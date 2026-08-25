@@ -2,9 +2,29 @@
 import Base from '../layouts/Base.astro';
 import ExplodeScene from '../components/ExplodeScene.astro';
 import copy from '../content/copy.json';
+import menu from '../content/menu.json';
 
 const { marca, hero, diferenciais, maisPedidos, ctaFinal, footer } = copy;
 const anoAtual = new Date().getFullYear();
+
+/**
+ * A copy traz o texto de venda; o menu traz o fato e a foto. O cruzamento
+ * acontece por id para que renomear um burger no cardapio nao deixe card orfao
+ * silenciosamente — sem foto o card ainda renderiza, so perde a imagem.
+ */
+const fotoPorId = new Map(
+  [...menu.destaques, ...menu.combos].map((item) => [item.id, `/produtos/${item.id}.webp`])
+);
+
+const destaques = maisPedidos.itens.map((item) => ({
+  ...item,
+  foto: fotoPorId.get(item.id) ?? null,
+}));
+
+const combos = menu.combos.map((combo) => ({
+  ...combo,
+  foto: fotoPorId.get(combo.id) ?? null,
+}));
 ---
 
 <Base>
@@ -60,8 +80,19 @@ const anoAtual = new Date().getFullYear();
         <p class="secao__texto">{maisPedidos.texto}</p>
         <ul class="cards" role="list" data-reveal>
           {
-            maisPedidos.itens.map((item) => (
+            destaques.map((item) => (
               <li class:list={['card', item.destaque && 'card--destaque']}>
+                {item.foto && (
+                  <img
+                    class="card__foto"
+                    src={item.foto}
+                    alt={`${item.nome} do YARD Burguer`}
+                    width="240"
+                    height="240"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
                 {item.selo && <span class="card__selo">{item.selo}</span>}
                 <h3 class="card__nome">{item.nome}</h3>
                 <p class="card__texto">{item.texto}</p>
@@ -89,6 +120,31 @@ const anoAtual = new Date().getFullYear();
       <div class="claro__wrap">
         <h2 id="combos-titulo" class="secao__titulo">{copy.combos.titulo}</h2>
         <p class="secao__texto">{copy.combos.texto}</p>
+
+        <ul class="combos__lista" role="list" data-reveal>
+          {
+            combos.map((combo) => (
+              <li class="combo">
+                {combo.foto && (
+                  <img
+                    class="combo__foto"
+                    src={combo.foto}
+                    alt={`${combo.nome}: ${combo.composicao}`}
+                    width="240"
+                    height="240"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
+                <div>
+                  <h3 class="combo__nome">{combo.nome}</h3>
+                  <p class="combo__composicao">{combo.composicao}</p>
+                </div>
+              </li>
+            ))
+          }
+        </ul>
+
         <a class="cta combos__cta" href={marca.cardapioUrl} data-evento="cardapio-combos">
           {copy.combos.cta}
         </a>
@@ -224,6 +280,20 @@ const anoAtual = new Date().getFullYear();
     color: var(--color-brasa);
   }
   .card--destaque .card__selo { color: var(--color-areia); }
+
+  /* O CDN do Brendi so entrega 240x240. Exibir contido em ~8.5rem mantem
+     densidade ~1.8x, ou seja, nitido em retina. Esticar para a largura do card
+     entregaria foto borrada — e foto de comida borrada vende menos que
+     nenhuma. Quando houver material em alta do dono, isso vira full-bleed. */
+  .card__foto {
+    display: block;
+    width: clamp(6.5rem, 20vw, 8.5rem);
+    height: auto;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 0.75rem;
+    margin-bottom: 1.1rem;
+  }
   .card__nome { font-family: var(--font-display); font-size: 1.5rem; margin-top: 0.4rem; }
   .card__texto { margin-top: 0.6rem; line-height: 1.6; font-size: 0.95rem; color: var(--color-areia); }
 
@@ -238,7 +308,47 @@ const anoAtual = new Date().getFullYear();
   /* Cena 6 — a unica secao com fundo brasa inteiro. */
   .combos { background-color: var(--color-brasa); color: var(--color-carvao); }
   .combos .secao__texto { color: var(--color-carvao); }
-  .combos__cta { margin-top: 2rem; }
+  .combos__cta { margin-top: 2.5rem; }
+
+  .combos__lista {
+    display: grid;
+    gap: 1rem;
+    list-style: none;
+    padding: 0;
+    margin-top: 2.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  }
+
+  /* Combo e leitura rapida: foto a esquerda, o que vem dentro a direita.
+     Sem preco por decisao de arquitetura — preco vive no Brendi, onde muda. */
+  .combo {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem;
+    border-radius: 0.9rem;
+    background-color: rgb(20 12 6 / 0.07);
+  }
+  .combo__foto {
+    flex-shrink: 0;
+    width: 5.5rem;
+    height: 5.5rem;
+    object-fit: cover;
+    border-radius: 0.65rem;
+  }
+  .combo__nome {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    line-height: 1.05;
+  }
+  .combo__composicao {
+    margin-top: 0.3rem;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: var(--color-carvao);
+    opacity: 0.85;
+  }
 
   .final {
     background-color: var(--color-carvao);
