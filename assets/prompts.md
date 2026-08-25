@@ -139,6 +139,75 @@ que mais denuncia geração nas três.
 
 ---
 
+## 2026-08-25 — hero fusão, primeiro take sob a anatomia de 7 blocos
+
+- **Modelo:** `gemini-3.1-flash-image` (rascunho — o pro estava em 503)
+- **Seed:** `44182` — **aceita pela API sem erro**, determinismo ainda não verificado
+- **Custo:** 1 geração (+ 9 tentativas perdidas em 503 nos modelos pro)
+- **Saída:** `assets/hero/hero-fusao-rascunho.webp` → aplicada em `public/assets/hero.webp`
+- **Nota:** 4/5
+
+**Prompt (literal, montado em blocos por `produce-hero.mjs`):**
+
+```
+Beef patties searing on a battered cast iron grill grate in the lower left of
+the frame, fat rendering and spitting, char marks forming. No assembled burger
+anywhere in the shot. Shot on 50mm at f/2.8, camera at chest height, slight low
+angle looking across the grill. Focus on the nearest patty, natural falloff
+toward the background. Last light of dusk raking in from the left, low sun
+behind silhouetted cerrado trees on the horizon. The glowing embers under the
+grate are the second light source and are visible in frame. Long warm shadows,
+no frontal fill. Kodak Portra 400 pushed half a stop. Visible grain in the
+shadows, soft orange halation bleeding from the embers and highlights, slight
+sharpness falloff in the corners. Natural surface imperfection: visible fibre
+and irregular sear on the meat, no smooth or plastic surfaces. Charcoal brown
+#140C06 dominant, terracotta #8B4A2B in the wood and copper, ember amber
+#C87A2E as accent on less than 10% of the frame. No cool blue, no blown-out
+white. Smoke curling upward into the dark empty space above. Suspended dust and
+ash catching the side light. Grease spatter, char crumbs and a stained cloth on
+the worn wood — the mess of a grill actually in use. 16:9 landscape. The centre
+and upper right of the frame stay dark, empty and uncluttered for large
+headline text. Asymmetric composition, subject off-centre. No centred symmetry,
+no HDR, no lens flare, no text, no logos, no hands.
+```
+
+**O que funcionou — e resolveu o defeito que motivou tudo isso:**
+
+Os blocos de **emulsão** e **atmosfera** eliminaram a superfície plástica. A
+carne tem fibra e selagem irregular, o grão aparece nas sombras, e a cena tem a
+bagunça que faltava — farelo de carvão, cinza, pano encardido, respingo na
+madeira. Nenhuma das três variantes anteriores tinha isso porque nenhuma pedia.
+
+O bloco de **luz** também rendeu: a brasa sob a grelha é fonte visível dentro do
+quadro, e o sol baixo atrás das árvores em silhueta dá a segunda fonte. Some a
+sensação de "luz que vem de lugar nenhum".
+
+Tirar o burger montado do primeiro plano foi decisivo. O que sobrou — carne,
+fumaça, brasa, madeira gasta — é tudo textura irregular, que é onde o modelo
+acerta.
+
+Na página, a headline "FEITO NA BRASA" caiu sobre brasa real: imagem e texto
+passaram a afirmar a mesma coisa.
+
+**O que falhou:**
+
+1. A fumaça saiu cinza-azulada. Contradiz o bloco de paleta, que pede
+   explicitamente `no cool blue`. É o defeito mais visível que resta.
+2. A saída veio em 1376px de largura. O hero ocupa 1440 CSS px, que em tela
+   retina são 2880px — a foto está sendo ampliada ~2x e perde nitidez. Não é
+   defeito de prompt, é limite de saída do modelo de rascunho.
+
+**Correção testada:** nenhuma ainda — uma por vez.
+**Próxima correção isolada (só esta, sem mexer em mais nada):** trocar
+`Suspended dust and ash catching the side light` por
+`Warm amber smoke lit from below by the embers, no grey or blue tint in the
+smoke`.
+
+O problema de resolução se resolve no take em `gemini-3-pro-image`, não no
+prompt — pendente, modelo em 503 desde a aprovação.
+
+---
+
 ## Fotos de produto — não geradas
 
 Destaques e combos usam foto real do CDN público do cardápio do Brendi, via

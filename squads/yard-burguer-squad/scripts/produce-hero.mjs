@@ -27,47 +27,66 @@ import sharp from 'sharp';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const API = 'https://generativelanguage.googleapis.com/v1beta/models';
-const MODELO_PADRAO = 'gemini-3.1-flash-image';
+/** Modelo de take final. Rascunho usa gemini-3.1-flash-image. */
+const MODELO_PADRAO = 'gemini-3-pro-image';
 
 /** Largura final. Cobre viewport de desktop em 1x e celular com folga. */
 const LARGURA_FINAL = 1920;
 
-const BASE = [
-  'Cinematic wide landscape food photograph, 16:9, for a premium burger restaurant hero banner.',
-  'Deep dark moody scene: charcoal-brown background, warm amber key light raking from the side,',
-  'rustic dark wood surface and a hammered copper serving tray.',
-  'Rich terracotta and ember tones, no cool blue tones, no bright white.',
-  'IMPORTANT COMPOSITION: the centre of the frame is empty, dark and uncluttered, because large',
-  'headline text will be placed there. Keep the food off-centre, toward the lower left or lower right.',
-  'Plenty of negative space and deep shadow in the middle of the image.',
-  'No text, no logos, no watermarks, no people looking at camera, no hands in the centre.',
-].join(' ');
-
 /**
- * Tres direcoes de composicao, nao tres sorteios do mesmo prompt. Variar a
- * cena de proposito da escolha real: uma aposta no produto, uma no ambiente,
- * uma no processo.
+ * O prompt e montado em blocos nomeados, na ordem da anatomia obrigatoria
+ * definida em CLAUDE.md. Isso e de proposito: enquanto o prompt era uma string
+ * unica, era facil escrever sujeito + composicao + paleta e achar que estava
+ * completo. Foi exatamente o que aconteceu — as tres primeiras variantes sairam
+ * sem LENTE, sem EMULSAO e sem ATMOSFERA, e voltaram com superficie plastica.
+ *
+ * Com os blocos separados, a falta de um e visivel no codigo.
+ *
+ * Fonte da identidade: assets/LOOK.md. Nada aqui pode contradizer aquele
+ * arquivo — se a direcao mudar, muda la primeiro.
  */
-const VARIANTES = [
-  {
-    id: 1,
-    nome: 'produto',
-    prompt:
-      'A single tall artisanal burger with melted cheddar and crispy bacon sits on the copper tray in the lower right corner, glowing under warm light, steam rising softly.',
-  },
-  {
-    id: 2,
-    nome: 'ambiente',
-    prompt:
-      'A rustic countryside burger joint table in the lower third: dark wood, copper tray, a burger slightly out of focus, scattered embers of warm light, evoking a backyard grill at dusk in the Brazilian cerrado.',
-  },
-  {
-    id: 3,
-    nome: 'processo',
-    prompt:
-      'Burger patties searing on a hot cast iron grill in the lower left, glowing embers beneath, smoke curling upward into the dark empty space above.',
-  },
-];
+const BLOCOS = {
+  // 1. Sujeito — concreto, sem adjetivo vago.
+  //    O burger montado saiu de proposito: era o elemento que denunciava
+  //    geracao nas tres variantes anteriores. Carne na grelha, fumaca e brasa
+  //    sao texturas irregulares, e o modelo acerta bagunca com muito mais
+  //    facilidade do que superficie lisa.
+  sujeito:
+    'Beef patties searing on a battered cast iron grill grate in the lower left of the frame, fat rendering and spitting, char marks forming. No assembled burger anywhere in the shot.',
+
+  // 2. Lente e distancia
+  lente:
+    'Shot on 50mm at f/2.8, camera at chest height, slight low angle looking across the grill. Focus on the nearest patty, natural falloff toward the background.',
+
+  // 3. Luz — o bloco que mais decide o resultado. A fonte precisa estar no
+  //    quadro ou logo fora dele: luz vinda de lugar nenhum e a assinatura mais
+  //    obvia de imagem gerada.
+  luz:
+    'Last light of dusk raking in from the left, low sun behind silhouetted cerrado trees on the horizon. The glowing embers under the grate are the second light source and are visible in frame. Long warm shadows, no frontal fill.',
+
+  // 4. Emulsao — o bloco ausente nas tres primeiras tentativas.
+  emulsao:
+    'Kodak Portra 400 pushed half a stop. Visible grain in the shadows, soft orange halation bleeding from the embers and highlights, slight sharpness falloff in the corners. Natural surface imperfection: visible fibre and irregular sear on the meat, no smooth or plastic surfaces.',
+
+  // 5. Paleta — hex vindos de LOOK.md. --yard-fogo nao entra em imagem: e cor
+  //    exclusiva de CTA e competiria com o botao.
+  paleta:
+    'Charcoal brown #140C06 dominant, terracotta #8B4A2B in the wood and copper, ember amber #C87A2E as accent on less than 10% of the frame. No cool blue, no blown-out white.',
+
+  // 6. Atmosfera — cena real tem bagunca.
+  atmosfera:
+    'Smoke curling upward into the dark empty space above. Suspended dust and ash catching the side light. Grease spatter, char crumbs and a stained cloth on the worn wood — the mess of a grill actually in use.',
+
+  // 7. Movimento: nao se aplica a imagem estatica.
+
+  // Requisito de layout + anti-slop. Fica por ultimo porque instrucao no fim do
+  // prompt e obedecida com mais frequencia — aprendido quando a exigencia de
+  // fundo das camadas abria o texto e era ignorada.
+  composicao:
+    '16:9 landscape. The centre and upper right of the frame stay dark, empty and uncluttered for large headline text. Asymmetric composition, subject off-centre. No centred symmetry, no HDR, no lens flare, no text, no logos, no hands.',
+};
+
+const PROMPT = Object.values(BLOCOS).join(' ');
 
 function parseArgs(argv) {
   const args = {};
@@ -88,14 +107,20 @@ async function carregarChave() {
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function gerar({ prompt, modelo, chave, tentativas = 4 }) {
+async function gerar({ modelo, chave, seed, tentativas = 4 }) {
   for (let tentativa = 1; ; tentativa++) {
     const resposta = await fetch(`${API}/${modelo}:generateContent`, {
       method: 'POST',
       headers: { 'x-goog-api-key': chave, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: `${BASE} ${prompt}` }] }],
-        generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
+        contents: [{ parts: [{ text: PROMPT }] }],
+        generationConfig: {
+          responseModalities: ['TEXT', 'IMAGE'],
+          // Seed e enviada para descobrir se a API aceita. O log registra que o
+          // suporte nao estava confirmado; sem seed nao da para iterar dentro
+          // do mesmo enquadramento, que e o mecanismo do sistema de prompts.
+          ...(seed !== undefined ? { seed } : {}),
+        },
       }),
     });
 
@@ -140,36 +165,35 @@ async function main() {
   const modelo = args.model || MODELO_PADRAO;
   const dirHero = join(raiz, 'assets', 'hero');
 
-  // Promove uma variante ja gerada para a posicao que o build le.
+  // Promove um take ja gerado para a posicao que o build le.
   if (args.escolher) {
-    const origem = join(dirHero, `hero-${args.escolher}.webp`);
+    const origem = join(dirHero, `${args.escolher}.webp`);
     const destino = join(raiz, 'public', 'assets', 'hero.webp');
     await mkdir(join(raiz, 'public', 'assets'), { recursive: true });
     await writeFile(destino, await readFile(origem));
-    console.log(`public/assets/hero.webp <- variante ${args.escolher}`);
+    console.log(`public/assets/hero.webp <- ${args.escolher}`);
     return;
   }
 
   const chave = await carregarChave();
   await mkdir(dirHero, { recursive: true });
 
-  console.log(`modelo: ${modelo} · ${VARIANTES.length} variantes\n`);
+  const seed = args.seed !== undefined ? Number(args.seed) : undefined;
+  const nome = args.nome || 'hero-fusao';
 
-  for (const variante of VARIANTES) {
-    try {
-      const raw = await gerar({ prompt: variante.prompt, modelo, chave });
-      const { buffer, largura, altura } = await otimizar(raw);
-      await writeFile(join(dirHero, `hero-${variante.id}.webp`), buffer);
-      console.log(
-        `  ok   ${variante.id} ${variante.nome.padEnd(10)} ${largura}x${altura}  ${(buffer.length / 1024).toFixed(0)}kb`
-      );
-    } catch (erro) {
-      console.error(`  FALHA ${variante.id} ${variante.nome}: ${erro.message}`);
-      process.exitCode = 1;
-    }
-  }
+  console.log(`modelo: ${modelo}${seed !== undefined ? ` · seed ${seed}` : ''}\n`);
 
-  console.log('\nEscolha com: node .../produce-hero.mjs --escolher <n>');
+  /**
+   * Uma geracao por vez. Take final nao se faz em lote — o portao de custo do
+   * projeto proibe, e gerar cinco variacoes de uma vez e o oposto de iterar:
+   * sem correcao isolada, nao se aprende qual bloco resolveu o quê.
+   */
+  const raw = await gerar({ modelo, chave, seed });
+  const { buffer, largura, altura } = await otimizar(raw);
+  await writeFile(join(dirHero, `${nome}.webp`), buffer);
+
+  console.log(`  ok   ${nome}  ${largura}x${altura}  ${(buffer.length / 1024).toFixed(0)}kb`);
+  console.log(`\nSe aprovado: node .../produce-hero.mjs --escolher ${nome}`);
 }
 
 main().catch((erro) => {
