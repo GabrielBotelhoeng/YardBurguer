@@ -68,9 +68,26 @@ const CHOKE_PADRAO = 2;
  * superficie lisa e o que denuncia geracao, e a correcao e descrever quebrado.
  */
 const BLOCOS = {
-  // 2. Lente e distancia
-  lente:
-    'Professional food photography of a single ingredient, shot on a 100mm macro lens at eye level, perfectly horizontal, sharp focus edge to edge, no depth-of-field blur.',
+  /**
+   * 2. Lente e distancia — PERSPECTIVA DE PERFIL, nao vista de topo.
+   *
+   * A versao anterior dizia so "at eye level, perfectly horizontal" e o modelo
+   * devolveu tomate e blend fotografados de CIMA: disco inteiro visivel, face
+   * superior virada para a camera. Empilhadas, sete perspectivas diferentes
+   * nunca formam um hamburguer — formam fotos sobrepostas, que foi exatamente a
+   * reclamacao do cliente em 2026-08-25.
+   *
+   * "Eye level" sozinho e ambiguo: a camera pode estar na altura do objeto e
+   * ainda olhar para baixo. O que resolve e dizer o que se ve e o que NAO se ve
+   * — a espessura sim, a face de cima nao.
+   */
+  lente: [
+    'Professional food photography of a single burger ingredient, shot on a 100mm macro lens.',
+    'The camera is at exactly the same height as the ingredient, looking at it straight from the side,',
+    'the way one layer of a stacked burger looks when seen edge-on at table height.',
+    'Show the THICKNESS and the side profile of the ingredient.',
+    'Sharp focus edge to edge, no depth-of-field blur.',
+  ].join(' '),
 
   // 3. Luz
   luz:
@@ -126,6 +143,32 @@ const EXIGENCIA_FUNDO = [
   'The background is a flat digital chroma key, NOT part of the photograph:',
   'no film grain, no halation, no colour bleed, no vignette and no light spill',
   'on the background. Grain, halation and warm tone apply to the food only.',
+  // Fecho curto e literal. O prompt cresceu ~25% ao ganhar o bloco de
+  // perspectiva, e na rodada de 2026-08-25 quatro camadas voltaram com o fundo
+  // entre 87 e 117 de distancia do magenta — todas com descricao rica em tom
+  // quente perto do fim. Uma ultima linha curta, sem adjetivo, recupera o peso
+  // da instrucao contra toda a linguagem de cor que veio antes.
+  'FINAL CHECK before rendering: background = solid #FF00FF magenta, flat, edge to edge.',
+  'Not pink, not red, not warm, not textured. Pure #FF00FF.',
+].join(' ');
+
+/**
+ * A perspectiva tambem precisa ser repetida no fim, pelo mesmo motivo do fundo.
+ *
+ * O bloco `lente` abre o prompt e fica longe; a descricao do ingrediente vem
+ * depois e e mais concreta. Quando as duas se contradizem, vence a mais
+ * proxima e mais concreta — foi assim que "seeds and pulp visible" produziu um
+ * tomate visto de cima apesar de o preambulo pedir camera horizontal.
+ *
+ * As sete camadas so empilham se forem sete fotos da MESMA camera. Perspectiva
+ * inconsistente nao se conserta no CSS.
+ */
+const EXIGENCIA_PERSPECTIVA = [
+  'CRITICAL REQUIREMENT: this is a strict side view, photographed at table height.',
+  'The camera must NOT look down at the ingredient. Do NOT show a top-down view,',
+  'do NOT show the full round top face of the ingredient, and do NOT tilt the camera above it.',
+  'The horizon of the ingredient is a straight horizontal line: the viewer sees its edge',
+  'and its thickness, exactly as a single layer inside a stacked burger photographed from the side.',
 ].join(' ');
 
 /**
@@ -163,7 +206,10 @@ const CAMADAS = [
     explodeY: -300,
     speed: 1.0,
     mobile: true,
-    prompt: 'The top half of a toasted brioche burger bun, golden brown and unevenly baked, with visible open crumb pores, a few loose sesame seeds and slight flour dusting. Matte crust, never glossy.',
+    // Sem "burger" e "domed" explicitos o modelo devolveu um pao rustico oval,
+    // tipo pao italiano, em vez de tampa de hamburguer.
+    prompt:
+      'The domed top half of a toasted brioche BURGER bun seen from the side, a rounded cap shape wider than it is tall, golden brown and unevenly baked, open crumb pores and a few sesame seeds on the crust, the flat cut base reading as a straight line along its bottom edge. Matte crust, never glossy.',
   },
   {
     id: 'alface',
@@ -171,7 +217,21 @@ const CAMADAS = [
     explodeY: -195,
     speed: 1.0,
     mobile: true,
-    prompt: 'A single ruffled leaf of crisp green lettuce, spread flat and wide, with irregular torn edges, visible leaf veins and a couple of water droplets. One edge slightly wilted.',
+    /**
+     * A cor precisa ser afirmada DUAS vezes e contra a paleta.
+     *
+     * O bloco `paleta` do preambulo pede "warm terracotta and ember tones" para
+     * o ingrediente, e numa alface isso produz exatamente o que voltou em
+     * 2026-08-25: uma folha marrom, seca, sem nada de verde. A instrucao de
+     * paleta e global e vale para carne, pao e bacon; para os ingredientes que
+     * tem cor propria ela precisa ser negada aqui, no prompt local.
+     *
+     * DIVIDA: o bloco `paleta` deveria excetuar alface, tomate e cebola na
+     * origem. Nao foi corrigido la porque mexer no preambulo obriga a regerar as
+     * sete — fica para a proxima geracao completa do conjunto.
+     */
+    prompt:
+      'A single ruffled leaf of VIVID FRESH GREEN lettuce seen from the side, lying almost flat as a thin wavy horizontal band with its frilled edge curling toward the camera, irregular torn edges, visible leaf veins and a couple of water droplets. The lettuce is bright green and crisp — do NOT make it brown, wilted, dried or terracotta; the warm palette instruction does not apply to this ingredient, only the warm lighting does.',
   },
   {
     id: 'tomate-cebola',
@@ -183,7 +243,9 @@ const CAMADAS = [
     // destruiria, deixando a cebola cinza.
     despillForte: false,
     prompt:
-      'One hand-cut slice of ripe red tomato, thickness slightly uneven, seeds and pulp visible and glistening from its own juice, with a ring of raw purple onion resting off-centre on top of it.',
+      // Era "seeds and pulp visible", que so existe na face de cima e puxava o
+      // modelo para a vista de topo. Agora a polpa aparece no CORTE lateral.
+      'One hand-cut slice of ripe red tomato seen from the side, its cut edge facing the camera, thickness slightly uneven, the wet pulp and a seed or two glistening along that cut edge, with a ring of raw purple onion resting on it and seen edge-on as a narrow curved band.',
   },
   {
     id: 'queijo',
@@ -192,7 +254,7 @@ const CAMADAS = [
     speed: 1.0,
     mobile: true,
     prompt:
-      'A slice of cheddar cheese caught mid-melt, deep orange, edges drooping unevenly and one corner still holding its shape. Matte surface with slight oil separation, never a smooth plastic sheet.',
+      'A slice of cheddar cheese caught mid-melt seen from the side, a thin deep orange band whose softened corners droop and hang down over the edge, one corner still holding its shape. Matte surface with slight oil separation, never a smooth plastic sheet.',
   },
   {
     id: 'blend',
@@ -201,7 +263,9 @@ const CAMADAS = [
     speed: 1.0,
     mobile: true,
     prompt:
-      'A thick 160g chargrilled beef patty, deep dark uneven sear crust, visible coarse grind and meat fibre, ragged hand-formed edges, rendered fat glistening in the crevices.',
+      // A crosta e a face de cima: descrita sozinha, ela pedia vista de topo.
+      // Aqui ela aparece so como borda superior do perfil.
+      'A thick 160g chargrilled beef patty seen from the side, showing its full height as a dark seared band, coarse grind and meat fibre visible along the ragged hand-formed rim, rendered fat glistening where it runs down the side, the charred crust reading only as the top edge of the profile.',
   },
   {
     id: 'bacon',
@@ -209,7 +273,8 @@ const CAMADAS = [
     explodeY: 70,
     speed: 1.0,
     mobile: true,
-    prompt: 'Two strips of fried bacon laid side by side, rippled and buckled unevenly, deep reddish brown with darker charred spots and irregular streaks of rendered fat.',
+    prompt:
+      'Two strips of fried bacon seen from the side, reading as a rippled horizontal band with the buckled waves rising and dipping across it, deep reddish brown with darker charred spots and irregular streaks of rendered fat.',
   },
   {
     id: 'pao-inferior',
@@ -217,7 +282,10 @@ const CAMADAS = [
     explodeY: 160,
     speed: 1.0,
     mobile: true,
-    prompt: 'The bottom half of a brioche burger bun, flat cut side facing up, toasted unevenly on the griddle with darker patches, visible open crumb texture. Matte, never glossy.',
+    // "flat cut side facing up" pedia literalmente a face de cima para a
+    // camera. Agora a face torrada e uma linha no topo do perfil.
+    prompt:
+      'The bottom half of a brioche burger bun seen from the side, a low dome with the flat toasted cut face reading as a straight line along its top edge, griddle-darkened in patches, open crumb texture visible on the side wall. Matte, never glossy.',
   },
 ];
 
@@ -266,7 +334,15 @@ async function gerar({ camada, modelo, chave }) {
     method: 'POST',
     headers: { 'x-goog-api-key': chave, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: `${PREAMBULO} ${camada.prompt} ${EXIGENCIA_FUNDO}` }] }],
+      contents: [
+        {
+          parts: [
+            {
+              text: `${PREAMBULO} ${camada.prompt} ${EXIGENCIA_PERSPECTIVA} ${EXIGENCIA_FUNDO}`,
+            },
+          ],
+        },
+      ],
       generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
     }),
   });
@@ -573,9 +649,14 @@ async function main() {
           break;
         } catch (erro) {
           const chromaRuim = erro.message.includes('distancia do magenta');
-          const podeRepetir = chromaRuim && args.reuse === undefined && tentativa < 3;
+          // Era 3 (2 re-rolagens) e o conjunto fechou 3 de 7 em 2026-08-25: as
+          // quatro perdidas custaram uma execucao inteira. Como a deriva e
+          // estocastica e a regra de composicao unica exige as sete na MESMA
+          // execucao, mais re-rolagens por camada saem mais barato que outra
+          // rodada completa.
+          const podeRepetir = chromaRuim && args.reuse === undefined && tentativa < 6;
           if (!podeRepetir) throw erro;
-          console.log(`       ${camada.id}: fundo derivou, nova rolagem (${tentativa}/2)`);
+          console.log(`       ${camada.id}: fundo derivou, nova rolagem (${tentativa}/5)`);
         }
       }
 

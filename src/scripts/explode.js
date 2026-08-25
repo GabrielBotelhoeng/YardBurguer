@@ -139,7 +139,9 @@ export async function initExplodeScene({ secao, ehMobile }) {
   if (pilha) {
     trilho.fromTo(
       pilha,
-      { scale: ehMobile ? 0.7 : 0.62, y: ehMobile ? -60 : -100 },
+      // 0.60 no desktop e nao 0.62: medido, a 25% do trilho o pao de cima ainda
+      // cortava 4px. Margem pequena, mas cena pinada nao tem para onde rolar.
+      { scale: ehMobile ? 0.7 : 0.6, y: ehMobile ? -60 : -100 },
       { scale: 1, y: 0, ease: 'none', duration: fimDaMontagem },
       0
     );

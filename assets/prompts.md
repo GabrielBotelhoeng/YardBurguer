@@ -325,3 +325,61 @@ Destaques e combos usam foto real do CDN público do cardápio do Brendi, via
 `fetch-menu-images.mjs`. Foto real sempre ganha de gerada quando existe.
 
 Limite: o CDN só entrega 240×240 e não há rota maior.
+
+---
+
+## [camadas] Sete ingredientes em PERFIL — correção de perspectiva
+
+**2026-08-25** · `produce-layers.mjs` · @scroll-trigger-specialist reportou,
+@brand-art-director corrigiu
+
+**Defeito:** o cliente disse que os ingredientes "não estão se transformando em
+um hambúrguer, está tudo em cima do outro". Não era CSS nem GSAP — era o
+conjunto de camadas.
+
+Cada camada tinha sido gerada com um **ângulo de câmera diferente**:
+
+| Camada | Como veio | Devia vir |
+|---|---|---|
+| `tomate-cebola` | vista de cima, disco inteiro | perfil |
+| `blend` | vista de cima, crosta para a câmera | perfil |
+| `pao-inferior` | 3/4, face cortada para cima | perfil |
+| `pao-superior` | pão rústico oval, quase de frente | tampa de burger em perfil |
+
+Empilhar quatro perspectivas nunca forma um hambúrguer. Forma fotos sobrepostas.
+
+**Causa raiz:** o `PREAMBULO` pedia `at eye level, perfectly horizontal`, mas os
+prompts de camada pediam a face de cima com todas as letras — `seeds and pulp
+visible`, `flat cut side facing up`, `sear crust`. Entre a instrução distante e
+a descrição concreta, o modelo seguiu a concreta. **É o mesmo erro que já tinha
+acontecido com o fundo**, e que o script tinha resolvido repetindo a exigência
+no fim do prompt. A lição não havia sido aplicada à perspectiva.
+
+**Correção, em três frentes:**
+
+1. `BLOCOS.lente` diz o que se vê e o que **não** se vê: espessura e perfil sim,
+   face de cima não. "Eye level" sozinho é ambíguo — a câmera pode estar na
+   altura do objeto e ainda olhar para baixo.
+2. Novo `EXIGENCIA_PERSPECTIVA`, repetido **depois** da descrição, junto do
+   requisito de fundo. Mesma técnica que fez o chroma obedecer.
+3. Cada prompt de camada reescrito para descrever o ingrediente de lado. A
+   polpa do tomate aparece no corte lateral, não na face; a crosta do blend é a
+   borda superior do perfil; o pão superior ganhou `domed`, `BURGER` e `wider
+   than it is tall` porque sem isso voltava pão italiano.
+
+**Validação barata antes do take caro** (`gemini-3.1-flash-image`, 2 gerações):
+
+- `tomate-cebola`: 770×583 → **900×187**
+- `blend`: 855×577 → **900×269**
+
+A proporção virar faixa larga e baixa É a confirmação — camada de hambúrguer
+vista de lado é larga e baixa. Perspectiva resolvida no rascunho.
+
+**O que o rascunho não resolve:** pontos brancos espalhados pelo recorte, com
+`fundo 68%` e `fundo derivou, nova rolagem` no log. É o chroma derivando no
+modelo barato, não defeito de prompt — as camadas em produção estavam limpas
+justamente por terem saído no `pro`. Take final regerado em `gemini-3-pro-image`.
+
+**Nota:** pendente de aprovação do cliente. Se passar, promover o bloco de
+perspectiva para o `LOOK.md`, porque ele vale para qualquer conjunto de camadas
+futuro — não só para este.
