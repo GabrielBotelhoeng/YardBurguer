@@ -23,6 +23,15 @@ o agente reinvente método que já existe empacotado.
 | `audit-motion-fallbacks` | **`fixing-motion-performance`** ⭐, `ui-a11y` |
 | stack | `astro`, `frontend-design`, `react-component-performance` (padrões aplicáveis) |
 
+## ⚓ `@scroll-trigger-specialist`
+
+| Task | Skills |
+|---|---|
+| `tune-pin-timeline` | **`scroll-experience`** ⭐, `fixing-motion-performance` |
+| `debug-scroll-trigger` | **`systematic-debugging`** ⭐ — reproduzir antes de acusar, `fixing-motion-performance` |
+| `document-scroll-triggers` | `documentation`, `technical-change-tracker` |
+| ferramenta | `claude-in-chrome`, `webapp-testing` — trilho de pin não se audita lendo código, se audita rolando |
+
 ## 🥩 `@hunger-copywriter`
 
 | Task | Skills |

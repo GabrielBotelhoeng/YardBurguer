@@ -42,7 +42,8 @@ executada:
 Também nunca criados, e são pré-requisito formal dos gates:
 
 - `docs/performance-budget.md` — as metas existem só como comentário no código
-- `docs/scroll-triggers.md` — a coreografia está implementada, não documentada
+- `docs/scroll-triggers.md` — a coreografia está implementada, não documentada.
+  Ganhou dono em 2026-08-25: `@scroll-trigger-specialist *document-scroll-triggers`
 - `src/content/ctas.json` — a task `craft-cta-ladder` nunca rodou
 - `docs/pitch-yard.md` — o roteiro de demo para o dono
 
