@@ -43,6 +43,12 @@ async function medir(rotulo) {
       let estado = 'ok';
       if (b.top < 0) estado = `corta ${Math.round(-b.top)}px em cima`;
       else if (b.bottom > vh) estado = `corta ${Math.round(b.bottom - vh)}px embaixo`;
+      // Transbordo lateral: com larguraRelativa > 1 as camadas passam da largura
+      // base de proposito — e assim que bacon e alface aparecem —, mas nunca
+      // podem sair do viewport.
+      else if (b.left < -1) estado = `corta ${Math.round(-b.left)}px na esquerda`;
+      else if (b.right > innerWidth + 1)
+        estado = `corta ${Math.round(b.right - innerWidth)}px na direita`;
       return { id: li.dataset.layer, topo: Math.round(b.top), base: Math.round(b.bottom), estado };
     });
     const sec = document.querySelector('#explode');

@@ -198,6 +198,26 @@ const EXIGENCIA_PERSPECTIVA = [
  *
  * Os ingredientes seguem o cardapio real (menu.json): blend de 160g, pao
  * brioche, cheddar. Nada aqui e inventado.
+ *
+ * ---------------------------------------------------------------------------
+ * larguraRelativa e assentamento — vindos do spec CORRECAOBURGERSTACK
+ * ---------------------------------------------------------------------------
+ *
+ * larguraRelativa: largura final em relacao ao pao (1.00 = mesma largura).
+ *
+ *   A regra que resolve o "bacon sumindo": numa vista de lado, uma camada fina
+ *   so existe visualmente se TRANSBORDAR lateralmente a camada que esta na
+ *   frente dela. O bacon tem z-index menor que o blend; com a mesma largura,
+ *   ele fica inteiramente coberto. Precisa ser mais largo para aparecer pelas
+ *   beiradas — e e exatamente assim que fotografo de hamburguer monta na vida
+ *   real, puxando bacon e alface para fora do pao.
+ *
+ * assentamento: quanto da propria altura a camada acrescenta a pilha.
+ *
+ *   1.0 = encosta na de baixo sem afundar; 0 = afunda por completo dentro dela.
+ *   Substitui a sobreposicao unica de 0.5 que valia para todas — uniforme, ela
+ *   fazia o queijo flutuar e escondia as camadas finas, porque queijo derretido
+ *   e alface afundam muito mais que pao e carne.
  */
 const CAMADAS = [
   {
@@ -206,6 +226,9 @@ const CAMADAS = [
     explodeY: -300,
     speed: 1.0,
     mobile: true,
+    // O pao e a referencia de largura: tudo mede em relacao a ele.
+    larguraRelativa: 1.0,
+    assentamento: 1.0,
     // Sem "burger" e "domed" explicitos o modelo devolveu um pao rustico oval,
     // tipo pao italiano, em vez de tampa de hamburguer.
     prompt:
@@ -217,6 +240,9 @@ const CAMADAS = [
     explodeY: -195,
     speed: 1.0,
     mobile: true,
+    // A mais larga de todas: folha sempre escapa pelas beiradas do pao.
+    larguraRelativa: 1.18,
+    assentamento: 0.28,
     /**
      * A cor precisa ser afirmada DUAS vezes e contra a paleta.
      *
@@ -239,6 +265,10 @@ const CAMADAS = [
     explodeY: -105,
     speed: 1.0,
     mobile: true,
+    // Carrega a cebola junto, entao precisa de mais transbordo que o tomate
+    // sozinho pediria — e a cebola que sumia.
+    larguraRelativa: 1.06,
+    assentamento: 0.38,
     // Cebola roxa e legitimamente mais azul que verde — despill por matiz a
     // destruiria, deixando a cebola cinza.
     despillForte: false,
@@ -253,6 +283,12 @@ const CAMADAS = [
     explodeY: -35,
     speed: 1.0,
     mobile: true,
+    // Derretido, escorre por fora da carne e quase nao levanta a pilha.
+    // 1.16 e nao 1.10: pelo ajuste fino do spec (+0.06 quando a camada continua
+    // escondida). O tomate esta na frente por z-index e tem quase a mesma
+    // altura, entao o queijo so aparece transbordando por fora dele.
+    larguraRelativa: 1.16,
+    assentamento: 0.21,
     prompt:
       'A slice of cheddar cheese caught mid-melt seen from the side, a thin deep orange band whose softened corners droop and hang down over the edge, one corner still holding its shape. Matte surface with slight oil separation, never a smooth plastic sheet.',
   },
@@ -262,6 +298,9 @@ const CAMADAS = [
     explodeY: 0,
     speed: 1.0,
     mobile: true,
+    // O volume da pilha: quase nao afunda, e e ele que da altura ao lanche.
+    larguraRelativa: 1.04,
+    assentamento: 0.56,
     prompt:
       // A crosta e a face de cima: descrita sozinha, ela pedia vista de topo.
       // Aqui ela aparece so como borda superior do perfil.
@@ -273,6 +312,10 @@ const CAMADAS = [
     explodeY: 70,
     speed: 1.0,
     mobile: true,
+    // O caso que motivou o spec. Fica ATRAS do blend por z-index; so aparece
+    // porque transborda 14% para os lados. Com largura igual, some inteiro.
+    larguraRelativa: 1.14,
+    assentamento: 0.32,
     prompt:
       'Two strips of fried bacon seen from the side, reading as a rippled horizontal band with the buckled waves rising and dipping across it, deep reddish brown with darker charred spots and irregular streaks of rendered fat.',
   },
@@ -282,6 +325,9 @@ const CAMADAS = [
     explodeY: 160,
     speed: 1.0,
     mobile: true,
+    // Base da pilha, mesma largura de referencia do pao de cima.
+    larguraRelativa: 1.0,
+    assentamento: 0.42,
     // "flat cut side facing up" pedia literalmente a face de cima para a
     // camera. Agora a face torrada e uma linha no topo do perfil.
     prompt:
@@ -698,6 +744,8 @@ async function main() {
         mobile: camada.mobile,
         largura,
         altura,
+        larguraRelativa: camada.larguraRelativa,
+        assentamento: camada.assentamento,
       });
     } catch (erro) {
       console.error(`  FALHA ${camada.id}: ${erro.message}`);

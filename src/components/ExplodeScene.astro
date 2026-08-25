@@ -21,6 +21,10 @@ type Camada = {
   mobile: boolean;
   largura?: number;
   altura?: number;
+  /** Largura final relativa ao pao (1.0 = mesma largura). Ver produce-layers.mjs. */
+  larguraRelativa?: number;
+  /** Quanto da propria altura a camada acrescenta a pilha. */
+  assentamento?: number;
 };
 
 const caminhoManifest = new URL('../../public/assets/layers/manifest.json', import.meta.url);
@@ -44,51 +48,83 @@ const camadas: Camada[] = temManifest
 const legendas = copy.explode.legendas as Record<string, string>;
 
 /**
- * Sobreposicao do empilhamento.
+ * LAYOUT DA PILHA — spec CORRECAOBURGERSTACK, etapas 2 e 5.
  *
- * Margem percentual no CSS e relativa a LARGURA do bloco pai, nunca a altura —
- * armadilha classica. Como cada camada ocupa 100% da largura, a altura
- * renderizada e (altura/largura) da largura do pai. Entao sobrepor 45% da
- * altura da camada equivale a esta porcentagem da largura, e o calculo fecha
- * em qualquer viewport sem media query.
+ * Antes daqui a pilha usava margem negativa com uma sobreposicao unica para
+ * todas as camadas. Duas coisas quebravam:
  *
- * Sem isso as camadas ficariam empilhadas com respiro entre elas — sete
- * ingredientes flutuando, nao um hamburguer.
+ * 1. Sobreposicao uniforme trata queijo derretido e pao como se afundassem
+ *    igual. Nao afundam — e por isso o queijo "flutuava" e a cebola sumia
+ *    dentro da alface.
+ * 2. Todas as camadas na mesma largura. Numa vista de lado, a camada que esta
+ *    ATRAS por z-index so aparece se transbordar lateralmente a que esta na
+ *    frente. Com largura igual, o bacon ficava 100% coberto pelo blend.
+ *
+ * Agora cada camada carrega larguraRelativa e assentamento (vindos do manifest,
+ * escritos por produce-layers.mjs) e a posicao de repouso e ACUMULADA de baixo
+ * para cima usando a altura visual real de cada uma.
+ *
+ * Tudo e calculado em fracoes da largura base, nunca em px: assim a mesma conta
+ * vale em 390px e em 1440px sem media query.
  */
-/**
- * Sobreposicao do hamburguer MONTADO: 0.64.
- *
- * Este e o estado de repouso do HTML e tambem o destino da animacao — a cena
- * monta as pecas ate chegar exatamente aqui. Sem JS ou sob reduced-motion o
- * usuario ve direto este quadro, que precisa ser um hamburguer inteiro e
- * apetitoso por si so.
- *
- * Era 0.68 e baixou porque com aquele valor a alface mostrava 67px de 208 e o
- * bacon 52px de 161: os dois praticamente desapareciam sob as camadas vizinhas,
- * e o conjunto lia como "tudo em cima do outro" em vez de lanche montado. 0.64
- * devolve a faixa visivel de cada ingrediente sem afrouxar a pilha a ponto de
- * virar ingrediente flutuando.
- */
-const SOBREPOSICAO = 0.5;
+
+/** Altura visual da camada, em fracoes da largura base da pilha. */
+function alturaVisual(camada: Camada) {
+  if (!camada.largura || !camada.altura) return 0;
+  return (camada.larguraRelativa ?? 1) * (camada.altura / camada.largura);
+}
 
 /**
- * Razao entre a altura da pilha e a largura do container, derivada das
- * proporcoes reais das sete camadas e da sobreposicao acima. Serve para o CSS
- * limitar a largura em funcao da ALTURA disponivel — sem isso o conjunto passa
- * do viewport e o pao de baixo fica cortado dentro da cena pinada.
+ * Posicao de repouso, acumulando de BAIXO para cima — a ordem em que um
+ * hamburguer e montado de verdade.
  *
- * Recalcular ao mudar SOBREPOSICAO ou trocar o conjunto de camadas.
+ * assentamento diz quanto da propria altura a camada acrescenta a pilha: 1.0
+ * encosta sem afundar, 0 afunda por completo na de baixo.
  */
-const RAZAO_DA_PILHA = camadas.reduce((total, camada, indice) => {
-  if (!camada.largura || !camada.altura) return total;
-  const proporcao = camada.altura / camada.largura;
-  return total + (indice === 0 ? proporcao : proporcao * (1 - SOBREPOSICAO));
-}, 0);
+const deBaixoParaCima = [...camadas].sort((a, b) => b.order - a.order);
+const repousoPorId = new Map<string, number>();
+let pilha = 0;
 
-function margemDeSobreposicao(camada: Camada, indice: number) {
-  if (indice === 0 || !camada.largura || !camada.altura) return undefined;
-  const proporcao = camada.altura / camada.largura;
-  return `margin-top: -${(SOBREPOSICAO * proporcao * 100).toFixed(2)}%`;
+for (const camada of deBaixoParaCima) {
+  repousoPorId.set(camada.id, -pilha);
+  pilha += alturaVisual(camada) * (camada.assentamento ?? 0.5);
+}
+
+/**
+ * Normalizacao para o topo do container.
+ *
+ * O acumulo acima produz valores negativos subindo a partir do zero. Para virar
+ * `top` de elemento absoluto, tudo desloca ate que a camada mais alta fique em
+ * zero.
+ */
+const topos = camadas.map((c) => (repousoPorId.get(c.id) ?? 0) - alturaVisual(c) / 2);
+const topoMaisAlto = Math.min(...topos);
+const baseMaisBaixa = Math.max(
+  ...camadas.map((c) => (repousoPorId.get(c.id) ?? 0) + alturaVisual(c) / 2)
+);
+
+/** Altura total da pilha, em fracoes da largura base. Vira aspect-ratio no CSS. */
+const RAZAO_DA_PILHA = baseMaisBaixa - topoMaisAlto;
+
+/**
+ * A camada mais larga define o quanto a pilha transborda para os lados.
+ *
+ * Com larguraRelativa de ate 1.18, a alface mede 18% a mais que a largura base.
+ * Se a base for 100% do espaco disponivel, esse excedente sai pela lateral da
+ * tela — foi o que aconteceu na primeira medicao apos aplicar o spec. Dividir a
+ * largura disponivel por este maximo faz a camada mais larga caber exatamente.
+ */
+const MAIOR_RAZAO_LATERAL = Math.max(...camadas.map((c) => c.larguraRelativa ?? 1));
+
+function estiloDaCamada(camada: Camada) {
+  const centro = repousoPorId.get(camada.id) ?? 0;
+  const topo = centro - alturaVisual(camada) / 2 - topoMaisAlto;
+  return [
+    // Maior z-index quanto mais alto na pilha fisica — monotonico, sem excecao.
+    `z-index: ${10 - camada.order}`,
+    `--ratio: ${(camada.larguraRelativa ?? 1).toFixed(3)}`,
+    `--topo: ${topo.toFixed(4)}`,
+  ].join('; ');
 }
 ---
 
@@ -106,19 +142,17 @@ function margemDeSobreposicao(camada: Camada, indice: number) {
   <ul
     class="explode__camadas"
     role="list"
-    style={`--razao-pilha: ${(RAZAO_DA_PILHA || 1.86).toFixed(4)}`}
+    style={`--razao-pilha: ${(RAZAO_DA_PILHA || 1.2).toFixed(4)}; --transbordo: ${MAIOR_RAZAO_LATERAL.toFixed(3)}`}
   >
     {
-      camadas.map((camada, indice) => (
+      camadas.map((camada) => (
         <li
           class="explode__camada"
           data-layer={camada.id}
           data-explode-y={camada.explodeY}
           data-speed={camada.speed}
           data-mobile={camada.mobile}
-          style={[`z-index: ${10 - camada.order}`, margemDeSobreposicao(camada, indice)]
-            .filter(Boolean)
-            .join('; ')}
+          style={estiloDaCamada(camada)}
         >
           {
             camada.src ? (
@@ -222,15 +256,43 @@ function margemDeSobreposicao(camada: Camada, indice: number) {
        muda por breakpoint porque o mobile usa padding menor e um texto que
        quebra em mais linhas — por isso e custom property e nao numero fixo. */
     --desconto-altura: 26.5rem;
-    width: min(
-      100%,
+    /* Dividido por --transbordo: a camada mais larga (alface, 1.18) precisa
+       caber na tela, e nao so a largura base. Sem isso a alface e o bacon saem
+       pela lateral do viewport. */
+    --largura-base: min(
+      calc(100% / var(--transbordo, 1.18)),
       24rem,
-      calc((100svh - var(--desconto-altura)) / var(--razao-pilha, 1.86))
+      calc((100svh - var(--desconto-altura)) / var(--razao-pilha, 1.2))
     );
+    width: var(--largura-base);
+    /* A pilha deixou de ser fluxo normal: as camadas sao absolutas e o container
+       precisa reservar a altura por conta propria. */
+    height: calc(var(--largura-base) * var(--razao-pilha, 1.2));
     margin-inline: auto;
+    /* Contexto de empilhamento proprio: o z-index das camadas nao vaza para o
+       resto da pagina nem disputa com o texto da cena. */
+    isolation: isolate;
+    /* NAO usar transform-style: preserve-3d aqui — o navegador passa a pintar
+       por translateZ e ignora o z-index, e a ordem das camadas vira aleatoria. */
   }
 
+  /**
+   * Cada camada e posicionada pelo `top`, nunca por transform.
+   *
+   * Isso e deliberado e e o que mantem o fallback funcionando: o hamburguer ja
+   * nasce MONTADO no HTML, sem depender de JS. O transform fica inteiramente
+   * livre para o GSAP animar a dispersao, e sob prefers-reduced-motion, onde
+   * nenhum transform e aplicado, o que sobra e exatamente a pilha montada.
+   *
+   * --topo e --ratio vem do componente, em fracoes da largura base.
+   */
   .explode__camada {
+    position: absolute;
+    left: 50%;
+    top: calc(var(--topo, 0) * var(--largura-base));
+    width: calc(var(--ratio, 1) * var(--largura-base));
+    /* Centraliza sem gastar o transform. */
+    margin-left: calc(var(--ratio, 1) * var(--largura-base) / -2);
     will-change: transform;
   }
 
