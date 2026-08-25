@@ -57,6 +57,7 @@ data:
   brand: data/brand-sertao-premium.md
   storyboard: data/scroll-storyboard.md
   business: data/business-context.md
+  skills: data/skill-map.md
 
 integration:
   menu_url: https://menu.brendi.com.br/yard-burguer
