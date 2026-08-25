@@ -23,7 +23,7 @@ type Camada = {
   altura?: number;
 };
 
-const caminhoManifest = new URL('../../public/layers/manifest.json', import.meta.url);
+const caminhoManifest = new URL('../../public/assets/layers/manifest.json', import.meta.url);
 
 /** Contrato de fallback, identico ao do script. Vale enquanto nao ha imagem. */
 const CAMADAS_PLACEHOLDER: Camada[] = [

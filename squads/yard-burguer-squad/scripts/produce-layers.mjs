@@ -405,7 +405,7 @@ async function main() {
 
   const chave = await carregarChave();
   const dirRaw = join(raiz, 'assets', 'raw');
-  const dirSaida = join(raiz, 'public', 'layers');
+  const dirSaida = join(raiz, 'public', 'assets', 'layers');
   await mkdir(dirRaw, { recursive: true });
   await mkdir(dirSaida, { recursive: true });
 
@@ -449,7 +449,7 @@ async function main() {
 
       prontas.push({
         id: camada.id,
-        src: `/layers/${camada.id}.webp`,
+        src: `/assets/layers/${camada.id}.webp`,
         order: camada.order,
         explodeY: camada.explodeY,
         speed: camada.speed,

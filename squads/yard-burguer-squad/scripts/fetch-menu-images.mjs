@@ -22,7 +22,7 @@ import { dirname, join } from 'node:path';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const CDN = 'https://images.brendi.com.br/optimized';
-const destino = join(raiz, 'public', 'produtos');
+const destino = join(raiz, 'public', 'assets', 'produtos');
 
 /** Só as seções que a landing realmente renderiza. Bebida não vira foto na página. */
 const SECOES_USADAS = ['destaques', 'combos'];

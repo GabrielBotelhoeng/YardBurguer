@@ -10,9 +10,9 @@ import menu from '../content/menu.json';
  * em alta — o CDN do Brendi so entrega 240x240, pequeno demais para tela cheia.
  * Em vez de deixar markup morto ou uma foto borrada no ponto mais visivel da
  * pagina, a camada de foto so e renderizada quando o arquivo existir no build.
- * Para ativar: colocar a foto em public/hero.webp. Nada mais precisa mudar.
+ * Para ativar: colocar a foto em public/assets/hero.webp.
  */
-const temFotoHero = existsSync(new URL('../../public/hero.webp', import.meta.url));
+const temFotoHero = existsSync(new URL('../../public/assets/hero.webp', import.meta.url));
 
 const { marca, hero, diferenciais, maisPedidos, ctaFinal, footer } = copy;
 const anoAtual = new Date().getFullYear();
@@ -23,7 +23,7 @@ const anoAtual = new Date().getFullYear();
  * silenciosamente — sem foto o card ainda renderiza, so perde a imagem.
  */
 const fotoPorId = new Map(
-  [...menu.destaques, ...menu.combos].map((item) => [item.id, `/produtos/${item.id}.webp`])
+  [...menu.destaques, ...menu.combos].map((item) => [item.id, `/assets/produtos/${item.id}.webp`])
 );
 
 const destaques = maisPedidos.itens.map((item) => ({
@@ -57,7 +57,7 @@ const combos = menu.combos.map((combo) => ({
         temFotoHero && (
           <img
             class="hero__foto"
-            src="/hero.webp"
+            src="/assets/hero.webp"
             alt=""
             aria-hidden="true"
             fetchpriority="high"

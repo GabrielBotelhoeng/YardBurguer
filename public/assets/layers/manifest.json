@@ -1,5 +1,5 @@
 {
-  "_gerado": "2026-08-25T13:30:26.220Z",
+  "_gerado": "2026-08-25T13:44:45.130Z",
   "_modelo": "gemini-3-pro-image",
   "_nota": "Conjunto fechado em uma unica sessao e um unico modelo. Regerar significa regerar TODAS as camadas — misturar modelos vira colagem.",
   "mobileLayers": [
@@ -11,7 +11,7 @@
   "camadas": [
     {
       "id": "pao-superior",
-      "src": "/layers/pao-superior.webp",
+      "src": "/assets/layers/pao-superior.webp",
       "order": 1,
       "explodeY": -300,
       "speed": 1,
@@ -21,7 +21,7 @@
     },
     {
       "id": "alface",
-      "src": "/layers/alface.webp",
+      "src": "/assets/layers/alface.webp",
       "order": 2,
       "explodeY": -195,
       "speed": 1,
@@ -31,7 +31,7 @@
     },
     {
       "id": "tomate-cebola",
-      "src": "/layers/tomate-cebola.webp",
+      "src": "/assets/layers/tomate-cebola.webp",
       "order": 3,
       "explodeY": -105,
       "speed": 1,
@@ -41,7 +41,7 @@
     },
     {
       "id": "queijo",
-      "src": "/layers/queijo.webp",
+      "src": "/assets/layers/queijo.webp",
       "order": 4,
       "explodeY": -35,
       "speed": 1,
@@ -51,7 +51,7 @@
     },
     {
       "id": "blend",
-      "src": "/layers/blend.webp",
+      "src": "/assets/layers/blend.webp",
       "order": 5,
       "explodeY": 0,
       "speed": 1,
@@ -61,7 +61,7 @@
     },
     {
       "id": "bacon",
-      "src": "/layers/bacon.webp",
+      "src": "/assets/layers/bacon.webp",
       "order": 6,
       "explodeY": 70,
       "speed": 1,
@@ -71,7 +71,7 @@
     },
     {
       "id": "pao-inferior",
-      "src": "/layers/pao-inferior.webp",
+      "src": "/assets/layers/pao-inferior.webp",
       "order": 7,
       "explodeY": 160,
       "speed": 1,

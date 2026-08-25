@@ -17,7 +17,7 @@
  *
  * Uso:
  *   node .../produce-hero.mjs                 # 3 variantes em assets/hero/
- *   node .../produce-hero.mjs --escolher 2    # promove a variante 2 para public/hero.webp
+ *   node .../produce-hero.mjs --escolher 2    # promove a variante 2 para public/assets/hero.webp
  */
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
@@ -143,10 +143,10 @@ async function main() {
   // Promove uma variante ja gerada para a posicao que o build le.
   if (args.escolher) {
     const origem = join(dirHero, `hero-${args.escolher}.webp`);
-    const destino = join(raiz, 'public', 'hero.webp');
-    await mkdir(join(raiz, 'public'), { recursive: true });
+    const destino = join(raiz, 'public', 'assets', 'hero.webp');
+    await mkdir(join(raiz, 'public', 'assets'), { recursive: true });
     await writeFile(destino, await readFile(origem));
-    console.log(`public/hero.webp <- variante ${args.escolher}`);
+    console.log(`public/assets/hero.webp <- variante ${args.escolher}`);
     return;
   }
 
