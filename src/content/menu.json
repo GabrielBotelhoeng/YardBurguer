@@ -1,0 +1,154 @@
+{
+  "_fonte": "menu.brendi.com.br/yard-burguer — coletado em 2026-08-25.",
+  "_regra": "Fonte da verdade de PRODUTO. Nome, descrição e ingredientes saem daqui e de mais lugar nenhum (Constitution, Artigo IV — No Invention). A copy da landing pode reescrever o tom, nunca os fatos.",
+  "_precos": "Preços ficam registrados aqui como referência de negócio, mas NÃO são renderizados na página. Preço na landing vira dívida: muda no Brendi e a landing mente. O cardápio é a fonte viva.",
+  "_imagens": "imageId aponta para https://images.brendi.com.br/optimized/{imageId}. O CDN só entrega 240x240 — serve para card, não para hero.",
+
+  "destaques": [
+    {
+      "id": "tapera-do-sertao",
+      "nome": "Tápera do Sertão",
+      "carroChefe": true,
+      "imageId": "6ad72d28cea1259893c7184d57441644",
+      "descricaoOficial": "Pão brioche, molho especial, bacon, blend de 160g, cheddar, costela desfiada, queijo coalho tostado lambuzado no mel, banana da terra frita caramelizada no açúcar mascavo, finalizado no maçarico",
+      "ingredientesChave": [
+        "costela desfiada",
+        "queijo coalho tostado no mel",
+        "banana da terra caramelizada no açúcar mascavo",
+        "finalização no maçarico"
+      ],
+      "preco": { "de": 57.0, "por": 48.45 }
+    },
+    {
+      "id": "supremo",
+      "nome": "Supremo",
+      "imageId": "70039cd5d6bd49a3dda5727339b85766",
+      "descricaoOficial": "Pão brioche macio, blend suculento de 160g, Catupiry cremoso, costela desfiada, cebola caramelizada e bacon crocante com molho da casa",
+      "ingredientesChave": ["Catupiry", "costela desfiada", "cebola caramelizada", "bacon"],
+      "preco": { "de": 55.99, "por": 47.59 }
+    },
+    {
+      "id": "yard-king",
+      "nome": "Yard King",
+      "imageId": "97c44f7d88cc928b29de205b75948d15",
+      "descricaoOficial": "Brioche macio, duas carnes suculentas de 160g, cheddar em dobro e o toque irresistível do nosso molho Santiago",
+      "ingredientesChave": ["duas carnes de 160g", "cheddar em dobro", "molho Santiago"],
+      "preco": { "de": 53.99, "por": 46.97 }
+    }
+  ],
+
+  "burgers": [
+    {
+      "id": "yard-tropical",
+      "nome": "Yard Tropical",
+      "imageId": "a249e4d17e224b39400a2dc75d9707db",
+      "descricaoOficial": "Pão brioche macio, hambúrguer 150g suculento, cheddar, bacon crocante, molho da casa e abacaxi grelhado no mel picante, finalizado com cream cheese cremoso",
+      "preco": { "por": 46.99 }
+    },
+    {
+      "id": "apolo",
+      "nome": "Apólo",
+      "imageId": "94fb3932f1ea5868bd14ad889a4a9182",
+      "descricaoOficial": "Pão brioche, dois smash suculentos 90g, 2 fatias cheddar derretido, catupiry cremoso, molho da casa, bacon crocante, cebola roxa e o toque final do molho Santiago",
+      "preco": { "de": 51.21, "por": 43.53 }
+    },
+    {
+      "id": "open-crysp",
+      "nome": "Open Crysp",
+      "imageId": "11eca2e7a4752f82399f35222b02390d",
+      "descricaoOficial": "Pão brioche macio, blend suculento de 160g, cheddar derretido, Catupiry cremoso, costela desfiada, muita cebola crispy e molho da casa",
+      "preco": { "de": 53.6, "por": 45.56 }
+    },
+    {
+      "id": "yard-moda",
+      "nome": "Yard Moda",
+      "imageId": "ebf9a149fcbd49134021ab09c80ca2c5",
+      "descricaoOficial": "Hambúrguer suculento com cebola caramelizada no ponto perfeito, bacon crocante irresistível e pão brioche artesanal macio",
+      "preco": { "de": 53.7, "por": 45.65 }
+    },
+    {
+      "id": "burguer-salad",
+      "nome": "Burguer Salad",
+      "imageId": "b43f07738f3afcc8b53592ee6969f507",
+      "descricaoOficial": "Brioche macio, blend 160g suculento, cheddar derretido, alface fresca, tomate e cebola roxa com o toque do molho da casa",
+      "preco": { "de": 44.9, "por": 38.17 }
+    },
+    {
+      "id": "american-smash",
+      "nome": "American Smash",
+      "imageId": "cd3e4cd85455cb46db8e05b490ab3cf5",
+      "descricaoOficial": "Hambúrguer suculento com cheddar em dobro e muita cebola, servido em um pão brioche fresco",
+      "preco": { "de": 41.5, "por": 35.28 }
+    },
+    {
+      "id": "cheese-burger",
+      "nome": "Cheese Burger",
+      "imageId": "715b51a1ea4efa17561867c6cc448b45",
+      "descricaoOficial": "Pão macio e dourado, envolvendo um suculento burger de 160g perfeitamente grelhado. O cheddar cremoso derrete sobre a carne",
+      "preco": { "de": 34.29, "por": 31.2 }
+    },
+    {
+      "id": "burguer-kids",
+      "nome": "Burguer Kids",
+      "imageId": "fdb0e7ebe41dc68e580e0af509ef7437",
+      "descricaoOficial": "Pão brioche macio, smash de 90g, cheddar derretido e molho da casa. Simples, irresistível",
+      "preco": { "de": 24.99, "por": 21.24 }
+    }
+  ],
+
+  "combos": [
+    {
+      "id": "combo-mega",
+      "nome": "Combo Mega",
+      "imageId": "fd2b9a4abeb1d19296e6fc543fa178ed",
+      "composicao": "2 Tápera + Batata + Refrigerante 1L",
+      "preco": { "de": 158.33, "por": 126.66 }
+    },
+    {
+      "id": "combo-casal",
+      "nome": "Combo Casal",
+      "imageId": "86e490786fe4335062514cf598835a23",
+      "composicao": "King + Apólo + Batata + Refrigerante 1L",
+      "preco": { "de": 151.4, "por": 121.12 }
+    },
+    {
+      "id": "combo-familia",
+      "nome": "Combo Família",
+      "imageId": "80e6374c61ed2c8008469b0b9ba80d4a",
+      "composicao": "4 Burguer Salad + Batata + Refrigerante 1L",
+      "preco": { "de": 216.0, "por": 172.8 }
+    },
+    {
+      "id": "combo-solteiro",
+      "nome": "Combo Solteiro",
+      "imageId": "19cf70b798dd9e61a815d220b3436fd1",
+      "composicao": "Cheese Burger + Refrigerante lata + Batata",
+      "preco": { "de": 59.7, "por": 47.76 }
+    }
+  ],
+
+  "porcoes": [
+    {
+      "id": "fritas-da-casa",
+      "nome": "Fritas da Casa",
+      "imageId": "83d8ebc1ad4ff98ae3a398c50699c332",
+      "descricaoOficial": "Fritas crocantes cobertas com cream cheese, costela desfiada suculenta, farofa de bacon e o toque final de picles de jalapeño",
+      "preco": { "de": 44.6, "por": 37.91 }
+    },
+    {
+      "id": "fritas-simples",
+      "nome": "Fritas Simples",
+      "imageId": "3f3e8d13fea9ab3c69557b35cb26505f",
+      "descricaoOficial": "Douradinha, sequinha e perfeita pra dividir… ou não",
+      "preco": { "de": 18.99, "por": 16.14 }
+    }
+  ],
+
+  "fatos": {
+    "blendPadrao": "160g",
+    "smash": "90g",
+    "pao": "brioche",
+    "molhosDaCasa": ["molho da casa", "molho Santiago", "molho especial"],
+    "_nota": "blendPadrao corrige o '180g' que a copy inventava. O cardápio real usa 160g no blend e 90g no smash."
+  }
+}
