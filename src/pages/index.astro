@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import ExplodeScene from '../components/ExplodeScene.astro';
+import Icone from '../components/Icone.astro';
 import { existsSync } from 'node:fs';
 import copy from '../content/copy.json';
 import menu from '../content/menu.json';
@@ -10,9 +11,9 @@ import menu from '../content/menu.json';
  * em alta — o CDN do Brendi so entrega 240x240, pequeno demais para tela cheia.
  * Em vez de deixar markup morto ou uma foto borrada no ponto mais visivel da
  * pagina, a camada de foto so e renderizada quando o arquivo existir no build.
- * Para ativar: colocar a foto em public/hero.webp. Nada mais precisa mudar.
+ * Para ativar: colocar a foto em public/assets/hero.webp.
  */
-const temFotoHero = existsSync(new URL('../../public/hero.webp', import.meta.url));
+const temFotoHero = existsSync(new URL('../../public/assets/hero.webp', import.meta.url));
 
 const { marca, hero, diferenciais, maisPedidos, ctaFinal, footer } = copy;
 const anoAtual = new Date().getFullYear();
@@ -23,7 +24,7 @@ const anoAtual = new Date().getFullYear();
  * silenciosamente — sem foto o card ainda renderiza, so perde a imagem.
  */
 const fotoPorId = new Map(
-  [...menu.destaques, ...menu.combos].map((item) => [item.id, `/produtos/${item.id}.webp`])
+  [...menu.destaques, ...menu.combos].map((item) => [item.id, `/assets/produtos/${item.id}.webp`])
 );
 
 const destaques = maisPedidos.itens.map((item) => ({
@@ -44,6 +45,7 @@ const combos = menu.combos.map((combo) => ({
     <nav aria-label="Principal">
       <a class="nav__link" href="#mais-pedidos">Destaques</a>
       <a class="nav__link" href="#explode">Nosso hambúrguer</a>
+      <a class="nav__link" href="#onde-estamos">Onde estamos</a>
     </nav>
     <a class="cta nav__cta" href={marca.cardapioUrl} data-evento="cardapio-navbar">
       {copy.navbar.ctaPrimario}
@@ -57,9 +59,11 @@ const combos = menu.combos.map((combo) => ({
         temFotoHero && (
           <img
             class="hero__foto"
-            src="/hero.webp"
+            src="/assets/hero.webp"
             alt=""
             aria-hidden="true"
+            width="1376"
+            height="768"
             fetchpriority="high"
             data-ken-burns
           />
@@ -79,18 +83,32 @@ const combos = menu.combos.map((combo) => ({
     <ExplodeScene />
 
     <!-- Cena 3 — Diferenciais -->
+    <!--
+      Diferenciais.
+
+      Duas coisas saíram daqui depois do feedback:
+
+      1. Os emojis. Renderizam diferente em cada sistema e leem como atalho
+         barato — o oposto da credibilidade que a página precisa passar.
+      2. A palavra "DO SERTÃO" gigante ao fundo. Ela ficava ATRÁS do texto do
+         corpo e o resultado era uma marca d'água ilegível cruzando o
+         parágrafo. Palavra de fundo funciona na cena 2, onde há espaço vazio
+         para ela ocupar; aqui só sujava a leitura.
+
+      O layout deixou de ser lista corrida e virou grade de cartões, com o
+      ícone no topo e uma régua de brasa separando ícone de título.
+    -->
     <section class="claro diferenciais" aria-labelledby="dif-titulo">
-      <div class="diferenciais__fundo" aria-hidden="true" data-parallax-lento>
-        {diferenciais.textoFundo}
-      </div>
-      <div class="claro__wrap diferenciais__wrap">
+      <div class="claro__wrap">
         <h2 id="dif-titulo" class="secao__titulo">{diferenciais.titulo}</h2>
         <p class="secao__texto">{diferenciais.texto}</p>
         <ul class="pilares" role="list" data-reveal>
           {
             diferenciais.pilares.map((pilar) => (
               <li class="pilar">
-                <span class="pilar__icone" aria-hidden="true">{pilar.icone}</span>
+                <span class="pilar__icone">
+                  <Icone nome={pilar.icone as any} />
+                </span>
                 <h3 class="pilar__titulo">{pilar.titulo}</h3>
                 <p class="pilar__texto">{pilar.texto}</p>
               </li>
@@ -178,6 +196,75 @@ const combos = menu.combos.map((combo) => ({
       </div>
     </section>
 
+    <!--
+      Onde estamos — a seção que faltava.
+
+      A navbar prometia "Onde estamos" no copy.json desde o início e a seção
+      nunca existiu. Mais grave: não havia um único link de WhatsApp na página,
+      enquanto as duas referências brasileiras do briefing põem em destaque. O
+      cardápio no Brendi era o único caminho de conversão; quem tinha dúvida
+      antes de pedir não tinha para onde ir.
+    -->
+    <section class="onde" id="onde-estamos" aria-labelledby="onde-titulo">
+      <div class="claro__wrap">
+        <h2 id="onde-titulo" class="secao__titulo">{copy.ondeEstamos.titulo}</h2>
+        <p class="secao__texto">{copy.ondeEstamos.texto}</p>
+
+        <!--
+          Tudo na mesma grade, com o mesmo tratamento de rotulo.
+
+          Antes o endereco ficava solto acima, repetindo "Setor Morada do Sol,
+          Rio Verde" que ja estava na linha de cima, e horario e pagamento
+          vinham como blocos avulsos. Tres niveis de informacao com tres
+          formatos diferentes e o que fazia a secao parecer bagunca.
+
+          O pagamento tambem deixou de ser uma frase corrida e virou lista: ler
+          "PIX, Cartao de credito online · Dinheiro, Credito, Debito, Vale-
+          refeicao, Vale-alimentacao na entrega" numa linha so nao e leitura, e
+          decifracao.
+        -->
+        <dl class="onde__dados">
+          <div class="onde__dado">
+            <dt>{copy.ondeEstamos.tituloEndereco}</dt>
+            <dd>
+              <address class="onde__endereco">
+                {marca.rua}<br />{marca.bairro}<br />{marca.cidade} – {marca.estado}, {marca.cep}
+              </address>
+            </dd>
+          </div>
+          <div class="onde__dado">
+            <dt>{copy.ondeEstamos.tituloHorario}</dt>
+            <dd>{marca.horario.texto}</dd>
+          </div>
+          <div class="onde__dado">
+            <dt>{copy.ondeEstamos.tituloPagamento}</dt>
+            <dd>
+              <span class="onde__pgto">Online</span> {marca.pagamento.online.join(' · ')}
+              <br />
+              <span class="onde__pgto">Na entrega</span> {marca.pagamento.naEntrega.join(' · ')}
+            </dd>
+          </div>
+        </dl>
+
+        <div class="onde__acoes" data-reveal>
+          <a
+            class="cta cta--whats"
+            href={marca.whatsappUrl}
+            target="_blank"
+            rel="noopener"
+            data-evento="whatsapp-onde"
+          >
+            {copy.ondeEstamos.ctaWhats}
+          </a>
+          <a class="onde__link" href={marca.mapaUrl} target="_blank" rel="noopener">
+            {copy.ondeEstamos.ctaMapa}
+          </a>
+        </div>
+
+        <p class="onde__nota">{copy.ondeEstamos.notaWhats}</p>
+      </div>
+    </section>
+
     <!-- Cena 7 — CTA final -->
     <section class="final textura-brasa" aria-labelledby="final-titulo">
       <h2 id="final-titulo" class="final__titulo">
@@ -224,6 +311,9 @@ const combos = menu.combos.map((combo) => ({
     background-color: var(--color-carvao);
   }
   .nav__logo {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     font-family: var(--font-display);
     font-size: 1.25rem;
     color: var(--color-creme);
@@ -237,6 +327,21 @@ const combos = menu.combos.map((combo) => ({
     font-size: 0.95rem;
   }
   .nav__link:hover { color: var(--color-brasa); }
+
+  /**
+   * Abaixo de 640px os links saem da navbar.
+   *
+   * Em 390px de largura eles empilhavam por cima do CTA e o proprio logo
+   * quebrava em duas linhas. A pagina e uma coluna unica de rolagem — os links
+   * sao atalho, nao navegacao essencial. O que nao pode sumir e o CTA, porque e
+   * ele que leva ao cardapio, que e o objetivo inteiro da pagina.
+   */
+  @media (max-width: 639px) {
+    .nav nav { display: none; }
+    .nav { padding-inline: 1rem; }
+    .nav__logo { font-size: 1.05rem; white-space: nowrap; }
+    .nav__cta { padding-inline: 1.1rem; font-size: 0.9rem; }
+  }
 
   .hero {
     position: relative;
@@ -289,26 +394,7 @@ const combos = menu.combos.map((combo) => ({
 
   .claro { background-color: var(--color-areia); color: var(--color-carvao); }
 
-  /* Mesma gramatica visual da cena 2: palavra grande atras, correndo mais
-     devagar que o conteudo. Aqui sem GSAP — o efeito e nativo do browser. */
-  .diferenciais { position: relative; overflow: hidden; }
-  .diferenciais__fundo {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    font-family: var(--font-display);
-    font-size: var(--text-display);
-    line-height: 0.85;
-    text-align: center;
-    color: var(--color-terracota);
-    opacity: 0.12;
-    text-transform: uppercase;
-    user-select: none;
-    pointer-events: none;
-    will-change: transform;
-  }
-  .diferenciais__wrap { position: relative; z-index: 1; }
+  .diferenciais { position: relative; }
   .claro__wrap {
     max-width: 68rem;
     margin-inline: auto;
@@ -329,17 +415,50 @@ const combos = menu.combos.map((combo) => ({
     margin-top: 2.5rem;
     grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
   }
-  .pilar__icone { font-size: 1.75rem; }
-  .pilar__titulo { font-weight: 700; margin-top: 0.5rem; }
-  .pilar__texto { margin-top: 0.35rem; line-height: 1.55; font-size: 0.95rem; }
-
-  .card {
-    padding: 1.75rem;
+  /* Cartao com regua: o icone ganha area propria e a linha de brasa separa
+     simbolo de texto. Sem isso o bloco lia como documento, nao como pagina. */
+  .pilar {
+    padding: 1.6rem 1.4rem;
     border-radius: 1rem;
+    background-color: var(--color-creme);
+    border: 1px solid rgb(139 74 43 / 0.14);
+  }
+  .pilar__icone {
+    display: inline-flex;
+    padding-bottom: 0.9rem;
+    margin-bottom: 0.9rem;
+    color: var(--color-terracota);
+    border-bottom: 2px solid var(--color-brasa);
+  }
+  .pilar__titulo {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+  }
+  .pilar__texto { margin-top: 0.5rem; line-height: 1.6; font-size: 0.95rem; opacity: 0.85; }
+
+  /* Foto ocupa a largura do cartao. Antes era miniatura de 8rem num canto e a
+     secao lia como lista de delivery — o feedback foi exatamente esse. Com a
+     reamostragem para 480px a foto aguenta ser exibida grande. */
+  .card {
+    display: flex;
+    flex-direction: column;
+    border-radius: 1rem;
+    overflow: hidden;
     background-color: var(--color-carvao);
     color: var(--color-creme);
   }
+  .card > :not(.card__foto) { padding-inline: 1.6rem; }
+  .card > :last-child { padding-bottom: 1.75rem; }
   .card--destaque { background-color: var(--color-terracota); }
+  /* O carro-chefe merece largura dobrada onde houver espaco. */
+  @media (min-width: 60rem) {
+    .cards { grid-template-columns: repeat(2, 1fr); }
+    .card--destaque { grid-column: 1 / -1; flex-direction: row; }
+    .card--destaque .card__foto { width: 45%; aspect-ratio: auto; margin-bottom: 0; }
+    .card--destaque > :not(.card__foto) { padding-top: 1.75rem; }
+  }
   .card__selo {
     display: inline-block;
     font-size: 0.7rem;
@@ -355,14 +474,18 @@ const combos = menu.combos.map((combo) => ({
      nenhuma. Quando houver material em alta do dono, isso vira full-bleed. */
   .card__foto {
     display: block;
-    width: clamp(6.5rem, 20vw, 8.5rem);
+    width: 100%;
     height: auto;
-    aspect-ratio: 1;
+    aspect-ratio: 4 / 3;
     object-fit: cover;
-    border-radius: 0.75rem;
-    margin-bottom: 1.1rem;
+    margin-bottom: 1.4rem;
   }
-  .card__nome { font-family: var(--font-display); font-size: 1.5rem; margin-top: 0.4rem; }
+  .card__nome {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    text-transform: uppercase;
+    margin-top: 0.35rem;
+  }
   .card__texto { margin-top: 0.6rem; line-height: 1.6; font-size: 0.95rem; color: var(--color-areia); }
 
   .cardapio { background-color: var(--color-creme); color: var(--color-carvao); }
@@ -373,9 +496,19 @@ const combos = menu.combos.map((combo) => ({
     opacity: 0.7;
   }
 
-  /* Cena 6 — a unica secao com fundo brasa inteiro. */
-  .combos { background-color: var(--color-brasa); color: var(--color-carvao); }
-  .combos .secao__texto { color: var(--color-carvao); }
+  /**
+   * Cena 6 — combos.
+   *
+   * Era a unica secao com fundo brasa inteiro e o feedback foi direto: parecia
+   * "site de entrada". Laranja chapado em tela cheia achata tudo, e os cartoes
+   * a 7% de preto por cima praticamente sumiam.
+   *
+   * Agora o fundo e carvao e a brasa vira acento — a mesma cor, usada como
+   * detalhe em vez de tinta de parede.
+   */
+  .combos { background-color: var(--color-carvao); color: var(--color-creme); }
+  .combos .secao__titulo { color: var(--color-creme); }
+  .combos .secao__texto { color: var(--color-areia); }
   .combos__cta { margin-top: 2.5rem; }
 
   .combos__lista {
@@ -392,30 +525,92 @@ const combos = menu.combos.map((combo) => ({
   .combo {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.1rem;
     padding: 0.85rem;
     border-radius: 0.9rem;
-    background-color: rgb(20 12 6 / 0.07);
+    background-color: rgb(232 220 200 / 0.06);
+    border: 1px solid rgb(232 220 200 / 0.1);
   }
   .combo__foto {
     flex-shrink: 0;
-    width: 5.5rem;
-    height: 5.5rem;
+    width: 6.5rem;
+    height: 6.5rem;
     object-fit: cover;
     border-radius: 0.65rem;
   }
   .combo__nome {
     font-family: var(--font-display);
-    font-size: 1.25rem;
+    font-size: 1.3rem;
     text-transform: uppercase;
     line-height: 1.05;
+    color: var(--color-brasa);
   }
   .combo__composicao {
-    margin-top: 0.3rem;
+    margin-top: 0.35rem;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--color-areia);
+  }
+
+  .onde { background-color: var(--color-creme); color: var(--color-carvao); }
+  .onde__endereco { font-style: normal; line-height: 1.6; }
+  .onde__dado { border-top: 1px solid rgb(139 74 43 / 0.18); padding-top: 1rem; }
+  .onde__pgto {
+    display: block;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.6;
+    margin-top: 0.5rem;
+  }
+  .onde__dado dd:first-of-type .onde__pgto:first-child { margin-top: 0; }
+  .onde__dados {
+    display: grid;
+    gap: 1.5rem;
+    margin-top: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    max-width: 52rem;
+  }
+  .onde__dados dt {
+    font-size: 0.75rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-terracota);
+    font-weight: 700;
+  }
+  .onde__dados dd {
+    margin: 0.4rem 0 0;
+    line-height: 1.55;
+  }
+
+  .onde__acoes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.25rem;
+    margin-top: 1.75rem;
+  }
+  /**
+   * O WhatsApp é CTA de verdade, então usa a cor de CTA — mas fica visualmente
+   * abaixo do "Ver cardápio" na hierarquia da página, porque o objetivo
+   * primário continua sendo o pedido no Brendi. Aqui ele resolve dúvida, que é
+   * o passo que antes não tinha para onde ir.
+   */
+  .cta--whats { background-color: var(--color-terracota); }
+  /* Área de toque de 44px: medido 97x24 na auditoria, abaixo do mínimo.
+     O padding vertical resolve sem mudar o peso visual do link. */
+  .onde__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-terracota);
+    font-weight: 600;
+    text-underline-offset: 3px;
+  }
+  .onde__nota {
+    margin-top: 1.25rem;
     font-size: 0.9rem;
-    line-height: 1.45;
-    color: var(--color-carvao);
-    opacity: 0.85;
+    opacity: 0.75;
   }
 
   .final {
@@ -446,5 +641,12 @@ const combos = menu.combos.map((combo) => ({
   .rodape__marca { font-family: var(--font-display); font-size: 1.25rem; }
   .rodape__tagline, .rodape__direitos { color: var(--color-areia); font-size: 0.9rem; }
   .rodape__direitos { opacity: 0.6; font-size: 0.8rem; margin-top: 0.75rem; }
-  .rodape__link { color: var(--color-brasa); }
+  /* Mesmo motivo do .onde__link: medidos 20px de altura na auditoria. */
+  .rodape__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: 0.5rem;
+    color: var(--color-brasa);
+  }
 </style>

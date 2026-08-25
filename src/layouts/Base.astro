@@ -1,4 +1,35 @@
 ---
+/**
+ * Fontes self-hosted via @fontsource, nao via Google Fonts.
+ *
+ * Os tokens ja pediam Anton e Inter desde o inicio, mas ninguem tinha
+ * importado o arquivo — a pagina inteira caia no sans do sistema e perdia a
+ * personalidade da marca. Aparece so quando se olha o render.
+ *
+ * Self-hosted em vez de CDN do Google: elimina DNS + TLS para outro dominio no
+ * caminho critico da fonte, que e exatamente o custo que pesa no 4G do
+ * interior. O Astro ainda faz hash e cache longo dos arquivos.
+ */
+import '@fontsource/anton/400.css';
+import '@fontsource-variable/inter';
+
+/**
+ * Preload dos subsets latinos.
+ *
+ * A auditoria mediu CLS de 0.059, e o culpado não era imagem: o shift acontece
+ * aos ~2s no bloco do hero, exatamente quando o Anton termina de baixar e o
+ * texto reflui. É FOUT — o @fontsource usa font-display: swap, então a página
+ * pinta com a fonte do sistema e reflui quando a real chega.
+ *
+ * Preload em vez de font-display: optional porque o H1 do hero é o elemento de
+ * LCP e é justamente ele que carrega a personalidade da marca. Com `optional`,
+ * quem estivesse em rede ruim veria a página inteira na fonte do sistema — que
+ * foi o defeito que os prints pegaram lá atrás.
+ *
+ * Só os subsets latinos: os demais nem chegam a ser baixados por unicode-range.
+ */
+import antonLatino from '@fontsource/anton/files/anton-latin-400-normal.woff2?url';
+import interLatino from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 import '../styles/tokens.css';
 import copy from '../content/copy.json';
 
@@ -18,14 +49,50 @@ const jsonLd = {
   name: marca.nome,
   description: copy.seo.description,
   servesCuisine: 'Hambúrguer artesanal',
+  /**
+   * Endereço confirmado pelo dono. É este bloco que dá ao Google o que ele
+   * precisa para ranquear "hamburgueria Rio Verde" — a brecha que motivou a
+   * página existir, já que o Brendi não ranqueia para isso.
+   *
+   * Ainda falta openingHoursSpecification: só sabemos que abre às 18h, e
+   * horário parcial em JSON-LD é pior que ausente — o Google mostra "fechado"
+   * em dia que a casa está aberta.
+   */
   address: {
     '@type': 'PostalAddress',
+    streetAddress: marca.rua,
     addressLocality: marca.cidade,
     addressRegion: marca.estado,
+    postalCode: marca.cep,
     addressCountry: 'BR',
+    ...(marca.bairro ? { addressNeighborhood: marca.bairro } : {}),
   },
+  telephone: marca.telefoneE164,
+  hasMap: marca.mapaUrl,
+
+  /**
+   * Horário completo — é isto que faz o Google mostrar "aberto agora" na busca
+   * por "hamburgueria Rio Verde", em vez de um card mudo.
+   *
+   * Segunda-feira fica de fora porque a casa fecha. Isso não estava escrito em
+   * lugar nenhum: a lista de horários da loja simplesmente não tem segunda. A
+   * ausência é o dado — e omitir aqui é o que faz o Google dizer "fechado" no
+   * dia certo.
+   */
+  openingHoursSpecification: [
+    {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: marca.horario.dias,
+      opens: marca.horario.abre,
+      closes: marca.horario.fecha,
+    },
+  ],
+
+  paymentAccepted: [...marca.pagamento.online, ...marca.pagamento.naEntrega].join(', '),
+  currenciesAccepted: 'BRL',
+  image: new URL('/assets/og.jpg', Astro.site).toString(),
   hasMenu: marca.cardapioUrl,
-  sameAs: [marca.instagramUrl],
+  sameAs: [marca.instagramUrl, marca.whatsappUrl],
   priceRange: '$$',
 };
 ---
@@ -37,15 +104,33 @@ const jsonLd = {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
+    <link rel="preload" as="font" type="font/woff2" href={antonLatino} crossorigin="anonymous" />
+    <link rel="preload" as="font" type="font/woff2" href={interLatino} crossorigin="anonymous" />
+
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={Astro.site} />
 
+    <!--
+      og:image nao e detalhe de SEO aqui — e o caso de uso principal. O trafego
+      vem do link na bio e de link colado no WhatsApp e no story; sem imagem, o
+      compartilhamento aparece como caixa de texto cinza e a pagina perde a
+      primeira impressao antes de ser aberta.
+
+      A imagem e recorte do proprio hero, de proposito: o preview precisa
+      parecer a pagina que o clique vai abrir.
+    -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content={copy.seo.ogTitle} />
     <meta property="og:description" content={copy.seo.ogDescription} />
     <meta property="og:locale" content="pt_BR" />
+    <meta property="og:url" content={Astro.site} />
+    <meta property="og:image" content={new URL('/assets/og.jpg', Astro.site)} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={copy.seo.ogTitle} />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={new URL('/assets/og.jpg', Astro.site)} />
 
     <!-- Geo local — reforça o alvo "hamburgueria Rio Verde" -->
     <meta name="geo.region" content="BR-GO" />

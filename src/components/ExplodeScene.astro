@@ -23,7 +23,7 @@ type Camada = {
   altura?: number;
 };
 
-const caminhoManifest = new URL('../../public/layers/manifest.json', import.meta.url);
+const caminhoManifest = new URL('../../public/assets/layers/manifest.json', import.meta.url);
 
 /** Contrato de fallback, identico ao do script. Vale enquanto nao ha imagem. */
 const CAMADAS_PLACEHOLDER: Camada[] = [
@@ -55,7 +55,19 @@ const legendas = copy.explode.legendas as Record<string, string>;
  * Sem isso as camadas ficariam empilhadas com respiro entre elas — sete
  * ingredientes flutuando, nao um hamburguer.
  */
-const SOBREPOSICAO = 0.45;
+/**
+ * Sobreposicao de REPOUSO: 0.68.
+ *
+ * A cena passou a comecar com o hamburguer MONTADO. Antes ela abria com as
+ * camadas ja afastadas e apenas se afastavam mais no scroll — o usuario nunca
+ * via o produto inteiro, so pecas soltas. O efeito de "explodir" so existe se
+ * houver algo inteiro para explodir primeiro.
+ *
+ * 0.68 e o ponto em que as camadas se tocam como num hamburguer real: cada uma
+ * mostra so a borda, como quando se olha um lanche de lado. A separacao inteira
+ * passa a ser trabalho do GSAP, a partir deste estado.
+ */
+const SOBREPOSICAO = 0.68;
 
 function margemDeSobreposicao(camada: Camada, indice: number) {
   if (indice === 0 || !camada.largura || !camada.altura) return undefined;
@@ -112,11 +124,22 @@ function margemDeSobreposicao(camada: Camada, indice: number) {
 </section>
 
 <style>
+  /**
+   * Fluxo em coluna, nao place-items: center.
+   *
+   * Enquanto as camadas eram placeholders de 3rem, empilhar tudo no centro
+   * funcionava. Com imagem real elas passaram de 30rem de altura e passaram por
+   * baixo do texto — titulo e paragrafo ficaram ilegiveis sobre o pao. O texto
+   * agora tem faixa propria acima da pilha.
+   */
   .explode {
     position: relative;
     min-height: var(--cena-altura);
-    display: grid;
-    place-items: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2.5rem;
     padding: 6rem 1.5rem;
     background-color: var(--color-carvao);
     overflow: hidden;
@@ -142,7 +165,7 @@ function margemDeSobreposicao(camada: Camada, indice: number) {
     z-index: 20;
     max-width: 34rem;
     text-align: center;
-    margin-bottom: 2rem;
+    flex-shrink: 0;
   }
 
   .explode__titulo {
@@ -164,7 +187,12 @@ function margemDeSobreposicao(camada: Camada, indice: number) {
     list-style: none;
     padding: 0;
     margin: 0;
-    width: min(100%, 30rem);
+    /* 24rem e o teto: cada camada tem ~0.4 da largura em altura e a pilha
+       sobrepoe 45%, entao a coluna inteira mede ~1.7x a largura. Acima disso o
+       burger nao cabe na tela junto com o texto, e a cena pinada passa a cortar
+       o pao de baixo. */
+    width: min(100%, 24rem);
+    margin-inline: auto;
   }
 
   .explode__camada {

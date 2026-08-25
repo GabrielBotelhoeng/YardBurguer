@@ -6,6 +6,27 @@
     "nome": "YARD Burguer",
     "cidade": "Rio Verde",
     "estado": "GO",
+    "bairro": "Setor Morada do Sol",
+    "rua": "R. Rozulino Campos, 134",
+    "cep": "75909-235",
+    "enderecoCompleto": "R. Rozulino Campos, 134 — Setor Morada do Sol, Rio Verde – GO, 75909-235",
+    "telefone": "+55 64 98119-3070",
+    "telefoneE164": "+5564981193070",
+    "whatsappUrl": "https://wa.me/5564981193070?text=Oi%21%20Vim%20pelo%20site%20e%20queria%20fazer%20um%20pedido.",
+    "_telefoneConferido": "Confirmado no WhatsApp Business em 2026-08-25: 98119-3070, com o 9. A primeira versão saiu sem o 9 e o link não abriria conversa — falha silenciosa, sem erro visível.",
+    "mapaUrl": "https://www.google.com/maps/search/?api=1&query=R.+Rozulino+Campos%2C+134+-+Setor+Morada+do+Sol%2C+Rio+Verde+-+GO%2C+75909-235",
+    "horario": {
+      "_fonte": "Informações da loja no Brendi, confirmado em 2026-08-25.",
+      "_segunda": "Segunda-feira NÃO aparece na lista da loja — a casa fecha. A ausência é o dado.",
+      "texto": "De terça a domingo, das 18h às 23h20. Segunda a gente descansa.",
+      "abre": "18:00",
+      "fecha": "23:20",
+      "dias": ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    },
+    "pagamento": {
+      "online": ["PIX", "Cartão de crédito"],
+      "naEntrega": ["Dinheiro", "Crédito", "Débito", "Vale-refeição", "Vale-alimentação"]
+    },
     "instagram": "@yardburguer_rioverde",
     "instagramUrl": "https://www.instagram.com/yardburguer_rioverde/",
     "cardapioUrl": "https://menu.brendi.com.br/yard-burguer?utm_source=landing&utm_medium=site&utm_campaign=cardapio"
@@ -42,27 +63,27 @@
   },
 
   "diferenciais": {
-    "textoFundo": "DO SERTÃO",
     "titulo": "Por que o YARD é diferente",
     "texto": "Hambúrguer bom não tem segredo — tem cuidado. E cuidado não dá pra terceirizar.",
+    "_icones": "Chave de ícone SVG em ExplodeIcones/Pilares. Emoji como ícone foi removido: renderiza diferente em cada sistema e derruba a credibilidade de uma página que quer parecer profissional.",
     "pilares": [
       {
-        "icone": "🥩",
+        "icone": "carne",
         "titulo": "Blend de 160g",
         "texto": "O peso padrão da casa. Quem quer mais pede o King, com duas carnes. Quem quer o smash tem o de 90g prensado na chapa."
       },
       {
-        "icone": "🍞",
+        "icone": "pao",
         "titulo": "Pão brioche",
         "texto": "Macio o bastante pra abraçar o recheio e firme o bastante pra não desmontar na metade."
       },
       {
-        "icone": "🧄",
+        "icone": "molho",
         "titulo": "Três molhos da casa",
         "texto": "Molho da casa, molho especial e o Santiago. Receita nossa — não tem igual em outro cardápio da cidade."
       },
       {
-        "icone": "🔥",
+        "icone": "cerrado",
         "titulo": "Sabor do cerrado",
         "texto": "Costela desfiada, queijo coalho tostado no mel e banana da terra caramelizada. Ingrediente daqui, não de rede americana."
       }
@@ -105,6 +126,17 @@
     "titulo": "Combos que valem a pena",
     "texto": "Burger, acompanhamento e bebida. Conta simples, fome resolvida.",
     "cta": "Pedir agora"
+  },
+
+  "ondeEstamos": {
+    "titulo": "Onde a gente fica",
+    "texto": "Salão aberto e delivery em Rio Verde.",
+    "tituloHorario": "Horário",
+    "tituloEndereco": "Endereço",
+    "tituloPagamento": "Pagamento",
+    "ctaMapa": "Ver no mapa",
+    "ctaWhats": "Chamar no WhatsApp",
+    "notaWhats": "Dúvida sobre o pedido? Chama que a gente responde."
   },
 
   "ctaFinal": {
