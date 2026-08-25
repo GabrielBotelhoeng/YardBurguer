@@ -46,16 +46,18 @@ export async function initExplodeScene({ secao, ehMobile }) {
 
   const fundo = secao.querySelector('[data-parallax]');
 
-  // Fase 1 — montagem: cada camada chega de uma direção diferente.
-  gsap.from(camadas, {
-    scrollTrigger: { trigger: secao, start: 'top 75%', once: true },
-    y: (i) => (i % 2 === 0 ? -60 : 60),
-    x: (i) => (i % 2 === 0 ? -80 : 80),
-    opacity: 0,
-    duration: 0.7,
-    ease: 'power3.out',
-    stagger: 0.08,
-  });
+  /**
+   * A fase de "montagem" foi removida.
+   *
+   * Ela fazia as camadas voarem de fora para dentro ao entrar na cena. O
+   * problema: como o empilhamento de repouso já era frouxo, o usuário nunca via
+   * o hambúrguer inteiro — via peças chegando e peças se afastando, sem nunca
+   * existir o produto montado.
+   *
+   * Agora a cena chega com o hambúrguer montado e a única coisa que acontece é
+   * a explosão. Explodir só significa alguma coisa se houver algo inteiro
+   * antes.
+   */
 
   /**
    * Fase 2 — separação por scroll.
@@ -92,12 +94,30 @@ export async function initExplodeScene({ secao, ehMobile }) {
    */
   const centro = (camadas.length - 1) / 2;
 
-  camadas.forEach((camada, i) => {
-    const deslocamento = Number(camada.dataset.explodeY ?? 0);
-    const distanciaDoCentro = Math.abs(i - centro) / centro;
-    const atraso = (1 - distanciaDoCentro) * 0.12;
+  /**
+   * Pausa antes de explodir.
+   *
+   * A cena prende na tela e a explosão só começa depois de 22% do trilho. Esse
+   * intervalo existe para o usuário ver o hambúrguer montado, inteiro, antes de
+   * qualquer coisa se mexer — é ele que dá o "antes" que faz a explosão
+   * significar alguma coisa. Sem a pausa, a separação começa junto com o pin e
+   * o produto inteiro nunca chega a ser lido.
+   */
+  const ESPERA = 0.22;
 
-    separacao.to(camada, { y: deslocamento, ease: 'none', duration: 1 }, atraso);
+  /**
+   * No celular o deslocamento é reduzido. Os valores do manifest foram
+   * calibrados para desktop; aplicados em 390px de largura, a camada de cima
+   * sairia da tela e a explosão viraria "ingredientes sumindo pra cima".
+   */
+  const alcance = ehMobile ? 0.55 : 1;
+
+  camadas.forEach((camada, i) => {
+    const deslocamento = Number(camada.dataset.explodeY ?? 0) * alcance;
+    const distanciaDoCentro = Math.abs(i - centro) / centro;
+    const atraso = ESPERA + (1 - distanciaDoCentro) * 0.12;
+
+    separacao.to(camada, { y: deslocamento, ease: 'none', duration: 1 - ESPERA }, atraso);
   });
 
   /**
@@ -114,7 +134,9 @@ export async function initExplodeScene({ secao, ehMobile }) {
    */
   const conteudo = secao.querySelector('.explode__conteudo');
   if (conteudo) {
-    separacao.to(conteudo, { opacity: 0, y: -40, ease: 'none', duration: 0.35 }, 0);
+    // Sai junto com o início da explosão, não antes: enquanto o hambúrguer está
+    // montado, o texto ainda é o que explica o que se está vendo.
+    separacao.to(conteudo, { opacity: 0, y: -40, ease: 'none', duration: 0.3 }, ESPERA);
   }
 
   // Texto de fundo: mais lento que qualquer ingrediente. É a diferença de

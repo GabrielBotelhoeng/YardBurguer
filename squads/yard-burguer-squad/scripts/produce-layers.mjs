@@ -130,7 +130,18 @@ const EXIGENCIA_FUNDO = [
 
 /**
  * Contrato espelhado em src/components/ExplodeScene.astro. order define o
- * empilhamento; mobile marca as quatro que sobrevivem no storyboard de celular.
+ * empilhamento.
+ *
+ * mobile: TODAS as camadas aparecem no celular.
+ *
+ * O storyboard original cortava para quatro no mobile por peso. Só que as tres
+ * cortadas eram alface, tomate-cebola e bacon — exatamente a cor. No celular
+ * sobrava pao, queijo e carne: marrom sobre marrom, sem apetite. A reducao
+ * economizava bytes e matava o proposito da cena, que e dar fome.
+ *
+ * A auditoria mobile deu LCP de 1,01s contra meta de 2,5s e 690kB contra teto
+ * de 1,5MB — ha folga de sobra. E as camadas sao lazy dentro da cena 2, entao
+ * nao tocam o carregamento inicial.
  *
  * explodeY agora e o deslocamento FINAL em px, nao um valor a ser multiplicado
  * por speed. Antes os dois se multiplicavam, e o resultado era invisivel no
@@ -159,7 +170,7 @@ const CAMADAS = [
     order: 2,
     explodeY: -195,
     speed: 1.0,
-    mobile: false,
+    mobile: true,
     prompt: 'A single ruffled leaf of crisp green lettuce, spread flat and wide, with irregular torn edges, visible leaf veins and a couple of water droplets. One edge slightly wilted.',
   },
   {
@@ -167,7 +178,7 @@ const CAMADAS = [
     order: 3,
     explodeY: -105,
     speed: 1.0,
-    mobile: false,
+    mobile: true,
     // Cebola roxa e legitimamente mais azul que verde — despill por matiz a
     // destruiria, deixando a cebola cinza.
     despillForte: false,
@@ -197,7 +208,7 @@ const CAMADAS = [
     order: 6,
     explodeY: 70,
     speed: 1.0,
-    mobile: false,
+    mobile: true,
     prompt: 'Two strips of fried bacon laid side by side, rippled and buckled unevenly, deep reddish brown with darker charred spots and irregular streaks of rendered fat.',
   },
   {

@@ -19,6 +19,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import sharp from 'sharp';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const CDN = 'https://images.brendi.com.br/optimized';
@@ -41,10 +42,30 @@ async function baixar(item) {
   }
 
   const bytes = Buffer.from(await resposta.arrayBuffer());
-  const arquivo = join(destino, `${item.id}.webp`);
-  await writeFile(arquivo, bytes);
 
-  return { id: item.id, kb: +(bytes.length / 1024).toFixed(1) };
+  /**
+   * Reamostragem para 480px.
+   *
+   * O CDN so entrega 240x240, e a 240 os cards ficavam com foto minuscula ou
+   * borrada — a secao inteira lia como lista de delivery. Dobrar com lanczos3 e
+   * uma leve mascara de nitidez nao INVENTA detalhe (isso seria trabalho de
+   * modelo generativo, e a regra do brand-art-director e clara: foto de produto
+   * e do burger real). O que ganha e a transicao entre pixels: a foto para de
+   * parecer pixelada quando exibida maior.
+   *
+   * O limite continua sendo o original. Se um dia houver foto em alta do dono,
+   * isto some e a foto real entra direto.
+   */
+  const tratada = await sharp(bytes)
+    .resize({ width: 480, kernel: 'lanczos3' })
+    .sharpen({ sigma: 0.6 })
+    .webp({ quality: 84, effort: 6 })
+    .toBuffer();
+
+  const arquivo = join(destino, `${item.id}.webp`);
+  await writeFile(arquivo, tratada);
+
+  return { id: item.id, kb: +(tratada.length / 1024).toFixed(1) };
 }
 
 async function main() {

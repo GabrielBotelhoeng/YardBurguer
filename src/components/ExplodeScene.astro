@@ -56,17 +56,18 @@ const legendas = copy.explode.legendas as Record<string, string>;
  * ingredientes flutuando, nao um hamburguer.
  */
 /**
- * 0.30, nao 0.45.
+ * Sobreposicao de REPOUSO: 0.68.
  *
- * Com 45% os ingredientes se enterravam uns nos outros: sobrava um terco de
- * cada camada visivel e a pilha lia como massa, nao como sete coisas
- * empilhadas. Como a cena inteira existe para mostrar *o que tem dentro*,
- * esconder metade de cada camada destroi o proprio argumento.
+ * A cena passou a comecar com o hamburguer MONTADO. Antes ela abria com as
+ * camadas ja afastadas e apenas se afastavam mais no scroll — o usuario nunca
+ * via o produto inteiro, so pecas soltas. O efeito de "explodir" so existe se
+ * houver algo inteiro para explodir primeiro.
  *
- * 30% ainda encosta o suficiente para parecer um hamburguer montado — acima de
- * ~35% some ingrediente, abaixo de ~25% os itens desgrudam e viram lista.
+ * 0.68 e o ponto em que as camadas se tocam como num hamburguer real: cada uma
+ * mostra so a borda, como quando se olha um lanche de lado. A separacao inteira
+ * passa a ser trabalho do GSAP, a partir deste estado.
  */
-const SOBREPOSICAO = 0.3;
+const SOBREPOSICAO = 0.68;
 
 function margemDeSobreposicao(camada: Camada, indice: number) {
   if (indice === 0 || !camada.largura || !camada.altura) return undefined;

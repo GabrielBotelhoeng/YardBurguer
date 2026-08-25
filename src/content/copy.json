@@ -63,27 +63,27 @@
   },
 
   "diferenciais": {
-    "textoFundo": "DO SERTÃO",
     "titulo": "Por que o YARD é diferente",
     "texto": "Hambúrguer bom não tem segredo — tem cuidado. E cuidado não dá pra terceirizar.",
+    "_icones": "Chave de ícone SVG em ExplodeIcones/Pilares. Emoji como ícone foi removido: renderiza diferente em cada sistema e derruba a credibilidade de uma página que quer parecer profissional.",
     "pilares": [
       {
-        "icone": "🥩",
+        "icone": "carne",
         "titulo": "Blend de 160g",
         "texto": "O peso padrão da casa. Quem quer mais pede o King, com duas carnes. Quem quer o smash tem o de 90g prensado na chapa."
       },
       {
-        "icone": "🍞",
+        "icone": "pao",
         "titulo": "Pão brioche",
         "texto": "Macio o bastante pra abraçar o recheio e firme o bastante pra não desmontar na metade."
       },
       {
-        "icone": "🧄",
+        "icone": "molho",
         "titulo": "Três molhos da casa",
         "texto": "Molho da casa, molho especial e o Santiago. Receita nossa — não tem igual em outro cardápio da cidade."
       },
       {
-        "icone": "🔥",
+        "icone": "cerrado",
         "titulo": "Sabor do cerrado",
         "texto": "Costela desfiada, queijo coalho tostado no mel e banana da terra caramelizada. Ingrediente daqui, não de rede americana."
       }
@@ -130,9 +130,10 @@
 
   "ondeEstamos": {
     "titulo": "Onde a gente fica",
-    "texto": "Setor Morada do Sol, em Rio Verde.",
+    "texto": "Salão aberto e delivery em Rio Verde.",
     "tituloHorario": "Horário",
-    "tituloPagamento": "Formas de pagamento",
+    "tituloEndereco": "Endereço",
+    "tituloPagamento": "Pagamento",
     "ctaMapa": "Ver no mapa",
     "ctaWhats": "Chamar no WhatsApp",
     "notaWhats": "Dúvida sobre o pedido? Chama que a gente responde."
