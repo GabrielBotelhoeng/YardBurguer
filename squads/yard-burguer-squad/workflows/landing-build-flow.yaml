@@ -1,0 +1,162 @@
+workflow:
+  id: landing-build-flow
+  name: Construção da Landing YARD Burguer
+  type: greenfield-ui
+  version: 1.0.0
+  description: >-
+    Fluxo task-first da landing. A ordem existe por dependência real de artefato,
+    não por hierarquia de agente. produce-ingredient-layers é o gargalo: bloqueia a
+    cena que vende o projeto. Começar por ela.
+
+  sequence:
+    # ---------- Fundação (paralelizável) ----------
+    - step: define-brand-tokens
+      agent: brand-art-director
+      action: aplicar a paleta Sertão Premium como tokens
+      creates: src/styles/tokens.css
+      notes: fonte da verdade em data/brand-sertao-premium.md
+
+    - step: set-performance-budget
+      agent: mobile-performance-guardian
+      action: definir as metas que viram gate de todo o fluxo
+      creates: docs/performance-budget.md
+
+    - step: design-scroll-choreography
+      agent: motion-director
+      action: consolidar as 9 cenas em mapa de triggers
+      creates: docs/scroll-triggers.md
+
+    # ---------- Produção de asset (caminho crítico) ----------
+    - step: produce-ingredient-layers
+      agent: brand-art-director
+      action: gerar as camadas do burger explodido em PNG transparente
+      creates: assets/layers/manifest.json
+      critical: true
+      blocker_atual: >-
+        Gemini com quota 0 para imagem (sem billing). Usar Higgsfield enquanto isso.
+
+    - step: harvest-instagram-assets
+      agent: brand-art-director
+      action: coletar e tratar as fotos reais dos burgers
+      creates: assets/produtos/
+
+    - step: write-section-copy
+      agent: hunger-copywriter
+      action: escrever a copy das 9 cenas
+      creates: src/content/copy.json
+
+    - step: craft-cta-ladder
+      agent: hunger-copywriter
+      action: montar a escada de CTAs por cena
+      creates: src/content/ctas.json
+      requires: src/content/copy.json
+
+    # ---------- Tratamento ----------
+    - step: optimize-image-pipeline
+      agent: brand-art-director
+      action: converter para AVIF/WebP e gerar srcset
+      creates: public/assets/
+      requires: assets/layers/manifest.json
+      gate: peso dentro de docs/performance-budget.md
+
+    # ---------- Implementação ----------
+    - step: implement-explode-scene
+      agent: motion-director
+      action: implementar a cena 2 — o burger explodido
+      creates: src/components/ExplodeScene.astro
+      requires: assets/layers/manifest.json
+      priority: 1
+
+    - step: implement-parallax-layers
+      agent: motion-director
+      action: implementar Ken Burns, scroll reveal, float loop e blur da navbar
+      creates: src/scripts/motion/
+      requires: src/styles/tokens.css
+      priority: 2
+
+    # ---------- Instrumentação ----------
+    - step: implement-local-seo
+      agent: local-growth-engineer
+      action: implementar JSON-LD Restaurant, metadados e Open Graph
+      creates: src/layouts/seo.astro
+      requires: src/content/copy.json
+
+    - step: setup-conversion-tracking
+      agent: local-growth-engineer
+      action: instrumentar GA4, Pixel e o clique Landing→Brendi
+      creates: src/scripts/analytics.js
+      notes: negociar peso dos scripts com o guardian antes de adicionar
+
+    # ---------- Gates ----------
+    - step: audit-motion-fallbacks
+      agent: motion-director
+      validates: src/scripts/motion/
+      creates: docs/motion-audit.md
+
+    - step: audit-mobile-experience
+      agent: mobile-performance-guardian
+      validates: docs/performance-budget.md
+      creates: docs/mobile-audit.md
+      veto: true
+      on_fail: retorna para implement-parallax-layers com feedback específico
+
+    - step: audit-accessibility
+      agent: mobile-performance-guardian
+      validates: src/components/ExplodeScene.astro
+      creates: docs/a11y-audit.md
+      veto: true
+
+    # ---------- Venda ----------
+    - step: build-owner-pitch
+      agent: deal-closer
+      action: montar roteiro de demo, deck curto e proposta
+      creates: docs/pitch-yard.md
+      requires: docs/mobile-audit.md
+
+  handoff_prompts:
+    brand_art_director_to_motion_director: >-
+      Camadas prontas em assets/layers/. O manifest traz ordem, explodeY e speed de
+      cada uma, além de mobileLayers com as 4 que sobrevivem no celular. Confira se
+      empilhadas elas formam um hambúrguer crível antes de animar.
+    hunger_copywriter_to_motion_director: >-
+      Copy final em src/content/copy.json. O texto define a medida das cenas — se
+      alguma headline não couber na composição, me devolva para reescrever em vez de
+      reduzir a fonte.
+    hunger_copywriter_to_local_growth: >-
+      Headlines aprovadas. Use-as como matéria-prima de title e description mirando
+      "hamburgueria Rio Verde" — não escreva metadados descolados da copy da página.
+    motion_director_to_performance_guardian: >-
+      Cenas implementadas, build pronto para auditoria. A cena 2 é a mais pesada:
+      7 camadas com pin e scrub. Meça com o preview de produção, não com o dev.
+    performance_guardian_to_motion_director: >-
+      Auditoria falhou nos gates marcados. Simplificar a cena antes de otimizar asset
+      — reduzir camada custa menos que reduzir qualidade de imagem.
+    performance_guardian_to_deal_closer: >-
+      Números medidos em docs/mobile-audit.md. Traduza para linguagem de dono:
+      "abre rápido no celular", nunca "LCP de 1,4s".
+
+handoffs:
+  - from: brand-art-director
+    to: motion-director
+    artifact: assets/layers/manifest.json
+  - from: hunger-copywriter
+    to: motion-director
+    artifact: src/content/copy.json
+  - from: hunger-copywriter
+    to: local-growth-engineer
+    artifact: headlines para title e description
+  - from: motion-director
+    to: mobile-performance-guardian
+    artifact: build para auditoria
+  - from: mobile-performance-guardian
+    to: deal-closer
+    artifact: docs/mobile-audit.md
+
+integracao_core:
+  note: >-
+    Este squad cobre o domínio. Execução de código, review e deploy continuam com
+    os agentes core do AIOX.
+  mapeamento:
+    implementacao: "@dev (Dex)"
+    review: "@qa (Quinn)"
+    deploy_e_push: "@devops (Gage) — autoridade exclusiva"

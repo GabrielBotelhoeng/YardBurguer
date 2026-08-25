@@ -1,0 +1,21 @@
+# Segredos — NUNCA commitar
+.env
+.env.*
+!.env.example
+referencia/chave*
+**/chave api*
+
+# Dependencias e build
+node_modules/
+dist/
+.astro/
+.vercel/
+
+# Assets gerados (pesados) — versionar so os finais otimizados
+assets/raw/
+assets/.cache/
+
+# SO
+Thumbs.db
+desktop.ini
+.DS_Store

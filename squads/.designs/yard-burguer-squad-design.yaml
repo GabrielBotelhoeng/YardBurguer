@@ -1,0 +1,316 @@
+# Squad Design Blueprint — gerado por @squad-creator (Craft) via *design-squad
+# Fonte: ./referencia/ (Prompt Base, para oque vai servir, referecnia parallax, logo, 4 refs visuais)
+squad:
+  name: yard-burguer-squad
+  description: >-
+    Squad de landing page cinematografica para a YARD Burguer (Rio Verde-GO).
+    Vende desejo por scrollytelling e entrega o clique no cardapio Brendi.
+  domain: burger-landing-experience
+
+analysis:
+  entities:
+    - YARD Burguer (marca)
+    - Burger (produto)
+    - Ingrediente-camada (burger explodido)
+    - Combo
+    - Cena de scroll
+    - CTA
+    - Depoimento
+    - Cardapio externo (Brendi)
+    - Loja Rio Verde-GO
+    - Tapera do Sertao (carro-chefe)
+  workflows:
+    - definir-identidade-sertao-premium
+    - produzir-assets-de-camada
+    - coreografar-scroll
+    - implementar-secoes
+    - escrever-copy-de-fome
+    - blindar-performance-mobile
+    - capturar-seo-local
+    - medir-conversao-brendi
+    - fechar-venda-com-dono
+  integrations:
+    - Brendi (menu.brendi.com.br/yard-burguer)
+    - Instagram @yardburguer_rioverde
+    - WhatsApp
+    - Higgsfield (geracao e recorte de asset)
+    - GA4 + Meta Pixel
+    - Google Business Profile
+    - Vercel
+  stakeholders:
+    - Dono da hamburgueria (decisor da compra)
+    - Cliente faminto no celular via link da bio
+    - Gabriel (dev e vendedor)
+
+recommendations:
+  template: basic
+  config_mode: extend
+
+  agents:
+    - id: brand-art-director
+      role: >-
+        Guardiao da identidade Sertao Premium e dono do pipeline de assets:
+        tokens de marca, geracao das camadas de ingrediente e otimizacao de imagem.
+      commands:
+        - define-brand-tokens
+        - produce-ingredient-layers
+        - harvest-instagram-assets
+        - optimize-image-pipeline
+      confidence: 0.95
+      user_added: false
+      user_modified: true
+
+    - id: motion-director
+      role: >-
+        Coreografo do scroll. Desenha a timeline de cenas, implementa o burger
+        explodido e as camadas de parallax com GSAP ScrollTrigger e Lenis.
+      commands:
+        - design-scroll-choreography
+        - implement-explode-scene
+        - implement-parallax-layers
+        - audit-motion-fallbacks
+      confidence: 0.94
+      user_added: false
+      user_modified: false
+
+    - id: hunger-copywriter
+      role: >-
+        Escreve a copy em PT-BR que provoca fome e conduz ao clique, com voz
+        regional goiana e escada de CTAs alinhada a jornada de scroll.
+      commands:
+        - write-section-copy
+        - craft-cta-ladder
+      confidence: 0.88
+      user_added: false
+      user_modified: false
+
+    - id: mobile-performance-guardian
+      role: >-
+        Defende o LCP no 4G e a acessibilidade. Dono do orcamento de performance,
+        do fallback de prefers-reduced-motion e da auditoria mobile.
+      commands:
+        - set-performance-budget
+        - audit-mobile-experience
+        - audit-accessibility
+      confidence: 0.92
+      user_added: false
+      user_modified: false
+
+    - id: local-growth-engineer
+      role: >-
+        Captura a busca local por hamburgueria em Rio Verde e instrumenta a
+        medicao de conversao da landing ate o cardapio Brendi.
+      commands:
+        - implement-local-seo
+        - setup-conversion-tracking
+      confidence: 0.86
+      user_added: false
+      user_modified: false
+
+    - id: deal-closer
+      role: >-
+        Transforma a pagina pronta em venda: demo no celular do dono, deck curto
+        de argumentos e proposta comercial na faixa definida.
+      commands:
+        - build-owner-pitch
+      confidence: 0.8
+      user_added: true
+      user_modified: false
+
+  tasks:
+    # brand-art-director
+    - name: define-brand-tokens
+      agent: brand-art-director
+      entrada: [logo YARD, referencias visuais, direcao Sertao Premium]
+      saida: [tokens.css, tailwind theme, brand-guide.md]
+      confidence: 0.95
+      checklist:
+        - Extrair paleta terrosa da logo real
+        - Definir escala tipografica display + corpo
+        - Publicar tokens como CSS custom properties
+        - Validar contraste AA em cada par de cor
+
+    - name: produce-ingredient-layers
+      agent: brand-art-director
+      entrada: [brief do burger heroi, paleta de luz, lista de camadas]
+      saida: [7 PNGs transparentes, manifest de camadas]
+      confidence: 0.9
+      checklist:
+        - Gerar burger heroi com luz coerente
+        - Isolar cada camada em PNG transparente
+        - Garantir alinhamento vertical entre camadas
+        - Exportar manifest com ordem e offset de cada camada
+
+    - name: harvest-instagram-assets
+      agent: brand-art-director
+      entrada: [perfil @yardburguer_rioverde, lista de produtos]
+      saida: [fotos reais por produto, creditos e direitos]
+      confidence: 0.82
+      checklist:
+        - Coletar fotos dos burgers reais do perfil
+        - Selecionar melhor foto por item do cardapio
+        - Tratar enquadramento e cor para a paleta
+        - Registrar origem de cada asset
+
+    - name: optimize-image-pipeline
+      agent: brand-art-director
+      entrada: [assets brutos, breakpoints alvo]
+      saida: [AVIF e WebP por breakpoint, srcset pronto]
+      confidence: 0.93
+      checklist:
+        - Converter para AVIF com fallback WebP
+        - Gerar variantes por breakpoint
+        - Definir prioridade de carregamento do heroi
+        - Confirmar peso total dentro do orcamento
+
+    # motion-director
+    - name: design-scroll-choreography
+      agent: motion-director
+      entrada: [estrutura de 8 secoes, manifest de camadas]
+      saida: [storyboard de cenas, mapa de triggers]
+      confidence: 0.94
+      checklist:
+        - Mapear cada secao para uma cena de scroll
+        - Definir entrada saida e duracao de cada trigger
+        - Especificar velocidade relativa por camada
+        - Validar continuidade narrativa entre cenas
+
+    - name: implement-explode-scene
+      agent: motion-director
+      entrada: [storyboard, 7 PNGs de camada, tokens]
+      saida: [secao burger explodido funcional]
+      confidence: 0.9
+      checklist:
+        - Montar burger a partir das camadas ao entrar
+        - Separar camadas em parallax ao rolar
+        - Aplicar parallax lento no texto de fundo
+        - Garantir pin e scrub estaveis sem travar
+
+    - name: implement-parallax-layers
+      agent: motion-director
+      entrada: [storyboard, assets otimizados]
+      saida: [parallax das demais secoes]
+      confidence: 0.89
+      checklist:
+        - Aplicar Ken Burns no heroi
+        - Implementar scroll reveal em cascata
+        - Implementar float loop dos burgers PNG
+        - Aplicar blur na navbar ao rolar
+
+    - name: audit-motion-fallbacks
+      agent: motion-director
+      entrada: [implementacao de motion]
+      saida: [relatorio de fallback, versao reduzida]
+      confidence: 0.91
+      checklist:
+        - Implementar prefers-reduced-motion
+        - Definir versao simplificada para mobile
+        - Garantir conteudo legivel sem JS
+        - Testar em dispositivo de baixo desempenho
+
+    # hunger-copywriter
+    - name: write-section-copy
+      agent: hunger-copywriter
+      entrada: [estrutura de secoes, cardapio Brendi, voz da marca]
+      saida: [copy final das 8 secoes]
+      confidence: 0.88
+      checklist:
+        - Escrever headline do heroi
+        - Escrever descricao de cada burger e combo
+        - Ancorar voz regional sem soar caricato
+        - Revisar ortografia e acentuacao PT-BR
+
+    - name: craft-cta-ladder
+      agent: hunger-copywriter
+      entrada: [jornada de scroll, destino Brendi]
+      saida: [escada de CTAs por secao]
+      confidence: 0.85
+      checklist:
+        - Definir CTA primario e secundario
+        - Escalonar intensidade ao longo do scroll
+        - Preservar UTM no link do cardapio
+        - Antecipar objecoes antes do CTA final
+
+    # mobile-performance-guardian
+    - name: set-performance-budget
+      agent: mobile-performance-guardian
+      entrada: [perfil de rede alvo, stack Astro]
+      saida: [budget.md com metas de LCP CLS e peso]
+      confidence: 0.93
+      checklist:
+        - Definir meta de LCP em 4G
+        - Definir teto de peso por rota
+        - Definir teto de JS de animacao
+        - Registrar metas como gate de QA
+
+    - name: audit-mobile-experience
+      agent: mobile-performance-guardian
+      entrada: [build de preview, budget.md]
+      saida: [relatorio de auditoria mobile]
+      confidence: 0.9
+      checklist:
+        - Medir LCP CLS e INP reais
+        - Verificar fluidez do scroll em mid range
+        - Checar area de toque dos CTAs
+        - Comparar resultado contra o budget
+
+    - name: audit-accessibility
+      agent: mobile-performance-guardian
+      entrada: [build de preview]
+      saida: [relatorio de acessibilidade]
+      confidence: 0.87
+      checklist:
+        - Validar contraste de texto sobre imagem
+        - Garantir navegacao por teclado
+        - Conferir texto alternativo dos assets
+        - Confirmar respeito a reducao de movimento
+
+    # local-growth-engineer
+    - name: implement-local-seo
+      agent: local-growth-engineer
+      entrada: [dados da loja, cardapio, cidade alvo]
+      saida: [schema Restaurant, metadados, checklist GBP]
+      confidence: 0.86
+      checklist:
+        - Implementar JSON-LD Restaurant e Menu
+        - Escrever title e description locais
+        - Gerar Open Graph para compartilhamento
+        - Listar acoes de Google Business Profile
+
+    - name: setup-conversion-tracking
+      agent: local-growth-engineer
+      entrada: [GA4, Meta Pixel, destinos externos]
+      saida: [eventos instrumentados, painel de leitura]
+      confidence: 0.84
+      checklist:
+        - Instrumentar clique para o cardapio Brendi
+        - Medir profundidade de scroll por cena
+        - Rastrear origem de trafego por UTM
+        - Documentar como ler os numeros
+
+    # deal-closer
+    - name: build-owner-pitch
+      agent: deal-closer
+      entrada: [landing publicada, argumentos do doc de venda]
+      saida: [roteiro de demo, deck curto, proposta]
+      confidence: 0.8
+      checklist:
+        - Montar roteiro de demo no celular
+        - Traduzir ganhos em linguagem de dono
+        - Definir escopo e faixa de preco
+        - Preparar resposta as objecoes previsiveis
+
+metadata:
+  created_at: "2026-08-24T00:00:00Z"
+  source_docs:
+    - ./referencia/Prompt Base.txt
+    - ./referencia/para oque vai servir.txt
+    - ./referencia/referecnia parallax.txt
+    - ./referencia/lOGO HAMBURGUERIA.jpg
+    - ./referencia/HOME.jpeg
+    - ./referencia/referencia 1 .jfif
+    - ./referencia/referencia 2.jfif
+    - ./referencia/referencia 3.jfif
+    - ./referencia/referencia para rolaghem paralax com hamburguer.jfif
+  user_adjustments: 4
+  overall_confidence: 0.89

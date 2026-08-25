@@ -1,0 +1,87 @@
+🍔 Conceito Final — YARD Burguer Landing Page
+
+Juntando as duas referências que você mandou, o design vai ser assim:
+
+Paleta de cores (fusão das duas refs)
+Elemento	Cor
+Navbar / Footer	Marrom escuro 
+#1A0800
+Hero (fundo)	Foto real + overlay escuro
+Seções claras	Creme/off-white 
+#FFF8EE
+Seção de destaque	Amarelo vibrante 
+#FFB300
+Acento/CTA	Vermelho 
+#E8192C
+Texto principal	Preto quente 
+#1A0800
+Estrutura seção por seção + animações
+
+🔝 NAVBAR
+Fundo escuro, logo à esquerda, links no centro, dois botões à direita — um contornado + um amarelo sólido "Ver Cardápio". Ao rolar: fica fixa com blur de fundo.
+
+1. HERO — Full bleed com foto real
+Inspirado na segunda referência: foto profissional do burger ocupando a tela toda com overlay escuro suave. Texto branco em cima: "FRESH. HOT & FEITO PRA VOCÊ." com acento em vermelho. Botão CTA vermelho abaixo.
+
+Animações:
+
+Texto entra da esquerda ao carregar
+Burger da foto tem leve zoom lento em loop (Ken Burns effect)
+Botão pulsa suavemente
+
+2. O HAMBURGUER EXPLODIDO
+Inspirado na primeira referência: texto gigante YARD BURGUER preenche o fundo — e o hamburguer aberto (cada ingrediente separado flutuando) fica na frente quebrando as letras.
+
+Animações (as mais incríveis):
+
+Ao entrar na seção: cada ingrediente voa de uma direção diferente e MONTA o burger
+Ao rolar para baixo: os ingredientes se SEPARAM em parallax, cada camada na sua velocidade
+Texto de fundo faz parallax mais lento que os ingredientes
+
+3. SEÇÃO CLARA — "Por que o YARD é diferente"
+Fundo creme. Burger em PNG flutuando à esquerda. Texto + 4 ícones à direita:
+🥩 Blend Artesanal / 🍞 Pão Brioche / 🧄 Molhos Exclusivos / 🔥 Smash Técnica
+
+Animações:
+
+Burger entra da esquerda, texto entra da direita (scroll reveal oposto)
+Ícones aparecem em cascata
+
+4. OS MAIS PEDIDOS
+Cards no estilo da referência — alternando amarelo e marrom escuro. Foto do burger + nome + ingredientes + preço. Três cards: Tapera do Sertão, Yard King, Supremo.
+
+Animações:
+
+Cards entram de baixo em sequência com delay
+Hover: card sobe + sombra suave + foto dá um leve zoom
+
+5. CARDÁPIO COMPLETO
+Fundo branco, tabs (Burgers / Porções / Bebidas), lista de todos os itens com nome, descrição e preço. Itens aparecem em cascata ao trocar de tab.
+
+6. SEÇÃO AMARELA — Combos
+Fundo amarelo 
+#FFB300, texto marrom escuro, burger PNG flutuando à direita. Os 3 combos principais com preço. Botão vermelho "Pedir Agora".
+
+Animações:
+
+Burger da direita flutua para cima e para baixo em loop suave
+Cards de combo entram de baixo
+
+7. CTA FINAL
+Fundo escuro 
+#1A0800. Texto grande branco + palavra em amarelo. Botão vermelho pulsando. Pequenos confetes ou partículas de brasa ao fundo.
+
+8. FOOTER
+Fundo escuro, logo, links rápidos, Instagram @yardburguer_rioverde, link do cardápio.
+
+Animações no total
+Ken Burns no hero (zoom lento na foto)
+Burger se monta e desmonta por scroll (a mais épica)
+Parallax em todas as imagens de burger PNG
+Scroll reveal em cascata nas seções
+Hover 3D nos cards de burger
+Marquee correndo
+Contador de números
+Burger flutuando suave (float loop)
+Navbar com blur ao rolar
+Botão CTA pulsando
