@@ -64,11 +64,15 @@ handoff:
   recebe_de:
     - brand-art-director: 'PNGs de camada + manifest de ordem e offset'
   entrega_para:
+    - scroll-trigger-specialist: 'cena aprovada, para calibragem de trilho e pin'
     - mobile-performance-guardian: 'build para auditoria de fluidez real'
 ```
 
 ## Colaboração
 
 - **← @brand-art-director:** bloqueado até receber as camadas.
+- **→ @scroll-trigger-specialist:** decidida a cena, a mecânica é dele. O Trilho define
+  o que o usuário sente; o Gatilho define com que trilho aquilo acontece. Quando ele
+  devolve dizendo que a cena só fecha mudando a coreografia, a decisão volta para cá.
 - **→ @mobile-performance-guardian:** ele mede. Se o scroll engasgar em device médio,
   a cena volta para simplificação — sem discussão.

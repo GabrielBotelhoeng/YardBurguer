@@ -19,6 +19,9 @@ components:
     - implement-explode-scene.md
     - implement-parallax-layers.md
     - audit-motion-fallbacks.md
+    - tune-pin-timeline.md
+    - debug-scroll-trigger.md
+    - document-scroll-triggers.md
     - write-section-copy.md
     - craft-cta-ladder.md
     - set-performance-budget.md
@@ -30,6 +33,7 @@ components:
   agents:
     - brand-art-director.md
     - motion-director.md
+    - scroll-trigger-specialist.md
     - hunger-copywriter.md
     - mobile-performance-guardian.md
     - local-growth-engineer.md
