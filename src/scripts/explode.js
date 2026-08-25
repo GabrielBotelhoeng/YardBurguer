@@ -1,12 +1,23 @@
 /**
- * Cena 2 — o burger explodido. Chunk carregado sob demanda por motion.js.
+ * Cena 2 — a montagem do burger. Chunk carregado sob demanda por motion.js.
  *
  * Só este arquivo importa GSAP + ScrollTrigger, e é o único lugar da página
  * que justifica esse peso: pin com scrub em 7 camadas não se faz com CSS.
  *
- * Duas fases: as camadas montam o burger ao entrar, depois se separam em
- * parallax conforme o scroll avança. O texto de fundo corre mais devagar que
- * qualquer ingrediente — é isso que cria a profundidade.
+ * A CENA FOI INVERTIDA (pedido do cliente, 2026-08-25).
+ *
+ * Antes: o burger chegava montado e se separava conforme o scroll. O problema
+ * não era a mecânica, era a promessa — o usuário via um hambúrguer se destruir.
+ * Agora os ingredientes chegam espalhados e o scroll os monta: cada peça pousa
+ * no lugar, de baixo para cima, até virar um hambúrguer de verdade. O scroll
+ * deixa de desmanchar e passa a construir, e é o ato de construir que dá
+ * vontade de comer.
+ *
+ * O estado de REPOUSO no CSS continua sendo o hambúrguer montado. Isso não é
+ * detalhe: sem JS e sob prefers-reduced-motion a cena precisa mostrar o produto
+ * inteiro, não peças soltas. A dispersão é aplicada pelo GSAP como ponto de
+ * PARTIDA da animação, então o fim do trilho coincide exatamente com o estado
+ * estático — a animação converge para o HTML, em vez de divergir dele.
  */
 
 import { gsap } from 'gsap/gsap-core';
@@ -38,7 +49,12 @@ export async function initExplodeScene({ secao, ehMobile }) {
     gsap.ticker.lagSmoothing(0);
   }
 
-  // Mobile roda a versão reduzida do storyboard: 4 camadas.
+  /**
+   * Todas as sete camadas rodam em qualquer viewport desde que o manifest passou
+   * a marcar mobile:true no conjunto inteiro. O filtro continua aqui porque o
+   * contrato do manifest ainda permite excluir camada — mas hoje ele não corta
+   * nada, e a auditoria justifica: a cena é lazy e não toca o LCP.
+   */
   const camadas = Array.from(secao.querySelectorAll('.explode__camada')).filter(
     (camada) => !ehMobile || camada.dataset.mobile === 'true'
   );
@@ -46,29 +62,7 @@ export async function initExplodeScene({ secao, ehMobile }) {
 
   const fundo = secao.querySelector('[data-parallax]');
 
-  /**
-   * A fase de "montagem" foi removida.
-   *
-   * Ela fazia as camadas voarem de fora para dentro ao entrar na cena. O
-   * problema: como o empilhamento de repouso já era frouxo, o usuário nunca via
-   * o hambúrguer inteiro — via peças chegando e peças se afastando, sem nunca
-   * existir o produto montado.
-   *
-   * Agora a cena chega com o hambúrguer montado e a única coisa que acontece é
-   * a explosão. Explodir só significa alguma coisa se houver algo inteiro
-   * antes.
-   */
-
-  /**
-   * Fase 2 — separação por scroll.
-   *
-   * Distância maior que a original (era +=100% no desktop). A cena tem sete
-   * camadas percorrendo até 300px cada; em uma tela de rolagem a separação
-   * acontecia rápido demais e o movimento lia como solavanco. Esticar o trilho
-   * não muda o quanto as camadas andam — muda quanto scroll é preciso para
-   * chegar lá, e é isso que faz a cena parecer suave.
-   */
-  const separacao = gsap.timeline({
+  const trilho = gsap.timeline({
     scrollTrigger: {
       trigger: secao,
       start: 'top top',
@@ -84,66 +78,127 @@ export async function initExplodeScene({ secao, ehMobile }) {
   });
 
   /**
-   * As camadas não partem juntas: cada uma entra um pouco depois da anterior,
-   * de fora para dentro. A abertura simultânea parece um zoom; escalonada,
-   * parece o hambúrguer se desmontando. O atraso é pequeno de propósito — o
-   * suficiente para criar ritmo, não para virar espera.
+   * Quanto as peças partem afastadas.
    *
-   * explodeY já é o deslocamento final em px. O antigo `speed` multiplicava
-   * esse valor e mascarava o resultado real no código.
+   * explodeY do manifest é o deslocamento que a camada tinha na versão que
+   * explodia. Espalhar precisa de mais do que separar: numa cena que separa, o
+   * olho parte do produto inteiro e acompanha; numa cena que monta, o olho
+   * precisa ler "peças soltas" no primeiro quadro, senão a montagem não tem
+   * de onde sair. 1.35 é o ponto em que as camadas deixam de se tocar sem que
+   * as extremas saiam do quadro.
    */
-  const centro = (camadas.length - 1) / 2;
+  const DISPERSAO = 1.35;
 
   /**
-   * Pausa antes de explodir.
-   *
-   * A cena prende na tela e a explosão só começa depois de 22% do trilho. Esse
-   * intervalo existe para o usuário ver o hambúrguer montado, inteiro, antes de
-   * qualquer coisa se mexer — é ele que dá o "antes" que faz a explosão
-   * significar alguma coisa. Sem a pausa, a separação começa junto com o pin e
-   * o produto inteiro nunca chega a ser lido.
-   */
-  const ESPERA = 0.22;
-
-  /**
-   * No celular o deslocamento é reduzido. Os valores do manifest foram
-   * calibrados para desktop; aplicados em 390px de largura, a camada de cima
-   * sairia da tela e a explosão viraria "ingredientes sumindo pra cima".
+   * No celular o alcance é reduzido. Os valores do manifest foram calibrados
+   * para desktop; aplicados em 390px de largura, a camada de cima sairia da
+   * tela e a dispersão viraria "ingredientes sumindo pra cima".
    */
   const alcance = ehMobile ? 0.55 : 1;
 
-  camadas.forEach((camada, i) => {
-    const deslocamento = Number(camada.dataset.explodeY ?? 0) * alcance;
-    const distanciaDoCentro = Math.abs(i - centro) / centro;
-    const atraso = ESPERA + (1 - distanciaDoCentro) * 0.12;
+  /**
+   * Espalhar não é só afastar no eixo Y.
+   *
+   * Deslocamento apenas vertical lê como um hambúrguer esticado, não como peças
+   * espalhadas. Um desvio lateral alternado e um giro leve quebram a coluna e
+   * fazem cada ingrediente parecer que caiu onde caiu. Tudo volta a zero no
+   * fim — é o que garante que o último quadro seja exatamente o estado estático
+   * do HTML.
+   */
+  const DESVIO_X = ehMobile ? 26 : 64;
+  const GIRO = ehMobile ? 4 : 7;
 
-    separacao.to(camada, { y: deslocamento, ease: 'none', duration: 1 - ESPERA }, atraso);
+  /**
+   * Ordem de chegada: de baixo para cima, como se monta um hambúrguer de
+   * verdade. O pão inferior pousa primeiro e o superior fecha por último.
+   *
+   * As camadas vêm do DOM na ordem visual (pão de cima primeiro), então a
+   * ordem de montagem é a inversa.
+   */
+  const ordemDeMontagem = [...camadas].reverse();
+
+  const PASSO = 0.055;
+  const DURACAO = 0.42;
+  const fimDaMontagem = (ordemDeMontagem.length - 1) * PASSO + DURACAO;
+
+  /**
+   * O conjunto começa menor e cresce enquanto monta.
+   *
+   * Sem isso a cena é geometricamente impossível: a pilha montada mede 537px de
+   * um viewport de 889, e separar sete camadas o bastante para nenhuma encostar
+   * na outra exige uns 720px a mais de respiro. Medido no browser, a versão sem
+   * escala cortava 109px do pão de cima e 194px do de baixo.
+   *
+   * Reduzir a escala no início resolve o transbordo e ainda entrega um segundo
+   * efeito de graça: o hambúrguer parece se aproximar da câmera conforme se
+   * monta. O deslocamento vertical junto compensa o fato de a pilha nascer
+   * abaixo do centro do viewport — o texto ocupa o topo do fluxo, então o
+   * conjunto espalhado precisa subir para caber simétrico.
+   */
+  const pilha = secao.querySelector('.explode__camadas');
+  if (pilha) {
+    trilho.fromTo(
+      pilha,
+      { scale: ehMobile ? 0.7 : 0.62, y: ehMobile ? -60 : -100 },
+      { scale: 1, y: 0, ease: 'none', duration: fimDaMontagem },
+      0
+    );
+  }
+
+  ordemDeMontagem.forEach((camada, posicao) => {
+    const indiceNoDom = camadas.indexOf(camada);
+    const dispersao = Number(camada.dataset.explodeY ?? 0) * DISPERSAO * alcance;
+
+    // Alterna o lado pelo índice visual, não pelo de montagem: o que importa é
+    // que camadas vizinhas no empilhamento caiam para lados opostos.
+    const lado = indiceNoDom % 2 === 0 ? 1 : -1;
+    const distanciaDoCentro = Math.abs(indiceNoDom - (camadas.length - 1) / 2);
+    const peso = distanciaDoCentro / ((camadas.length - 1) / 2 || 1);
+
+    trilho.fromTo(
+      camada,
+      {
+        y: dispersao,
+        x: lado * DESVIO_X * peso,
+        rotation: lado * GIRO * peso,
+      },
+      {
+        y: 0,
+        x: 0,
+        rotation: 0,
+        ease: 'none',
+        duration: DURACAO,
+      },
+      posicao * PASSO
+    );
   });
 
   /**
-   * O texto sai de cena quando a separação começa.
+   * O título entra depois que o hambúrguer fecha.
    *
-   * O título fica no topo da cena pinada e o pão de cima sobe em direção a ele
-   * — por z-index o texto vence e continua legível, mas fica cruzado por cima
-   * do pão, o que é feio. Em vez de encurtar a explosão para caber, o texto
-   * cede o lugar: ele já foi lido quando o burger começa a abrir, e a partir
-   * daí a cena é sobre a imagem.
+   * Na versão anterior o texto precisava sair de cena porque o pão de cima
+   * subia por cima dele. Aqui o problema se resolve pela narrativa em vez de
+   * pelo remendo: enquanto as peças estão no ar, a cena é sobre o movimento;
+   * quando o hambúrguer fica pronto, o título aparece e nomeia o que acabou de
+   * ser montado.
    *
-   * Some no primeiro terço e volta ao rolar de volta, porque o scrub é
-   * reversível. Sob prefers-reduced-motion nada disso roda e o texto fica.
+   * Sob prefers-reduced-motion nada disso roda e o texto nasce visível pelo CSS.
    */
   const conteudo = secao.querySelector('.explode__conteudo');
   if (conteudo) {
-    // Sai junto com o início da explosão, não antes: enquanto o hambúrguer está
-    // montado, o texto ainda é o que explica o que se está vendo.
-    separacao.to(conteudo, { opacity: 0, y: -40, ease: 'none', duration: 0.3 }, ESPERA);
+    trilho.fromTo(
+      conteudo,
+      { opacity: 0, y: 24 },
+      { opacity: 1, y: 0, ease: 'none', duration: 0.16 },
+      Math.max(0, fimDaMontagem - 0.04)
+    );
   }
 
   // Texto de fundo: mais lento que qualquer ingrediente. É a diferença de
   // velocidade contra as camadas que cria a profundidade.
   if (fundo) {
     const fator = Number(fundo.dataset.parallax ?? 0.15);
-    separacao.to(fundo, { y: -220 * fator, ease: 'none', duration: 1 }, 0);
+    trilho.to(fundo, { y: -220 * fator, ease: 'none', duration: 1 }, 0);
   }
 
   ScrollTrigger.refresh();

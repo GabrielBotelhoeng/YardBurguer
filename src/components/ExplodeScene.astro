@@ -56,18 +56,34 @@ const legendas = copy.explode.legendas as Record<string, string>;
  * ingredientes flutuando, nao um hamburguer.
  */
 /**
- * Sobreposicao de REPOUSO: 0.68.
+ * Sobreposicao do hamburguer MONTADO: 0.64.
  *
- * A cena passou a comecar com o hamburguer MONTADO. Antes ela abria com as
- * camadas ja afastadas e apenas se afastavam mais no scroll — o usuario nunca
- * via o produto inteiro, so pecas soltas. O efeito de "explodir" so existe se
- * houver algo inteiro para explodir primeiro.
+ * Este e o estado de repouso do HTML e tambem o destino da animacao — a cena
+ * monta as pecas ate chegar exatamente aqui. Sem JS ou sob reduced-motion o
+ * usuario ve direto este quadro, que precisa ser um hamburguer inteiro e
+ * apetitoso por si so.
  *
- * 0.68 e o ponto em que as camadas se tocam como num hamburguer real: cada uma
- * mostra so a borda, como quando se olha um lanche de lado. A separacao inteira
- * passa a ser trabalho do GSAP, a partir deste estado.
+ * Era 0.68 e baixou porque com aquele valor a alface mostrava 67px de 208 e o
+ * bacon 52px de 161: os dois praticamente desapareciam sob as camadas vizinhas,
+ * e o conjunto lia como "tudo em cima do outro" em vez de lanche montado. 0.64
+ * devolve a faixa visivel de cada ingrediente sem afrouxar a pilha a ponto de
+ * virar ingrediente flutuando.
  */
-const SOBREPOSICAO = 0.68;
+const SOBREPOSICAO = 0.64;
+
+/**
+ * Razao entre a altura da pilha e a largura do container, derivada das
+ * proporcoes reais das sete camadas e da sobreposicao acima. Serve para o CSS
+ * limitar a largura em funcao da ALTURA disponivel — sem isso o conjunto passa
+ * do viewport e o pao de baixo fica cortado dentro da cena pinada.
+ *
+ * Recalcular ao mudar SOBREPOSICAO ou trocar o conjunto de camadas.
+ */
+const RAZAO_DA_PILHA = camadas.reduce((total, camada, indice) => {
+  if (!camada.largura || !camada.altura) return total;
+  const proporcao = camada.altura / camada.largura;
+  return total + (indice === 0 ? proporcao : proporcao * (1 - SOBREPOSICAO));
+}, 0);
 
 function margemDeSobreposicao(camada: Camada, indice: number) {
   if (indice === 0 || !camada.largura || !camada.altura) return undefined;
@@ -87,7 +103,11 @@ function margemDeSobreposicao(camada: Camada, indice: number) {
     <p class="explode__texto">{copy.explode.texto}</p>
   </div>
 
-  <ul class="explode__camadas" role="list">
+  <ul
+    class="explode__camadas"
+    role="list"
+    style={`--razao-pilha: ${(RAZAO_DA_PILHA || 1.86).toFixed(4)}`}
+  >
     {
       camadas.map((camada, indice) => (
         <li
@@ -187,11 +207,26 @@ function margemDeSobreposicao(camada: Camada, indice: number) {
     list-style: none;
     padding: 0;
     margin: 0;
-    /* 24rem e o teto: cada camada tem ~0.4 da largura em altura e a pilha
-       sobrepoe 45%, entao a coluna inteira mede ~1.7x a largura. Acima disso o
-       burger nao cabe na tela junto com o texto, e a cena pinada passa a cortar
-       o pao de baixo. */
-    width: min(100%, 24rem);
+    /* A largura e limitada pela ALTURA disponivel, nao por um teto fixo.
+       --razao-pilha vem do componente e diz quantas vezes a largura a pilha
+       mede de altura (soma das proporcoes reais das camadas, ja descontada a
+       sobreposicao). Dividir a altura util por ela devolve a maior largura que
+       ainda deixa o hamburguer INTEIRO dentro da cena pinada.
+
+       Antes havia so `min(100%, 24rem)`, e era por isso que o pao de baixo
+       aparecia cortado: 24rem geravam uma pilha de 658px que, somada aos 313px
+       ocupados pelo texto, passavam do viewport.
+
+       --desconto-altura e a soma do que a pilha NAO pode ocupar: padding da
+       secao (12rem), altura do texto e o gap entre os dois, mais folga. Ele
+       muda por breakpoint porque o mobile usa padding menor e um texto que
+       quebra em mais linhas — por isso e custom property e nao numero fixo. */
+    --desconto-altura: 26.5rem;
+    width: min(
+      100%,
+      24rem,
+      calc((100svh - var(--desconto-altura)) / var(--razao-pilha, 1.86))
+    );
     margin-inline: auto;
   }
 
@@ -226,8 +261,26 @@ function margemDeSobreposicao(camada: Camada, indice: number) {
     opacity: 0.75;
   }
 
-  /* Mobile: storyboard limita a cena a 4 camadas. */
   @media (max-width: 767px) {
+    /* A cena e pinada: ela precisa caber EXATAMENTE na tela, senao o pin
+       reserva altura que nao existe e o fim do trilho cai fora do quadro.
+       Medido em Pixel 5, a secao fechava 793px num viewport de 727 — o padrao
+       de 6rem em cima e embaixo era o excedente. Aqui o respiro vertical cede
+       para o hamburguer, que e o que a pessoa veio ver. */
+    .explode {
+      padding-block: 3rem;
+      gap: 1.5rem;
+    }
+
+    /* Padding menor libera altura, entao o desconto cai junto e o hamburguer
+       fica maior no celular — que e onde 90% das pessoas vao ver a cena. */
+    .explode__camadas {
+      --desconto-altura: 22rem;
+    }
+
+    /* O contrato do manifest ainda permite excluir camada do mobile, mas hoje
+       o conjunto inteiro vem marcado mobile:true e nada e cortado. A regra fica
+       porque o contrato existe — nao porque haja camada escondida. */
     .explode__camada[data-mobile='false'] {
       display: none;
     }
