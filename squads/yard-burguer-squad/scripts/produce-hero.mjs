@@ -60,7 +60,7 @@ const BLOCOS = {
    * instrucoes existe para negar uma caracteristica de render.
    */
   sujeito:
-    'Beef patties searing on a battered cast iron grill grate in the lower left of the frame, fat rendering and spitting, char marks forming. On the worn wood to the lower right, one finished burger sits slightly off-kilter on a hammered copper tray: the bun pressed unevenly to one side, sauce escaping and running down the edge, a few sesame seeds fallen loose on the tray. It is lit only by the embers and the low sun, half of it falling into shadow, and it sits slightly behind the plane of focus.',
+    'Beef patties searing on a battered cast iron grill grate in the lower left of the frame, deep dark sear crust and char marks, fat rendering and spitting. On the worn wood to the lower right, one finished burger sits crooked on a hammered copper tray. The bun is craggy and hand-formed with uneven browning and flour still dusting the top, squashed lower on one side so the whole burger leans. The melted cheese is matte, not glossy, and has set unevenly. One edge of the charred patty juts out past the bun. Sauce has already run down and pooled on the tray. It is lit only by the embers and the low sun, half of it falling into shadow, and it sits slightly behind the plane of focus.',
 
   // 2. Lente e distancia
   lente:
@@ -81,9 +81,17 @@ const BLOCOS = {
   paleta:
     'Charcoal brown #140C06 dominant, terracotta #8B4A2B in the wood and copper, ember amber #C87A2E as accent on less than 10% of the frame. No cool blue, no blown-out white.',
 
-  // 6. Atmosfera — cena real tem bagunca.
+  /**
+   * 6. Atmosfera — cena real tem bagunca.
+   *
+   * Correcao isolada do take anterior: a fumaca saia cinza-azulada, o que
+   * contradiz o bloco de paleta, que pede `no cool blue`. Fumaca e fisicamente
+   * neutra e assume a cor de quem a ilumina — se a unica fonte proxima e a
+   * brasa, ela tem que puxar ambar. Dizer de onde a luz da fumaca vem resolve
+   * melhor do que simplesmente proibir azul.
+   */
   atmosfera:
-    'Smoke curling upward into the dark empty space above. Suspended dust and ash catching the side light. Grease spatter, char crumbs and a stained cloth on the worn wood — the mess of a grill actually in use.',
+    'Smoke curling upward into the dark empty space above, lit from below by the embers so it glows warm amber — no grey or blue tint anywhere in the smoke. Suspended ash catching the side light. Grease spatter, char crumbs and a stained cloth on the worn wood — the mess of a grill actually in use.',
 
   // 7. Movimento: nao se aplica a imagem estatica.
 

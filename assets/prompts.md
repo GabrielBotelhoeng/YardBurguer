@@ -266,6 +266,59 @@ descrito quebrado.
 
 ---
 
+## 2026-08-25 — correção da fumaça (take intermediário, descartado)
+
+- **Modelo:** `gemini-3.1-flash-image` · **Seed:** `44182` · **Custo:** 1 geração
+- **Saída:** `assets/hero/hero-fumaca.webp` — **não aplicada**
+- **Nota:** 3/5
+
+**Mudança:** só o bloco de atmosfera.
+`Smoke curling upward into the dark empty space above, lit from below by the
+embers so it glows warm amber — no grey or blue tint anywhere in the smoke.`
+
+**O que funcionou:** a fumaça virou âmbar, sem nenhum resquício azulado. Dizer
+**de onde vem a luz da fumaça** funciona melhor que proibir a cor: fumaça é
+fisicamente neutra e assume a cor de quem a ilumina.
+
+**O que falhou:** o burger regrediu — voltou liso e brilhante, com o queijo
+virando mancha lustrosa. As carnes na grelha também ficaram pálidas.
+
+**Descoberta importante sobre o método:** a disciplina de "uma correção isolada
+por vez" **depende de seed determinística**, e a API de imagem do Gemini não
+tem. Mudei um bloco e o modelo re-sorteou a imagem inteira. Na prática, aqui,
+cada geração é uma tentativa nova — não uma variação controlada da anterior.
+
+Consequência: quando um take estiver bom, **o prompt inteiro precisa ir para o
+`LOOK.md` como fórmula**, porque não dá para reconstruí-lo por partes depois.
+
+---
+
+## 2026-08-25 — hero final aprovado ★
+
+- **Modelo:** `gemini-3.1-flash-image` · **Seed:** `44182` · **Custo:** 1 geração
+- **Saída:** `assets/hero/hero-fumaca-burger.webp` → **em produção**
+- **Nota:** 5/5 — **promovida para `LOOK.md`**
+
+**Mudança:** bloco de sujeito reforçado, mantendo a fumaça corrigida. Cada frase
+nova nega uma característica de render: pão craquelado e polvilhado de farinha,
+prensado de um lado, queijo **fosco** e derretido irregular, carne saindo para
+fora do pão, molho já empoçado na bandeja.
+
+**O que funcionou:** tudo o que as duas gerações anteriores tinham de bom, junto.
+Fumaça âmbar iluminada pela brasa, burger crível e legível como produto, e as
+carnes na grelha recuperaram a crosta escura de selagem que haviam perdido — o
+reforço de `deep dark sear crust and char marks` resolveu o efeito colateral sem
+precisar de rodada extra.
+
+Na página: fumaça sobe atrás da headline, grelha à esquerda, burger à direita,
+brasa embaixo. O vazio escuro no centro recebe o texto sem competição.
+
+**O que falha ainda:** saída em 1376px, ampliada ~2x no hero em tela retina.
+Único item aberto, e não se resolve no prompt — depende do take em
+`gemini-3-pro-image`, que segue em 503.
+
+---
+
 ## Fotos de produto — não geradas
 
 Destaques e combos usam foto real do CDN público do cardápio do Brendi, via
