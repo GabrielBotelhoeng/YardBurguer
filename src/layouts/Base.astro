@@ -1,0 +1,60 @@
+---
+import '../styles/tokens.css';
+import copy from '../content/copy.json';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = copy.seo.title, description = copy.seo.description } = Astro.props;
+const { marca } = copy;
+
+// JSON-LD Restaurant — a brecha de SEO local: o Brendi nao ranqueia para
+// "hamburgueria Rio Verde", esta pagina pode.
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Restaurant',
+  name: marca.nome,
+  description: copy.seo.description,
+  servesCuisine: 'Hambúrguer artesanal',
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: marca.cidade,
+    addressRegion: marca.estado,
+    addressCountry: 'BR',
+  },
+  hasMenu: marca.cardapioUrl,
+  sameAs: [marca.instagramUrl],
+  priceRange: '$$',
+};
+---
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={Astro.site} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={copy.seo.ogTitle} />
+    <meta property="og:description" content={copy.seo.ogDescription} />
+    <meta property="og:locale" content="pt_BR" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Geo local — reforça o alvo "hamburgueria Rio Verde" -->
+    <meta name="geo.region" content="BR-GO" />
+    <meta name="geo.placename" content={marca.cidade} />
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </head>
+
+  <body>
+    <slot />
+  </body>
+</html>

@@ -1,0 +1,143 @@
+---
+import copy from '../content/copy.json';
+
+/**
+ * Cena 2 — o burger explodido. A cena que vende o projeto.
+ *
+ * Estado atual: estrutura pronta, aguardando os 7 PNGs de
+ * produce-ingredient-layers. Assim que assets/layers/manifest.json existir,
+ * as camadas entram aqui sem refatorar o markup — cada <li> ja carrega os
+ * data-attributes que o GSAP le.
+ */
+
+// Fallback ate o manifest real existir. Espelha o contrato documentado na task.
+const camadas = [
+  { id: 'pao-superior', order: 1, explodeY: -180, speed: 1.0, mobile: true },
+  { id: 'alface', order: 2, explodeY: -120, speed: 0.85, mobile: false },
+  { id: 'tomate-cebola', order: 3, explodeY: -70, speed: 0.7, mobile: false },
+  { id: 'queijo', order: 4, explodeY: -30, speed: 0.55, mobile: true },
+  { id: 'blend', order: 5, explodeY: 0, speed: 0.4, mobile: true },
+  { id: 'bacon', order: 6, explodeY: 40, speed: 0.3, mobile: false },
+  { id: 'pao-inferior', order: 7, explodeY: 90, speed: 0.2, mobile: true },
+];
+
+const legendas = copy.explode.legendas as Record<string, string>;
+---
+
+<section class="explode textura-brasa" id="explode" aria-labelledby="explode-titulo">
+  <!-- Texto de fundo: parallax mais lento que qualquer ingrediente -->
+  <div class="explode__fundo" aria-hidden="true" data-parallax="0.15">
+    {copy.explode.textoFundo}
+  </div>
+
+  <div class="explode__conteudo">
+    <h2 id="explode-titulo" class="explode__titulo">{copy.explode.titulo}</h2>
+    <p class="explode__texto">{copy.explode.texto}</p>
+  </div>
+
+  <ul class="explode__camadas" role="list">
+    {
+      camadas.map((camada) => (
+        <li
+          class="explode__camada"
+          data-layer={camada.id}
+          data-explode-y={camada.explodeY}
+          data-speed={camada.speed}
+          data-mobile={camada.mobile}
+          style={`z-index: ${10 - camada.order}`}
+        >
+          {/* Placeholder ate o PNG real chegar */}
+          <div class="explode__placeholder" role="img" aria-label={legendas[camada.id]}>
+            <span>{legendas[camada.id]}</span>
+          </div>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<style>
+  .explode {
+    position: relative;
+    min-height: var(--cena-altura);
+    display: grid;
+    place-items: center;
+    padding: 6rem 1.5rem;
+    background-color: var(--color-carvao);
+    overflow: hidden;
+  }
+
+  .explode__fundo {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+    font-size: var(--text-display);
+    line-height: 0.85;
+    text-align: center;
+    color: var(--color-terracota);
+    text-transform: uppercase;
+    user-select: none;
+    will-change: transform;
+  }
+
+  .explode__conteudo {
+    position: relative;
+    z-index: 20;
+    max-width: 34rem;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .explode__titulo {
+    font-family: var(--font-display);
+    font-size: var(--text-titulo);
+    color: var(--color-creme);
+    text-transform: uppercase;
+  }
+
+  .explode__texto {
+    margin-top: 1rem;
+    color: var(--color-areia);
+    line-height: 1.6;
+  }
+
+  .explode__camadas {
+    position: relative;
+    z-index: 15;
+    display: grid;
+    justify-items: center;
+    gap: 0.5rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: min(100%, 30rem);
+  }
+
+  .explode__camada {
+    will-change: transform;
+  }
+
+  /* Placeholder visivel enquanto os PNGs nao chegam — some sozinho quando
+     a <img> real substituir este bloco. */
+  .explode__placeholder {
+    display: grid;
+    place-items: center;
+    width: min(70vw, 22rem);
+    height: 3.25rem;
+    border: 1px dashed var(--color-brasa);
+    border-radius: 999px;
+    color: var(--color-brasa);
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    opacity: 0.75;
+  }
+
+  /* Mobile: storyboard limita a cena a 4 camadas. */
+  @media (max-width: 767px) {
+    .explode__camada[data-mobile='false'] {
+      display: none;
+    }
+  }
+</style>

@@ -1,0 +1,103 @@
+@import 'tailwindcss';
+
+/**
+ * Tokens YARD Burguer — identidade Sertão Premium.
+ * Fonte da verdade: squads/yard-burguer-squad/data/brand-sertao-premium.md
+ *
+ * Regra inegociável: --yard-fogo só aparece em elemento clicável que leva ao
+ * cardápio. No momento em que vira enfeite, o CTA perde poder de atração.
+ */
+@theme {
+  /* Paleta */
+  --color-carvao: #140c06;
+  --color-areia: #e8dcc8;
+  --color-brasa: #c87a2e;
+  --color-terracota: #8b4a2b;
+  --color-fogo: #d93a2b;
+  --color-creme: #f5efe4;
+
+  /* Tipografia — display condensada pesada + sans humanista */
+  --font-display: 'Anton', 'Archivo Black', system-ui, sans-serif;
+  --font-corpo: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Escala fluida. O display trava em 13vw no mobile ou quebra a composição. */
+  --text-hero: clamp(2.75rem, 13vw, 9rem);
+  --text-display: clamp(2.25rem, 11vw, 7.5rem);
+  --text-titulo: clamp(1.75rem, 5vw, 3.5rem);
+
+  /* Ritmo vertical das cenas */
+  --cena-altura: 100svh;
+}
+
+:root {
+  color-scheme: dark;
+  background-color: var(--color-carvao);
+}
+
+body {
+  font-family: var(--font-corpo);
+  color: var(--color-creme);
+  /* Lenis controla o scroll; o nativo fica de fallback sem JS. */
+  overflow-x: hidden;
+}
+
+/* Textura de brasa: CSS puro, nunca imagem grande por seção. Opacidade <= 6%. */
+.textura-brasa {
+  position: relative;
+}
+.textura-brasa::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: radial-gradient(
+      circle at 20% 30%,
+      var(--color-brasa) 0.5px,
+      transparent 1px
+    ),
+    radial-gradient(circle at 70% 60%, var(--color-terracota) 0.5px, transparent 1px);
+  background-size: 40px 40px, 55px 55px;
+}
+
+/**
+ * Redução de movimento tratada na base, não como remendo por componente.
+ * Toda cena precisa ter estado final estático legível.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Foco visível — exigido pelo gate de acessibilidade. */
+:focus-visible {
+  outline: 3px solid var(--color-brasa);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Área de toque mínima de 44px nos CTAs. */
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding-inline: 1.75rem;
+  background-color: var(--color-fogo);
+  color: var(--color-creme);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+.cta:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}

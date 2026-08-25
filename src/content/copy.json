@@ -1,0 +1,127 @@
+{
+  "_nota": "Copy final das 9 cenas. Voz: orgulho de origem, sem sotaque forçado. Task write-section-copy / @hunger-copywriter.",
+
+  "marca": {
+    "nome": "YARD Burguer",
+    "cidade": "Rio Verde",
+    "estado": "GO",
+    "instagram": "@yardburguer_rioverde",
+    "instagramUrl": "https://www.instagram.com/yardburguer_rioverde/",
+    "cardapioUrl": "https://menu.brendi.com.br/yard-burguer?utm_source=landing&utm_medium=site&utm_campaign=cardapio"
+  },
+
+  "navbar": {
+    "links": ["Os mais pedidos", "Cardápio", "Combos", "Onde estamos"],
+    "ctaSecundario": "Nosso Instagram",
+    "ctaPrimario": "Ver Cardápio"
+  },
+
+  "hero": {
+    "sobretitulo": "Rio Verde, Goiás",
+    "titulo": "FEITO NA BRASA.",
+    "tituloDestaque": "SERVIDO NA HORA.",
+    "subtitulo": "Blend artesanal, pão brioche assado todo dia e molho que a gente não entrega a receita pra ninguém.",
+    "cta": "Ver o cardápio",
+    "ctaApoio": "Peça em minutos, direto pelo WhatsApp"
+  },
+
+  "explode": {
+    "textoFundo": "YARD BURGUER",
+    "titulo": "Camada por camada",
+    "texto": "Nada aqui é montado no automático. Cada camada entra na ordem certa, na temperatura certa — porque é isso que separa um lanche de um hambúrguer de verdade.",
+    "legendas": {
+      "pao-superior": "Brioche assado todo dia",
+      "alface": "Alface crocante",
+      "tomate-cebola": "Tomate e cebola roxa",
+      "queijo": "Queijo derretido na chapa",
+      "blend": "Blend artesanal 180g",
+      "bacon": "Bacon em ponto de crocância",
+      "pao-inferior": "Base que segura tudo"
+    }
+  },
+
+  "diferenciais": {
+    "titulo": "Por que o YARD é diferente",
+    "texto": "Hambúrguer bom não tem segredo — tem cuidado. E cuidado não dá pra terceirizar.",
+    "pilares": [
+      {
+        "icone": "🥩",
+        "titulo": "Blend artesanal",
+        "texto": "Corte próprio, moído no dia. Gordura na medida certa pra dar suculência sem pesar."
+      },
+      {
+        "icone": "🍞",
+        "titulo": "Pão brioche",
+        "texto": "Assado todo dia. Macio por dentro, dourado na chapa antes de montar."
+      },
+      {
+        "icone": "🧄",
+        "titulo": "Molhos exclusivos",
+        "texto": "Receita da casa. Você não encontra igual em nenhum outro lugar da cidade."
+      },
+      {
+        "icone": "🔥",
+        "titulo": "Técnica smash",
+        "texto": "Prensado na chapa quente pra formar aquela crosta que guarda o suco por dentro."
+      }
+    ]
+  },
+
+  "maisPedidos": {
+    "titulo": "Os mais pedidos",
+    "texto": "Se é sua primeira vez, comece por um destes.",
+    "itens": [
+      {
+        "nome": "Tapera do Sertão",
+        "destaque": true,
+        "selo": "O queridinho da casa",
+        "texto": "O que leva o nome da nossa terra. Blend artesanal, queijo derretido na chapa, bacon crocante e o molho da casa que ninguém copia. É o pedido que mais volta — e o que mais faz gente virar cliente."
+      },
+      {
+        "nome": "Yard King",
+        "texto": "Pra quem chegou com fome de verdade. Camada dupla de blend, queijo escorrendo e salada fresca segurando a estrutura."
+      },
+      {
+        "nome": "Supremo",
+        "texto": "O equilíbrio da casa. Carne no ponto, queijo, alface e tomate — clássico bem feito é imbatível."
+      }
+    ]
+  },
+
+  "cardapio": {
+    "titulo": "Cardápio completo",
+    "texto": "Tem muito mais esperando por você.",
+    "tabs": ["Burgers", "Porções", "Bebidas"],
+    "cta": "Ver cardápio e pedir",
+    "nota": "Preços e disponibilidade atualizados direto no nosso cardápio."
+  },
+
+  "combos": {
+    "titulo": "Combos que valem a pena",
+    "texto": "Burger, acompanhamento e bebida. Conta simples, fome resolvida.",
+    "cta": "Pedir agora"
+  },
+
+  "ctaFinal": {
+    "titulo": "Tá com fome",
+    "tituloDestaque": "agora",
+    "tituloFim": "né?",
+    "texto": "A gente resolve isso em minutos. Escolhe o seu, faz o pedido e prepara a mesa.",
+    "cta": "Pedir meu YARD",
+    "apoio": "Rio Verde – GO · Peça pelo cardápio online"
+  },
+
+  "footer": {
+    "tagline": "Hambúrguer artesanal em Rio Verde, Goiás.",
+    "linksTitulo": "Navegue",
+    "contatoTitulo": "Fale com a gente",
+    "direitos": "YARD Burguer. Todos os direitos reservados."
+  },
+
+  "seo": {
+    "title": "YARD Burguer — Hambúrguer artesanal em Rio Verde, GO",
+    "description": "Blend artesanal, pão brioche assado todo dia e molhos exclusivos. Conheça o Tapera do Sertão e peça o seu pelo cardápio online. Rio Verde – Goiás.",
+    "ogTitle": "YARD Burguer — Feito na brasa, servido na hora",
+    "ogDescription": "Hambúrguer artesanal em Rio Verde, GO. Veja o cardápio e peça o seu."
+  }
+}

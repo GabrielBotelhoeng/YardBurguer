@@ -1,0 +1,232 @@
+---
+import Base from '../layouts/Base.astro';
+import ExplodeScene from '../components/ExplodeScene.astro';
+import copy from '../content/copy.json';
+
+const { marca, hero, diferenciais, maisPedidos, ctaFinal, footer } = copy;
+const anoAtual = new Date().getFullYear();
+---
+
+<Base>
+  <!-- Cena 0 — Navbar -->
+  <header class="nav" data-nav>
+    <a class="nav__logo" href="/">{marca.nome}</a>
+    <nav aria-label="Principal">
+      <a class="nav__link" href="#mais-pedidos">Os mais pedidos</a>
+      <a class="nav__link" href="#explode">Nosso hambúrguer</a>
+    </nav>
+    <a class="cta nav__cta" href={marca.cardapioUrl} data-evento="cardapio-navbar">
+      {copy.navbar.ctaPrimario}
+    </a>
+  </header>
+
+  <main>
+    <!-- Cena 1 — Hero -->
+    <section class="hero textura-brasa" aria-labelledby="hero-titulo">
+      <p class="hero__sobretitulo">{hero.sobretitulo}</p>
+      <h1 id="hero-titulo" class="hero__titulo">
+        {hero.titulo}<br /><span class="hero__destaque">{hero.tituloDestaque}</span>
+      </h1>
+      <p class="hero__subtitulo">{hero.subtitulo}</p>
+      <a class="cta" href={marca.cardapioUrl} data-evento="cardapio-hero">{hero.cta}</a>
+    </section>
+
+    <!-- Cena 2 — Burger explodido -->
+    <ExplodeScene />
+
+    <!-- Cena 3 — Diferenciais -->
+    <section class="claro" aria-labelledby="dif-titulo">
+      <div class="claro__wrap">
+        <h2 id="dif-titulo" class="secao__titulo">{diferenciais.titulo}</h2>
+        <p class="secao__texto">{diferenciais.texto}</p>
+        <ul class="pilares" role="list">
+          {
+            diferenciais.pilares.map((pilar) => (
+              <li class="pilar">
+                <span class="pilar__icone" aria-hidden="true">{pilar.icone}</span>
+                <h3 class="pilar__titulo">{pilar.titulo}</h3>
+                <p class="pilar__texto">{pilar.texto}</p>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </section>
+
+    <!-- Cena 4 — Os mais pedidos -->
+    <section class="claro" id="mais-pedidos" aria-labelledby="mp-titulo">
+      <div class="claro__wrap">
+        <h2 id="mp-titulo" class="secao__titulo">{maisPedidos.titulo}</h2>
+        <p class="secao__texto">{maisPedidos.texto}</p>
+        <ul class="cards" role="list">
+          {
+            maisPedidos.itens.map((item) => (
+              <li class:list={['card', item.destaque && 'card--destaque']}>
+                {item.selo && <span class="card__selo">{item.selo}</span>}
+                <h3 class="card__nome">{item.nome}</h3>
+                <p class="card__texto">{item.texto}</p>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </section>
+
+    <!-- Cena 7 — CTA final -->
+    <section class="final textura-brasa" aria-labelledby="final-titulo">
+      <h2 id="final-titulo" class="final__titulo">
+        {ctaFinal.titulo} <span class="final__destaque">{ctaFinal.tituloDestaque}</span>
+        {ctaFinal.tituloFim}
+      </h2>
+      <p class="final__texto">{ctaFinal.texto}</p>
+      <a class="cta" href={marca.cardapioUrl} data-evento="cardapio-final">{ctaFinal.cta}</a>
+      <p class="final__apoio">{ctaFinal.apoio}</p>
+    </section>
+  </main>
+
+  <!-- Cena 8 — Footer -->
+  <footer class="rodape">
+    <p class="rodape__marca">{marca.nome}</p>
+    <p class="rodape__tagline">{footer.tagline}</p>
+    <p>
+      <a class="rodape__link" href={marca.instagramUrl}>{marca.instagram}</a>
+      ·
+      <a class="rodape__link" href={marca.cardapioUrl}>Cardápio</a>
+    </p>
+    <p class="rodape__direitos">© {anoAtual} {footer.direitos}</p>
+  </footer>
+</Base>
+
+<style>
+  .nav {
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    transition: background-color 0.3s ease;
+  }
+  .nav[data-scrolled] {
+    background-color: var(--color-carvao);
+  }
+  .nav__logo {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    color: var(--color-creme);
+    text-decoration: none;
+    letter-spacing: 0.05em;
+  }
+  .nav__link {
+    color: var(--color-areia);
+    text-decoration: none;
+    margin-inline: 0.75rem;
+    font-size: 0.95rem;
+  }
+  .nav__link:hover { color: var(--color-brasa); }
+
+  .hero {
+    min-height: var(--cena-altura);
+    display: grid;
+    place-content: center;
+    text-align: center;
+    gap: 1.25rem;
+    padding: 7rem 1.5rem 4rem;
+    background-color: var(--color-carvao);
+  }
+  .hero__sobretitulo {
+    color: var(--color-brasa);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+  }
+  .hero__titulo {
+    font-family: var(--font-display);
+    font-size: var(--text-hero);
+    line-height: 0.9;
+    text-transform: uppercase;
+  }
+  .hero__destaque { color: var(--color-brasa); }
+  .hero__subtitulo {
+    max-width: 34rem;
+    margin-inline: auto;
+    color: var(--color-areia);
+    line-height: 1.6;
+  }
+
+  .claro { background-color: var(--color-areia); color: var(--color-carvao); }
+  .claro__wrap {
+    max-width: 68rem;
+    margin-inline: auto;
+    padding: 5rem 1.5rem;
+  }
+  .secao__titulo {
+    font-family: var(--font-display);
+    font-size: var(--text-titulo);
+    text-transform: uppercase;
+  }
+  .secao__texto { margin-top: 0.75rem; max-width: 38rem; line-height: 1.6; }
+
+  .pilares, .cards {
+    display: grid;
+    gap: 1.5rem;
+    list-style: none;
+    padding: 0;
+    margin-top: 2.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  }
+  .pilar__icone { font-size: 1.75rem; }
+  .pilar__titulo { font-weight: 700; margin-top: 0.5rem; }
+  .pilar__texto { margin-top: 0.35rem; line-height: 1.55; font-size: 0.95rem; }
+
+  .card {
+    padding: 1.75rem;
+    border-radius: 1rem;
+    background-color: var(--color-carvao);
+    color: var(--color-creme);
+  }
+  .card--destaque { background-color: var(--color-terracota); }
+  .card__selo {
+    display: inline-block;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-brasa);
+  }
+  .card--destaque .card__selo { color: var(--color-areia); }
+  .card__nome { font-family: var(--font-display); font-size: 1.5rem; margin-top: 0.4rem; }
+  .card__texto { margin-top: 0.6rem; line-height: 1.6; font-size: 0.95rem; color: var(--color-areia); }
+
+  .final {
+    background-color: var(--color-carvao);
+    text-align: center;
+    display: grid;
+    gap: 1.25rem;
+    place-content: center;
+    padding: 6rem 1.5rem;
+  }
+  .final__titulo {
+    font-family: var(--font-display);
+    font-size: var(--text-titulo);
+    text-transform: uppercase;
+  }
+  .final__destaque { color: var(--color-brasa); }
+  .final__texto { color: var(--color-areia); max-width: 32rem; margin-inline: auto; }
+  .final__apoio { font-size: 0.85rem; color: var(--color-areia); opacity: 0.75; }
+
+  .rodape {
+    background-color: var(--color-carvao);
+    border-top: 1px solid rgb(232 220 200 / 0.12);
+    padding: 3rem 1.5rem;
+    text-align: center;
+    display: grid;
+    gap: 0.5rem;
+  }
+  .rodape__marca { font-family: var(--font-display); font-size: 1.25rem; }
+  .rodape__tagline, .rodape__direitos { color: var(--color-areia); font-size: 0.9rem; }
+  .rodape__direitos { opacity: 0.6; font-size: 0.8rem; margin-top: 0.75rem; }
+  .rodape__link { color: var(--color-brasa); }
+</style>
