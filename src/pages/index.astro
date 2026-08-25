@@ -238,6 +238,21 @@ const combos = menu.combos.map((combo) => ({
   }
   .nav__link:hover { color: var(--color-brasa); }
 
+  /**
+   * Abaixo de 640px os links saem da navbar.
+   *
+   * Em 390px de largura eles empilhavam por cima do CTA e o proprio logo
+   * quebrava em duas linhas. A pagina e uma coluna unica de rolagem — os links
+   * sao atalho, nao navegacao essencial. O que nao pode sumir e o CTA, porque e
+   * ele que leva ao cardapio, que e o objetivo inteiro da pagina.
+   */
+  @media (max-width: 639px) {
+    .nav nav { display: none; }
+    .nav { padding-inline: 1rem; }
+    .nav__logo { font-size: 1.05rem; white-space: nowrap; }
+    .nav__cta { padding-inline: 1.1rem; font-size: 0.9rem; }
+  }
+
   .hero {
     position: relative;
     min-height: var(--cena-altura);

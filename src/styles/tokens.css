@@ -18,7 +18,7 @@
 
   /* Tipografia — display condensada pesada + sans humanista */
   --font-display: 'Anton', 'Archivo Black', system-ui, sans-serif;
-  --font-corpo: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-corpo: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
 
   /* Escala fluida. O display trava em 13vw no mobile ou quebra a composição. */
   --text-hero: clamp(2.75rem, 13vw, 9rem);

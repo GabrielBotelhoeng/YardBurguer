@@ -1,4 +1,17 @@
 ---
+/**
+ * Fontes self-hosted via @fontsource, nao via Google Fonts.
+ *
+ * Os tokens ja pediam Anton e Inter desde o inicio, mas ninguem tinha
+ * importado o arquivo — a pagina inteira caia no sans do sistema e perdia a
+ * personalidade da marca. Aparece so quando se olha o render.
+ *
+ * Self-hosted em vez de CDN do Google: elimina DNS + TLS para outro dominio no
+ * caminho critico da fonte, que e exatamente o custo que pesa no 4G do
+ * interior. O Astro ainda faz hash e cache longo dos arquivos.
+ */
+import '@fontsource/anton/400.css';
+import '@fontsource-variable/inter';
 import '../styles/tokens.css';
 import copy from '../content/copy.json';
 
