@@ -208,6 +208,64 @@ prompt — pendente, modelo em 503 desde a aprovação.
 
 ---
 
+## 2026-08-25 — hero fusão + burger (take em produção)
+
+- **Modelo:** `gemini-3.1-flash-image` (o pro seguia em 503)
+- **Seed:** `44182` — mesma do take anterior
+- **Custo:** 1 geração
+- **Saída:** `assets/hero/hero-fusao-burger.webp` → aplicada em `public/assets/hero.webp`
+- **Nota:** 4/5
+
+**Mudança isolada em relação ao take anterior:** apenas o bloco de **sujeito**.
+Todos os outros seis blocos ficaram idênticos, para que a diferença fosse
+atribuível.
+
+```
+Beef patties searing on a battered cast iron grill grate in the lower left of
+the frame, fat rendering and spitting, char marks forming. On the worn wood to
+the lower right, one finished burger sits slightly off-kilter on a hammered
+copper tray: the bun pressed unevenly to one side, sauce escaping and running
+down the edge, a few sesame seeds fallen loose on the tray. It is lit only by
+the embers and the low sun, half of it falling into shadow, and it sits
+slightly behind the plane of focus.
+```
+
+**Contexto:** o burger montado tinha sido removido porque era o que denunciava
+geração nas três primeiras variantes. Remover resolveu o plástico, mas custou o
+produto — uma landing de hamburgueria precisa mostrar hambúrguer. Cliente pediu
+de volta.
+
+**O que funcionou:**
+
+Especificar imperfeição ponto a ponto salvou o burger. Cada instrução nega uma
+característica de render: pão prensado torto (nega simetria), molho escorrendo
+pela borda (nega superfície limpa), gergelim solto na bandeja (nega composição
+arrumada), metade na sombra e atrás do plano de foco (nega nitidez uniforme).
+
+Na página a composição fecha: grelha à esquerda, burger à direita, headline no
+vazio escuro do meio. O burger fica parcialmente atrás do "HORA." e isso cria
+profundidade em vez de atrapalhar.
+
+**Regra que emerge deste par de takes:** o modelo acerta textura irregular e
+erra superfície lisa. Objeto liso não precisa ser removido — precisa ser
+descrito quebrado.
+
+**O que falhou:**
+
+1. A fumaça continua cinza-azulada. Não foi tocada de propósito: mudar sujeito e
+   atmosfera juntos tornaria impossível saber o que resolveu o quê.
+2. Saída ainda em 1376px, ampliada ~2x no hero em tela retina.
+3. As carnes na grelha ficaram mais pálidas que no take anterior, com menos
+   crosta de selagem. Efeito colateral não pedido — a atenção do modelo se
+   dividiu com o burger novo.
+
+**Próxima correção isolada (a fila, uma por vez):**
+1. `Warm amber smoke lit from below by the embers, no grey or blue tint in the smoke`
+2. Reforçar a selagem das carnes na grelha, se o item 1 não resolver junto
+3. Take em `gemini-3-pro-image` para resolver resolução
+
+---
+
 ## Fotos de produto — não geradas
 
 Destaques e combos usam foto real do CDN público do cardápio do Brendi, via

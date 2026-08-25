@@ -46,13 +46,21 @@ const LARGURA_FINAL = 1920;
  * arquivo — se a direcao mudar, muda la primeiro.
  */
 const BLOCOS = {
-  // 1. Sujeito — concreto, sem adjetivo vago.
-  //    O burger montado saiu de proposito: era o elemento que denunciava
-  //    geracao nas tres variantes anteriores. Carne na grelha, fumaca e brasa
-  //    sao texturas irregulares, e o modelo acerta bagunca com muito mais
-  //    facilidade do que superficie lisa.
+  /**
+   * 1. Sujeito — concreto, sem adjetivo vago.
+   *
+   * O burger montado tinha sido removido porque era o que denunciava geracao
+   * nas tres primeiras variantes. Removê-lo resolveu o plastico, mas custou o
+   * produto: a landing de uma hamburgueria precisa mostrar hamburguer.
+   *
+   * Ele volta sob a regra que o take anterior ensinou — o modelo acerta
+   * textura irregular e erra superficie lisa. Entao nada de pilha simetrica e
+   * perfeita: pao torto, molho escapando, gergelim caido, luz so de brasa,
+   * metade na sombra e ligeiramente atras do plano de foco. Cada uma dessas
+   * instrucoes existe para negar uma caracteristica de render.
+   */
   sujeito:
-    'Beef patties searing on a battered cast iron grill grate in the lower left of the frame, fat rendering and spitting, char marks forming. No assembled burger anywhere in the shot.',
+    'Beef patties searing on a battered cast iron grill grate in the lower left of the frame, fat rendering and spitting, char marks forming. On the worn wood to the lower right, one finished burger sits slightly off-kilter on a hammered copper tray: the bun pressed unevenly to one side, sauce escaping and running down the edge, a few sesame seeds fallen loose on the tray. It is lit only by the embers and the low sun, half of it falling into shadow, and it sits slightly behind the plane of focus.',
 
   // 2. Lente e distancia
   lente:
