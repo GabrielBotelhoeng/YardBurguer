@@ -1,44 +1,35 @@
-# Registro de prompts — YARD Burguer
+# Log de gerações — YARD Burguer
 
-Todo prompt usado para gerar mídia deste projeto fica aqui. O objetivo não é
-burocracia: é conseguir **regerar o mesmo conjunto** meses depois, quando
-ninguém lembrar por que a luz vinha da esquerda.
+Regras: prompt sempre literal e completo (prompt resumido não é reproduzível).
+Nota de 1 a 5 — sem nota o log vira lixo e ninguém consulta. Só **uma correção
+testada por vez**: mudando três coisas, não se sabe qual resolveu.
 
-Regra de composição: uma composição fecha inteira num só modelo e numa só
-execução. Regerar significa regerar tudo — nunca metade nova com metade antiga.
+## Sobre seed neste projeto
 
----
+O sistema pede seed anotada para iterar dentro do mesmo enquadramento. A API de
+imagem do Gemini (`generateContent` com `responseModalities: ['TEXT','IMAGE']`)
+**não devolve seed na resposta**, e o suporte a seed de entrada ainda não foi
+verificado aqui.
 
-## Modelos em uso
+Consequência prática: hoje não dá para "manter o enquadramento e mudar só a
+luz". Cada geração é um dado novo. Isso torna o bloco de prompt ainda mais
+importante — é o único controle determinístico que resta.
 
-O plano original pedia `flux/schnell` para rascunho e `Seedream V4` no take
-final. Ambos vivem no Higgsfield, e a conta está em `credits: 0`, plano free,
-com `unlim.available: false` — verificado em 2026-08-25. Os modelos nem aparecem
-na lista que o plano cobre.
-
-A intenção foi mantida com o que existe:
-
-| Papel | Modelo | Quando |
-|---|---|---|
-| Rascunho | `gemini-3.1-flash-image` | exploração, variantes, iteração de recorte |
-| Take final | `gemini-3-pro-image` | só no take aprovado |
-
-Trocar para Seedream assim que o Higgsfield tiver crédito significa **regerar o
-conjunto inteiro**, não uma camada avulsa.
+**A verificar na próxima geração:** enviar `generationConfig.seed` e gerar duas
+vezes com o mesmo valor. Se saírem idênticas, seed funciona e passa a ser
+anotada em toda entrada.
 
 ---
 
-## Camadas do burger explodido (cena 2)
+## 2026-08-25 — camadas do burger explodido (7 peças)
 
-**Script:** `squads/yard-burguer-squad/scripts/produce-layers.mjs`
-**Modelo:** `gemini-3.1-flash-image`
-**Saída:** `public/assets/layers/*.webp` + `manifest.json`
-**Data:** 2026-08-25
+- **Modelo:** `gemini-3.1-flash-image`
+- **Seed:** não disponível
+- **Custo:** ~11 gerações até fechar o conjunto (3 perdidas em 503, 1 com fundo errado)
+- **Saída:** `public/assets/layers/*.webp` + `manifest.json`
+- **Nota:** 4/5
 
-O Gemini não devolve canal alfa — toda resposta vem em JPEG. Por isso as camadas
-são geradas sobre chroma magenta e recortadas localmente com `sharp`.
-
-### Preâmbulo (idêntico em toda camada — é ele que garante consistência)
+**Prompt (preâmbulo idêntico em toda camada — é ele que garante consistência):**
 
 ```
 Professional food product photography for a premium burger brand. Single
@@ -46,26 +37,17 @@ ingredient, photographed straight from the side at eye level, perfectly
 horizontal. Soft warm key light from the upper left, gentle fill, no harsh
 specular blowout. Shot on 100mm macro lens, sharp focus edge to edge, no
 depth-of-field blur. The ingredient floats in the centre of the frame and is
-fully visible, not cropped.
+fully visible, not cropped. <PROMPT DA CAMADA> CRITICAL REQUIREMENT: the entire
+background must be one single flat colour, pure magenta, hex #FF00FF,
+RGB(255,0,255), edge to edge, perfectly uniform. Do not use a studio backdrop,
+gradient, dark background, wood, or any texture. No shadow cast on the
+background, no plate, no surface, no props, no hands, no text. The magenta must
+touch all four edges of the image.
 ```
 
-### Exigência de fundo (vai no FIM do prompt, não no início)
+**Prompt por camada:**
 
-```
-CRITICAL REQUIREMENT: the entire background must be one single flat colour,
-pure magenta, hex #FF00FF, RGB(255,0,255), edge to edge, perfectly uniform. Do
-not use a studio backdrop, gradient, dark background, wood, or any texture. No
-shadow cast on the background, no plate, no surface, no props, no hands, no
-text. The magenta must touch all four edges of the image.
-```
-
-> **Por que no fim:** na primeira versão isso abria o prompt e o `blend` voltou
-> com fundo de estúdio escuro. O modelo seguiu a parte concreta (a descrição do
-> ingrediente) e descartou a instrução distante.
-
-### Por camada
-
-| id | prompt do ingrediente |
+| id | bloco de sujeito |
 |---|---|
 | `pao-superior` | The top half of a glossy toasted brioche burger bun, golden brown, slightly domed. |
 | `alface` | A single ruffled leaf of crisp fresh green lettuce, spread flat and wide. |
@@ -75,26 +57,33 @@ text. The magenta must touch all four edges of the image.
 | `bacon` | Two strips of crispy fried bacon laid side by side, rippled, deep reddish brown. |
 | `pao-inferior` | The bottom half of a toasted brioche burger bun, flat cut side facing up, golden. |
 
-### Parâmetros de recorte que custaram iteração
+**O que funcionou:**
+Travar luz, lente e ângulo num preâmbulo fixo deu consistência real entre sete
+chamadas separadas — empilhadas, as camadas formam um hambúrguer crível. A
+exigência de fundo no **fim** do prompt foi o que fez o modelo obedecer; quando
+ela abria o texto, o `blend` voltou com fundo de estúdio escuro.
 
-| Parâmetro | Valor | Descoberta |
-|---|---|---|
-| chroma | magenta | verde brigaria com alface, azul com cebola roxa, branco com pão |
-| `CHROMA_DENTRO` | 90 | abaixo disso é fundo puro |
-| `CHROMA_FORA` | 170 | em 200 o recorte comeu a borda do blend e do bacon — o patty perdeu um terço da altura |
-| choke | 2 passadas | mata a franja da alface frisada |
-| despill por matiz | ligado, exceto `tomate-cebola` | cebola roxa é legitimamente mais azul que verde |
+**O que falhou:**
+Faltou bloco de **emulsão e textura**. O queijo e o pão têm superfície lisa
+demais — leem como render, não como foto. É o anti-slop de "superfície plástica,
+sem poro". Nenhum grão, nenhuma halação, nenhuma imperfeição foi pedida.
+
+**Correção testada:** adicionar ao preâmbulo
+`shot on Kodak Portra 400, visible grain in the shadows, soft orange halation on
+the highlights, natural surface imperfection — visible pores in the bread,
+visible fibre in the meat`.
+→ **Ainda não testada.** Exige regerar as 7 (regra de composição única).
 
 ---
 
-## Foto do hero (cena 1)
+## 2026-08-25 — hero, 3 variantes
 
-**Script:** `squads/yard-burguer-squad/scripts/produce-hero.mjs`
-**Modelo:** `gemini-3.1-flash-image`
-**Saída:** `public/assets/hero.webp`
-**Data:** 2026-08-25
+- **Modelo:** `gemini-3.1-flash-image`
+- **Seed:** não disponível
+- **Custo:** 3 gerações + 4 retries de 503
+- **Saída:** `assets/hero/hero-{1,2,3}.webp`
 
-### Base (comum às três variantes)
+**Base comum:**
 
 ```
 Cinematic wide landscape food photograph, 16:9, for a premium burger restaurant
@@ -108,33 +97,51 @@ deep shadow in the middle of the image. No text, no logos, no watermarks, no
 people looking at camera, no hands in the centre.
 ```
 
-### Variantes
+### Variante 1 — produto · Nota 2/5
 
-| # | nome | prompt | veredito |
-|---|---|---|---|
-| 1 | produto | A single tall artisanal burger with melted cheddar and crispy bacon sits on the copper tray in the lower right corner, glowing under warm light, steam rising softly. | descartada |
-| 2 | ambiente | A rustic countryside burger joint table in the lower third: dark wood, copper tray, a burger slightly out of focus, scattered embers of warm light, evoking a backyard grill at dusk in the Brazilian cerrado. | aplicada |
-| 3 | processo | Burger patties searing on a hot cast iron grill in the lower left, glowing embers beneath, smoke curling upward into the dark empty space above. | preferida pelo cliente |
+**Sujeito:** `A single tall artisanal burger with melted cheddar and crispy bacon sits on the copper tray in the lower right corner, glowing under warm light, steam rising softly.`
 
-### Feedback aberto sobre o hero
+**O que falhou:** burger grande e limpo em primeiro plano, o pior cenário para
+denunciar geração. Descartada.
 
-Gabriel avaliou em 2026-08-25:
+### Variante 2 — ambiente · Nota 3/5 · *aplicada em produção*
 
-- A composição da **variante 3 (grelha)** acomoda melhor e chama mais atenção.
-- O clima do **cerrado ao entardecer** da variante 2 deve ser preservado.
-- **O burger montado em primeiro plano parece artificial** — é o elemento que
-  mais denuncia geração. As carnes na grelha, a fumaça e a brasa passam bem
-  porque são texturas irregulares.
+**Sujeito:** `A rustic countryside burger joint table in the lower third: dark wood, copper tray, a burger slightly out of focus, scattered embers of warm light, evoking a backyard grill at dusk in the Brazilian cerrado.`
 
-Direção pendente: fundir as duas composições e resolver o burger artificial.
-Aguardando prompt do cliente antes de gerar.
+**O que funcionou:** o clima. Cerrado ao entardecer, árvores em silhueta, brasa
+ao fundo — é a marca. O vazio escuro no centro-direita recebeu a headline sem
+briga.
+
+**O que falhou:** o burger em primeiro plano parece artificial. Avaliação do
+cliente: composição acomoda pior que a 3.
+
+### Variante 3 — processo · Nota 4/5 · *preferida pelo cliente*
+
+**Sujeito:** `Burger patties searing on a hot cast iron grill in the lower left, glowing embers beneath, smoke curling upward into the dark empty space above.`
+
+**O que funcionou:** a composição acomoda melhor e chama mais atenção. As carnes
+na grelha, a fumaça e a brasa passam como reais porque são **texturas
+irregulares** — o modelo acerta bagunça com mais facilidade que superfície lisa.
+
+**O que falhou:** o burger montado à direita parece artificial, mesmo defeito da
+variante 1.
+
+### Diagnóstico transversal das três
+
+Nenhuma tinha bloco de **lente**, **emulsão** nem **atmosfera**. O prompt tinha
+sujeito, composição e paleta — metade da anatomia. Sem grão, halação e
+imperfeição, o modelo devolve superfície plástica por padrão.
+
+**Correção isolada a testar no próximo take:** adicionar os blocos 2 (lente),
+4 (emulsão) e 6 (atmosfera), **mantendo a composição da variante 3 e o clima da
+variante 2**, e **removendo o burger montado do primeiro plano** — o elemento
+que mais denuncia geração nas três.
 
 ---
 
-## Fotos de produto (destaques e combos)
+## Fotos de produto — não geradas
 
-**Não são geradas.** Vêm do CDN público do cardápio do Brendi, coletadas por
-`squads/yard-burguer-squad/scripts/fetch-menu-images.mjs`. São fotos reais dos
-produtos da casa — sempre preferíveis a imagem gerada quando existem.
+Destaques e combos usam foto real do CDN público do cardápio do Brendi, via
+`fetch-menu-images.mjs`. Foto real sempre ganha de gerada quando existe.
 
-Limite conhecido: o CDN só entrega 240×240 e não há rota de resolução maior.
+Limite: o CDN só entrega 240×240 e não há rota maior.
