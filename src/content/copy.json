@@ -1,5 +1,6 @@
 {
   "_nota": "Copy final das 9 cenas. Voz: orgulho de origem, sem sotaque forçado. Task write-section-copy / @hunger-copywriter.",
+  "_fatos": "Todo ingrediente citado aqui vem de src/content/menu.json (cardápio real do Brendi). Não inventar sabor, peso ou técnica que não esteja lá.",
 
   "marca": {
     "nome": "YARD Burguer",
@@ -11,7 +12,7 @@
   },
 
   "navbar": {
-    "links": ["Os mais pedidos", "Cardápio", "Combos", "Onde estamos"],
+    "links": ["Destaques", "Cardápio", "Combos", "Onde estamos"],
     "ctaSecundario": "Nosso Instagram",
     "ctaPrimario": "Ver Cardápio"
   },
@@ -20,7 +21,7 @@
     "sobretitulo": "Rio Verde, Goiás",
     "titulo": "FEITO NA BRASA.",
     "tituloDestaque": "SERVIDO NA HORA.",
-    "subtitulo": "Blend artesanal, pão brioche assado todo dia e molho que a gente não entrega a receita pra ninguém.",
+    "subtitulo": "Blend de 160g, pão brioche e três molhos da casa que só existem aqui.",
     "cta": "Ver o cardápio",
     "ctaApoio": "Peça em minutos, direto pelo WhatsApp"
   },
@@ -30,11 +31,11 @@
     "titulo": "Camada por camada",
     "texto": "Nada aqui é montado no automático. Cada camada entra na ordem certa, na temperatura certa — porque é isso que separa um lanche de um hambúrguer de verdade.",
     "legendas": {
-      "pao-superior": "Brioche assado todo dia",
+      "pao-superior": "Pão brioche macio",
       "alface": "Alface crocante",
       "tomate-cebola": "Tomate e cebola roxa",
-      "queijo": "Queijo derretido na chapa",
-      "blend": "Blend artesanal 180g",
+      "queijo": "Cheddar derretido na chapa",
+      "blend": "Blend de 160g",
       "bacon": "Bacon em ponto de crocância",
       "pao-inferior": "Base que segura tudo"
     }
@@ -46,44 +47,47 @@
     "pilares": [
       {
         "icone": "🥩",
-        "titulo": "Blend artesanal",
-        "texto": "Corte próprio, moído no dia. Gordura na medida certa pra dar suculência sem pesar."
+        "titulo": "Blend de 160g",
+        "texto": "O peso padrão da casa. Quem quer mais pede o King, com duas carnes. Quem quer o smash tem o de 90g prensado na chapa."
       },
       {
         "icone": "🍞",
         "titulo": "Pão brioche",
-        "texto": "Assado todo dia. Macio por dentro, dourado na chapa antes de montar."
+        "texto": "Macio o bastante pra abraçar o recheio e firme o bastante pra não desmontar na metade."
       },
       {
         "icone": "🧄",
-        "titulo": "Molhos exclusivos",
-        "texto": "Receita da casa. Você não encontra igual em nenhum outro lugar da cidade."
+        "titulo": "Três molhos da casa",
+        "texto": "Molho da casa, molho especial e o Santiago. Receita nossa — não tem igual em outro cardápio da cidade."
       },
       {
         "icone": "🔥",
-        "titulo": "Técnica smash",
-        "texto": "Prensado na chapa quente pra formar aquela crosta que guarda o suco por dentro."
+        "titulo": "Sabor do cerrado",
+        "texto": "Costela desfiada, queijo coalho tostado no mel e banana da terra caramelizada. Ingrediente daqui, não de rede americana."
       }
     ]
   },
 
   "maisPedidos": {
-    "titulo": "Os mais pedidos",
-    "texto": "Se é sua primeira vez, comece por um destes.",
+    "titulo": "Comece por estes",
+    "texto": "Se é sua primeira vez no YARD, qualquer um dos três resolve.",
     "itens": [
       {
-        "nome": "Tapera do Sertão",
+        "id": "tapera-do-sertao",
+        "nome": "Tápera do Sertão",
         "destaque": true,
-        "selo": "O queridinho da casa",
-        "texto": "O que leva o nome da nossa terra. Blend artesanal, queijo derretido na chapa, bacon crocante e o molho da casa que ninguém copia. É o pedido que mais volta — e o que mais faz gente virar cliente."
+        "selo": "O nome da casa",
+        "texto": "Costela desfiada, queijo coalho tostado lambuzado no mel e banana da terra caramelizada no açúcar mascavo — tudo sobre blend de 160g e finalizado no maçarico. Não existe igual em Rio Verde porque ninguém mais teve a ideia."
       },
       {
-        "nome": "Yard King",
-        "texto": "Pra quem chegou com fome de verdade. Camada dupla de blend, queijo escorrendo e salada fresca segurando a estrutura."
-      },
-      {
+        "id": "supremo",
         "nome": "Supremo",
-        "texto": "O equilíbrio da casa. Carne no ponto, queijo, alface e tomate — clássico bem feito é imbatível."
+        "texto": "Catupiry cremoso, costela desfiada, cebola caramelizada e bacon crocante. Pra quem gosta de sabor forte do começo ao fim."
+      },
+      {
+        "id": "yard-king",
+        "nome": "Yard King",
+        "texto": "Duas carnes de 160g, cheddar em dobro e o molho Santiago por cima. Pra quem chegou com fome de verdade."
       }
     ]
   },
@@ -120,7 +124,7 @@
 
   "seo": {
     "title": "YARD Burguer — Hambúrguer artesanal em Rio Verde, GO",
-    "description": "Blend artesanal, pão brioche assado todo dia e molhos exclusivos. Conheça o Tapera do Sertão e peça o seu pelo cardápio online. Rio Verde – Goiás.",
+    "description": "Blend de 160g, pão brioche e molhos da casa. Conheça o Tápera do Sertão — costela desfiada, queijo coalho no mel e banana da terra. Peça pelo cardápio online. Rio Verde – Goiás.",
     "ogTitle": "YARD Burguer — Feito na brasa, servido na hora",
     "ogDescription": "Hambúrguer artesanal em Rio Verde, GO. Veja o cardápio e peça o seu."
   }
