@@ -1,5 +1,5 @@
 {
-  "_gerado": "2026-08-25T21:58:50.634Z",
+  "_gerado": "2026-08-25T22:15:55.198Z",
   "_modelo": "gemini-3-pro-image",
   "_nota": "Conjunto fechado em uma unica sessao e um unico modelo. Regerar significa regerar TODAS as camadas — misturar modelos vira colagem.",
   "mobileLayers": [
@@ -32,7 +32,7 @@
       "speed": 1,
       "mobile": true,
       "largura": 900,
-      "altura": 267,
+      "altura": 320,
       "larguraRelativa": 1.18,
       "assentamento": 0.28
     },
@@ -43,8 +43,8 @@
       "explodeY": -105,
       "speed": 1,
       "mobile": true,
-      "largura": 847,
-      "altura": 337,
+      "largura": 900,
+      "altura": 234,
       "larguraRelativa": 1.06,
       "assentamento": 0.38
     },

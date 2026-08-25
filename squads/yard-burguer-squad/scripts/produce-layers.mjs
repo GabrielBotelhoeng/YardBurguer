@@ -257,7 +257,29 @@ const CAMADAS = [
      * sete — fica para a proxima geracao completa do conjunto.
      */
     prompt:
-      'A single ruffled leaf of VIVID FRESH GREEN lettuce seen from the side, lying almost flat as a thin wavy horizontal band with its frilled edge curling toward the camera, irregular torn edges, visible leaf veins and a couple of water droplets. The lettuce is bright green and crisp — do NOT make it brown, wilted, dried or terracotta; the warm palette instruction does not apply to this ingredient, only the warm lighting does.',
+      /*
+       * FAIXA CONTINUA, nao folha solta.
+       *
+       * A versao anterior gerava uma folha unica assimetrica — grossa de um
+       * lado, ponta fina do outro. Centralizada na pilha, o pao cobria o meio
+       * dela e sobravam duas pontas soltas nas laterais, que leem como recorte
+       * colado. Foi a reclamacao do cliente em 2026-08-25.
+       *
+       * Food styling de verdade usa folha ondulada formando uma faixa que corre
+       * por todo o perimetro e sobra cerca de um centimetro da borda. Entao o
+       * pedido e a FAIXA, com babado embaixo, atravessando o quadro inteiro,
+       * mais a negacao explicita de fragmento isolado e de ponta fina.
+       */
+      /*
+       * "edge to edge" era contraditorio com o bloco de enquadramento, que pede
+       * o ingrediente inteiro dentro do quadro. O modelo obedeceu ao mais
+       * concreto e encostou a folha nas quatro bordas: o resultado empilhado
+       * mostrava um retangulo reto atras do pao, com o topo cortado em linha.
+       *
+       * Agora a faixa e larga mas FLUTUA — margem de fundo em volta, nenhuma
+       * borda tocada. O contorno superior tem que ser irregular, nunca reto.
+       */
+      'A wide continuous band of VIVID FRESH GREEN ruffled leaf lettuce seen from the side, much wider than it is tall, reading as ONE unbroken layer with its frilly wavy edge running along the bottom the way lettuce hangs out of a burger. The whole leaf floats fully inside the frame with clear empty margin on all four sides — it must NOT touch or be cropped by any edge, and its top contour must be irregular and leafy, never a straight horizontal line. Crisp and bright green, visible leaf veins, a couple of water droplets. NOT a single loose leaf, no isolated fragments, no empty gap in the middle, ends must not taper into thin points. Do NOT make it brown, wilted, dried or terracotta; the warm palette instruction does not apply to this ingredient, only the warm lighting does.',
   },
   {
     id: 'tomate-cebola',
@@ -275,7 +297,17 @@ const CAMADAS = [
     prompt:
       // Era "seeds and pulp visible", que so existe na face de cima e puxava o
       // modelo para a vista de topo. Agora a polpa aparece no CORTE lateral.
-      'One hand-cut slice of ripe red tomato seen from the side, its cut edge facing the camera, thickness slightly uneven, the wet pulp and a seed or two glistening along that cut edge, with a ring of raw purple onion resting on it and seen edge-on as a narrow curved band.',
+      /*
+       * Terceira versao. "cut edge facing the camera" ainda produzia a face
+       * cortada inteira — polpa e sementes de frente, ou seja, vista de cima com
+       * outro nome. E a cebola voltava como elipse completa e deslocada para a
+       * direita: ao empilhar aparecia so de um lado e lia como recorte colado.
+       *
+       * O que resolve e dizer o que a fatia VIRA no quadro (uma faixa
+       * horizontal) e negar a elipse na cebola — anel visto de lado e uma barra
+       * curva, nao um circulo.
+       */
+      'One hand-cut slice of ripe red tomato seen STRICTLY from the side, reading as a horizontal red band across the frame: the viewer sees the outer skin along the edge and the full thickness of the slice, NOT the flat cut face. A single ring of raw purple onion sits CENTRED on top of it, also seen strictly from the side, so the ring reads as a narrow curved purple-and-white band — never a full ellipse, never a complete circle, never pushed off to one side.',
   },
   {
     id: 'queijo',

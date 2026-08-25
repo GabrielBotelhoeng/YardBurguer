@@ -383,3 +383,50 @@ justamente por terem saído no `pro`. Take final regerado em `gemini-3-pro-image
 **Nota:** pendente de aprovação do cliente. Se passar, promover o bloco de
 perspectiva para o `LOOK.md`, porque ele vale para qualquer conjunto de camadas
 futuro — não só para este.
+
+---
+
+## [camadas] Alface e tomate-cebola — o que a pesquisa de food styling corrigiu
+
+**2026-08-25** · segunda correção, depois de o cliente apontar que alface e
+cebola continuavam com cara artificial.
+
+**O que a pesquisa mostrou** ([FoodShot AI](https://foodshot.ai/blog/burger-photography),
+[Food Bloggers of Canada](https://www.foodbloggersofcanada.com/food-styling-the-burger/),
+[Hitchcock Farms](https://www.hitchcockfarms.com/blog/best-lettuce-for-burgers)):
+
+1. **Alface é faixa, não folha.** Food stylist usa folha de borda ondulada
+   formando uma faixa contínua que corre pelo perímetro e sobra ~1cm da borda.
+   A nossa era uma folha assimétrica — grossa de um lado, ponta fina do outro.
+   Centralizada, o pão cobria o meio e sobravam duas pontas soltas nas
+   laterais: exatamente o "recorte colado" que o cliente viu.
+2. **Cada ingrediente aparece pela FRENTE**, não pelas beiradas — *"every
+   ingredient peeking out the front"*. Eu vinha resolvendo tudo por transbordo
+   lateral, que é justamente o que denuncia a montagem.
+
+**O defeito real do tomate-cebola:** a camada não estava em perfil. Mostrava a
+face cortada inteira (polpa e sementes de frente) e a cebola como elipse
+completa deslocada para a direita — vista de cima com outro nome. Empilhada, a
+cebola aparecia só de um lado.
+
+**Correções de prompt:**
+
+| Camada | Antes | Depois |
+|---|---|---|
+| alface | "a single ruffled leaf… thin wavy band" | "a wide continuous band… ONE unbroken layer", negando fragmento isolado e ponta fina |
+| tomate-cebola | "cut edge facing the camera" | "reading as a horizontal red band… NOT the flat cut face"; cebola CENTRADA e "never a full ellipse" |
+
+**Armadilha nova, e cara:** pedir `spanning the full width edge to edge` briga
+com o bloco de enquadramento, que exige o ingrediente inteiro dentro do quadro.
+O modelo obedeceu ao mais concreto e encostou a folha nas quatro bordas — o
+resultado empilhado mostrava um **retângulo reto** atrás do pão, com o topo
+cortado em linha. A formulação que funciona é "much wider than it is tall" +
+"floats fully inside the frame with clear empty margin on all four sides" +
+"top contour must be irregular, never a straight horizontal line".
+
+É a terceira vez que o mesmo mecanismo morde este script: **instrução concreta
+vence instrução distante**. Já aconteceu com o fundo, com a perspectiva e agora
+com o enquadramento.
+
+Resultado: alface 900×320, tomate-cebola 900×234, ambas em perfil e coerentes
+com as outras cinco. Nota pendente de aprovação do cliente.
