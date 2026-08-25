@@ -51,6 +51,27 @@ const jsonLd = {
   },
   telephone: marca.telefoneE164,
   hasMap: marca.mapaUrl,
+
+  /**
+   * Horário completo — é isto que faz o Google mostrar "aberto agora" na busca
+   * por "hamburgueria Rio Verde", em vez de um card mudo.
+   *
+   * Segunda-feira fica de fora porque a casa fecha. Isso não estava escrito em
+   * lugar nenhum: a lista de horários da loja simplesmente não tem segunda. A
+   * ausência é o dado — e omitir aqui é o que faz o Google dizer "fechado" no
+   * dia certo.
+   */
+  openingHoursSpecification: [
+    {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: marca.horario.dias,
+      opens: marca.horario.abre,
+      closes: marca.horario.fecha,
+    },
+  ],
+
+  paymentAccepted: [...marca.pagamento.online, ...marca.pagamento.naEntrega].join(', '),
+  currenciesAccepted: 'BRL',
   image: new URL('/assets/og.jpg', Astro.site).toString(),
   hasMenu: marca.cardapioUrl,
   sameAs: [marca.instagramUrl, marca.whatsappUrl],

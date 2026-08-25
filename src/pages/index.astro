@@ -195,6 +195,21 @@ const combos = menu.combos.map((combo) => ({
 
         <address class="onde__endereco">{marca.enderecoCompleto}</address>
 
+        <dl class="onde__dados">
+          <div>
+            <dt>{copy.ondeEstamos.tituloHorario}</dt>
+            <dd>{marca.horario.texto}</dd>
+          </div>
+          <div>
+            <dt>{copy.ondeEstamos.tituloPagamento}</dt>
+            <dd>
+              {marca.pagamento.online.join(', ')} online · {
+                marca.pagamento.naEntrega.join(', ')
+              } na entrega
+            </dd>
+          </div>
+        </dl>
+
         <div class="onde__acoes" data-reveal>
           <a
             class="cta cta--whats"
@@ -477,6 +492,25 @@ const combos = menu.combos.map((combo) => ({
     line-height: 1.6;
     max-width: 26rem;
   }
+  .onde__dados {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: 1.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    max-width: 46rem;
+  }
+  .onde__dados dt {
+    font-size: 0.75rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-terracota);
+    font-weight: 700;
+  }
+  .onde__dados dd {
+    margin: 0.4rem 0 0;
+    line-height: 1.55;
+  }
+
   .onde__acoes {
     display: flex;
     flex-wrap: wrap;

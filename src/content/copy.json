@@ -10,12 +10,23 @@
     "rua": "R. Rozulino Campos, 134",
     "cep": "75909-235",
     "enderecoCompleto": "R. Rozulino Campos, 134 — Setor Morada do Sol, Rio Verde – GO, 75909-235",
-    "telefone": "+55 64 8119-3070",
-    "telefoneE164": "+556481193070",
-    "whatsappUrl": "https://wa.me/556481193070?text=Oi%21%20Vim%20pelo%20site%20e%20queria%20fazer%20um%20pedido.",
+    "telefone": "+55 64 98119-3070",
+    "telefoneE164": "+5564981193070",
+    "whatsappUrl": "https://wa.me/5564981193070?text=Oi%21%20Vim%20pelo%20site%20e%20queria%20fazer%20um%20pedido.",
+    "_telefoneConferido": "Confirmado no WhatsApp Business em 2026-08-25: 98119-3070, com o 9. A primeira versão saiu sem o 9 e o link não abriria conversa — falha silenciosa, sem erro visível.",
     "mapaUrl": "https://www.google.com/maps/search/?api=1&query=R.+Rozulino+Campos%2C+134+-+Setor+Morada+do+Sol%2C+Rio+Verde+-+GO%2C+75909-235",
-    "_telefone": "CONFERIR: 8119-3070 tem 8 dígitos. Celular brasileiro tem 9 (começa com 9). Se for celular, o link do WhatsApp precisa de 5564 9 8119-3070. Link quebrado não dá erro — só não abre conversa.",
-    "_horario": "PENDENTE: só sabemos que abre às 18h (fonte: Brendi). Falta o horário por dia da semana para entrar o openingHoursSpecification no JSON-LD.",
+    "horario": {
+      "_fonte": "Informações da loja no Brendi, confirmado em 2026-08-25.",
+      "_segunda": "Segunda-feira NÃO aparece na lista da loja — a casa fecha. A ausência é o dado.",
+      "texto": "De terça a domingo, das 18h às 23h20. Segunda a gente descansa.",
+      "abre": "18:00",
+      "fecha": "23:20",
+      "dias": ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    },
+    "pagamento": {
+      "online": ["PIX", "Cartão de crédito"],
+      "naEntrega": ["Dinheiro", "Crédito", "Débito", "Vale-refeição", "Vale-alimentação"]
+    },
     "instagram": "@yardburguer_rioverde",
     "instagramUrl": "https://www.instagram.com/yardburguer_rioverde/",
     "cardapioUrl": "https://menu.brendi.com.br/yard-burguer?utm_source=landing&utm_medium=site&utm_campaign=cardapio"
@@ -119,7 +130,9 @@
 
   "ondeEstamos": {
     "titulo": "Onde a gente fica",
-    "texto": "Setor Morada do Sol, em Rio Verde. Aberto a partir das 18h.",
+    "texto": "Setor Morada do Sol, em Rio Verde.",
+    "tituloHorario": "Horário",
+    "tituloPagamento": "Formas de pagamento",
     "ctaMapa": "Ver no mapa",
     "ctaWhats": "Chamar no WhatsApp",
     "notaWhats": "Dúvida sobre o pedido? Chama que a gente responde."
