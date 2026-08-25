@@ -52,13 +52,60 @@ const CHROMA_FORA = 170;
 /** Passadas de erosao da matte. 2 mata o halo em superficie brilhante. */
 const CHOKE_PADRAO = 2;
 
-const PREAMBULO = [
-  'Professional food product photography for a premium burger brand.',
-  'Single ingredient, photographed straight from the side at eye level, perfectly horizontal.',
-  'Soft warm key light from the upper left, gentle fill, no harsh specular blowout.',
-  'Shot on 100mm macro lens, sharp focus edge to edge, no depth-of-field blur.',
-  'The ingredient floats in the centre of the frame and is fully visible, not cropped.',
-].join(' ');
+/**
+ * Blocos da anatomia obrigatoria (CLAUDE.md), na ordem. Identicos em toda
+ * camada — e essa identidade que garante que sete chamadas separadas produzam
+ * sete pecas do mesmo hamburguer, e nao sete estilos.
+ *
+ * Duas notas sobre como isto difere do hero:
+ *
+ * ATMOSFERA nao se aplica. A camada e recortada e vive sobre o fundo carvao da
+ * pagina; fumaca ou poeira no quadro viraria sujeira no alfa.
+ *
+ * COMPOSICAO inverte o anti-slop. O LOOK.md registra a excecao: aqui o
+ * enquadramento centralizado e frontal e requisito tecnico do empilhamento no
+ * CSS, nao preguica de composicao. O que continua valendo e o resto —
+ * superficie lisa e o que denuncia geracao, e a correcao e descrever quebrado.
+ */
+const BLOCOS = {
+  // 2. Lente e distancia
+  lente:
+    'Professional food photography of a single ingredient, shot on a 100mm macro lens at eye level, perfectly horizontal, sharp focus edge to edge, no depth-of-field blur.',
+
+  // 3. Luz
+  luz:
+    'Soft warm key light from the upper left, gentle fill, no harsh specular blowout, no light without a visible direction.',
+
+  /**
+   * 4. Emulsao — SEM grao e SEM halacao, ao contrario do hero.
+   *
+   * Emulsao de filme e chroma key sao contraditorios. Grao e halacao sao
+   * tratamento de quadro inteiro: o modelo os aplica tambem no fundo, e o
+   * magenta puro vira rosa lavado a 120-150 de distancia do alvo — perto demais
+   * dos tons avermelhados da comida para qualquer recorte confiavel. Testado
+   * tres vezes, inclusive proibindo explicitamente grao no fundo. Nao adianta:
+   * nao da para pedir que o fundo seja chapado e fotografico ao mesmo tempo.
+   *
+   * O que resolveu o plastico no hero, porem, nao foi o grao — foi a linguagem
+   * de IMPERFEICAO. Essa parte fica, e ela nao mexe no fundo.
+   */
+  emulsao:
+    'Real food texture with natural imperfection — visible pores, fibre and irregularity. Nothing smooth, nothing glossy, nothing computer-generated. Matte surfaces.',
+
+  // 5. Paleta — escopo AMARRADO ao ingrediente.
+  //    Na primeira versao dizia so "warm tones, no cool blue cast". Magenta e
+  //    fortemente azul, entao a paleta brigou com a exigencia de chroma e
+  //    venceu: o fundo voltou rosa lavado em 6 das 7 camadas e o recorte falhou
+  //    inteiro. Instrucao de cor precisa dizer a QUE ela se aplica.
+  paleta:
+    'The ingredient itself is in warm terracotta and ember tones, with no blown-out white. This colour instruction applies only to the food, never to the background.',
+
+  // Requisito de enquadramento (excecao registrada no LOOK.md).
+  enquadramento:
+    'The ingredient floats in the centre of the frame, fully visible, not cropped.',
+};
+
+const PREAMBULO = Object.values(BLOCOS).join(' ');
 
 /**
  * O requisito de fundo vem DEPOIS da descricao do ingrediente, e nao antes.
@@ -72,6 +119,13 @@ const EXIGENCIA_FUNDO = [
   'Do not use a studio backdrop, gradient, dark background, wood, or any texture.',
   'No shadow cast on the background, no plate, no surface, no props, no hands, no text.',
   'The magenta must touch all four edges of the image.',
+  // Sem esta frase o fundo deriva. Grao e halacao sao tratamentos de quadro
+  // inteiro: o modelo aplicava a emulsao tambem no fundo, e o magenta puro
+  // virava rosa lavado a 100+ de distancia do alvo — perto demais dos tons
+  // avermelhados da comida para qualquer recorte confiavel.
+  'The background is a flat digital chroma key, NOT part of the photograph:',
+  'no film grain, no halation, no colour bleed, no vignette and no light spill',
+  'on the background. Grain, halation and warm tone apply to the food only.',
 ].join(' ');
 
 /**
@@ -98,7 +152,7 @@ const CAMADAS = [
     explodeY: -300,
     speed: 1.0,
     mobile: true,
-    prompt: 'The top half of a glossy toasted brioche burger bun, golden brown, slightly domed.',
+    prompt: 'The top half of a toasted brioche burger bun, golden brown and unevenly baked, with visible open crumb pores, a few loose sesame seeds and slight flour dusting. Matte crust, never glossy.',
   },
   {
     id: 'alface',
@@ -106,7 +160,7 @@ const CAMADAS = [
     explodeY: -195,
     speed: 1.0,
     mobile: false,
-    prompt: 'A single ruffled leaf of crisp fresh green lettuce, spread flat and wide.',
+    prompt: 'A single ruffled leaf of crisp green lettuce, spread flat and wide, with irregular torn edges, visible leaf veins and a couple of water droplets. One edge slightly wilted.',
   },
   {
     id: 'tomate-cebola',
@@ -118,7 +172,7 @@ const CAMADAS = [
     // destruiria, deixando a cebola cinza.
     despillForte: false,
     prompt:
-      'One thick slice of ripe red tomato with a ring of raw purple onion resting on top of it.',
+      'One hand-cut slice of ripe red tomato, thickness slightly uneven, seeds and pulp visible and glistening from its own juice, with a ring of raw purple onion resting off-centre on top of it.',
   },
   {
     id: 'queijo',
@@ -127,7 +181,7 @@ const CAMADAS = [
     speed: 1.0,
     mobile: true,
     prompt:
-      'A square slice of melted cheddar cheese, deep orange, edges softly drooping as if just melted.',
+      'A slice of cheddar cheese caught mid-melt, deep orange, edges drooping unevenly and one corner still holding its shape. Matte surface with slight oil separation, never a smooth plastic sheet.',
   },
   {
     id: 'blend',
@@ -136,7 +190,7 @@ const CAMADAS = [
     speed: 1.0,
     mobile: true,
     prompt:
-      'A thick 160g chargrilled beef burger patty, dark seared crust, visible grill marks, juicy.',
+      'A thick 160g chargrilled beef patty, deep dark uneven sear crust, visible coarse grind and meat fibre, ragged hand-formed edges, rendered fat glistening in the crevices.',
   },
   {
     id: 'bacon',
@@ -144,7 +198,7 @@ const CAMADAS = [
     explodeY: 70,
     speed: 1.0,
     mobile: false,
-    prompt: 'Two strips of crispy fried bacon laid side by side, rippled, deep reddish brown.',
+    prompt: 'Two strips of fried bacon laid side by side, rippled and buckled unevenly, deep reddish brown with darker charred spots and irregular streaks of rendered fat.',
   },
   {
     id: 'pao-inferior',
@@ -152,7 +206,7 @@ const CAMADAS = [
     explodeY: 160,
     speed: 1.0,
     mobile: true,
-    prompt: 'The bottom half of a toasted brioche burger bun, flat cut side facing up, golden.',
+    prompt: 'The bottom half of a brioche burger bun, flat cut side facing up, toasted unevenly on the griddle with darker patches, visible open crumb texture. Matte, never glossy.',
   },
 ];
 
@@ -248,12 +302,71 @@ async function recortar(bufferJpeg, choke, despillForte) {
   const canais = info.channels;
   let removidos = 0;
 
+  /**
+   * Chroma medido, nao assumido.
+   *
+   * A versao anterior comparava contra #FF00FF literal. Quando o modelo
+   * devolveu um magenta lavado — porque outro bloco do prompt pedia tons
+   * quentes — a distancia ficou em ~112, dentro da rampa e fora do corte, e
+   * NENHUM pixel virou transparente. O recorte falhou sem que nada estivesse
+   * errado com a imagem.
+   *
+   * A primeira tentativa de conserto foi usar a cor medida do canto COMO
+   * chroma, para ser imune a deriva. Foi pior: magenta lavado fica perto demais
+   * dos tons vermelho-amarronzados da comida, e com a tolerancia calibrada para
+   * magenta puro o recorte passou a comer o ingrediente. As camadas sairam
+   * esburacadas.
+   *
+   * A licao: nao adaptar o recorte a um fundo ruim. Exigir o fundo certo e
+   * RECUSAR quando ele nao vier. O canto vira validacao, nao referencia — ele e
+   * fundo por definicao, entao a distancia dele ao magenta puro mede
+   * exatamente o quanto o modelo desobedeceu.
+   */
+  const cantos = [
+    0,
+    (info.width - 1) * canais,
+    (info.height - 1) * info.width * canais,
+    ((info.height - 1) * info.width + info.width - 1) * canais,
+  ];
+  const mediana = (valores) => valores.slice().sort((a, b) => a - b)[Math.floor(valores.length / 2)];
+  const chroma = {
+    r: mediana(cantos.map((i) => data[i])),
+    g: mediana(cantos.map((i) => data[i + 1])),
+    b: mediana(cantos.map((i) => data[i + 2])),
+  };
+
+  const desvio = Math.sqrt(
+    (chroma.r - CHROMA.r) ** 2 + (chroma.g - CHROMA.g) ** 2 + (chroma.b - CHROMA.b) ** 2
+  );
+
+  /**
+   * Controle de admissao, medido nos dois desastres anteriores.
+   *
+   * Ate ~85 o fundo ainda e magenta saturado de verdade (ex.: rgb 228,57,208) e
+   * fica a mais de 170 de qualquer tom de comida — o recorte tem folga. Acima
+   * de ~110 o fundo vira rosa lavado, entra na faixa dos ingredientes
+   * avermelhados e o recorte come o proprio ingrediente: foi assim que as
+   * camadas sairam esburacadas.
+   *
+   * Dentro do limite o recorte usa a cor MEDIDA, nao o magenta ideal, porque e
+   * contra o fundo real que o pixel precisa ser comparado. Fora do limite,
+   * recusa — adaptar-se a um fundo ruim foi exatamente o erro que produziu as
+   * camadas furadas.
+   */
+  if (desvio > 85) {
+    throw new Error(
+      `fundo a ${Math.round(desvio)} de distancia do magenta puro ` +
+        `(medido rgb ${chroma.r},${chroma.g},${chroma.b}). ` +
+        'O modelo nao obedeceu a exigencia de chroma — provavel conflito com um bloco de cor do prompt. Regerar.'
+    );
+  }
+
   for (let i = 0; i < data.length; i += canais) {
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
 
-    const distancia = Math.sqrt((r - CHROMA.r) ** 2 + (g - CHROMA.g) ** 2 + (b - CHROMA.b) ** 2);
+    const distancia = Math.sqrt((r - chroma.r) ** 2 + (g - chroma.g) ** 2 + (b - chroma.b) ** 2);
 
     if (distancia <= CHROMA_DENTRO) {
       data[i + 3] = 0;
@@ -390,6 +503,7 @@ async function recortar(bufferJpeg, choke, despillForte) {
     largura: saida.info.width,
     altura: saida.info.height,
     proporcaoFundo,
+    desvioChroma: Math.round(desvio),
   };
 }
 
@@ -424,27 +538,63 @@ async function main() {
       // tentativa e erro; refazer a geracao a cada ajuste queimaria credito
       // para receber uma imagem diferente, que e justamente o que nao se quer
       // quando o objetivo e comparar recortes do mesmo raw.
+      /**
+       * Retry tambem para recorte reprovado, nao so para 503.
+       *
+       * A deriva do fundo e estocastica: a mesma instrucao de chroma as vezes e
+       * obedecida e as vezes nao, na mesma execucao. Tratar isso como erro
+       * terminal derrubava o conjunto inteiro por causa de uma ou duas camadas,
+       * obrigando a refazer as sete. Uma nova rolagem da camada que falhou custa
+       * uma geracao; refazer o conjunto custa sete.
+       */
       let raw;
-      if (args.reuse !== undefined && existsSync(caminhoRaw)) {
-        raw = await readFile(caminhoRaw);
-      } else {
-        raw = await gerarComRetry({ camada, modelo, chave });
-        await writeFile(caminhoRaw, raw);
+      let resultado;
+
+      for (let tentativa = 1; ; tentativa++) {
+        if (args.reuse !== undefined && existsSync(caminhoRaw)) {
+          raw = await readFile(caminhoRaw);
+        } else {
+          raw = await gerarComRetry({ camada, modelo, chave });
+        }
+
+        try {
+          resultado = await recortar(raw, choke, camada.despillForte !== false);
+          break;
+        } catch (erro) {
+          const chromaRuim = erro.message.includes('distancia do magenta');
+          const podeRepetir = chromaRuim && args.reuse === undefined && tentativa < 3;
+          if (!podeRepetir) throw erro;
+          console.log(`       ${camada.id}: fundo derivou, nova rolagem (${tentativa}/2)`);
+        }
       }
 
-      const { buffer, largura, altura, proporcaoFundo } = await recortar(raw, choke, camada.despillForte !== false);
+      await writeFile(caminhoRaw, raw);
+
+      const { buffer, largura, altura, proporcaoFundo, desvioChroma } = resultado;
       await writeFile(join(dirSaida, `${camada.id}.webp`), buffer);
 
       const kb = (buffer.length / 1024).toFixed(0);
       const fundo = (proporcaoFundo * 100).toFixed(0);
-      console.log(`  ok   ${camada.id.padEnd(15)} ${largura}x${altura}  ${kb}kb  fundo ${fundo}%`);
+      const deriva = desvioChroma > 40 ? `  chroma +${desvioChroma}` : '';
+      console.log(`  ok   ${camada.id.padEnd(15)} ${largura}x${altura}  ${kb}kb  fundo ${fundo}%${deriva}`);
 
-      // Fundo removido de menos significa chroma sujo; de mais significa que o
-      // recorte comeu o ingrediente. Os dois merecem olhar humano.
+      /**
+       * Recorte ruim REPROVA a camada em vez de so avisar.
+       *
+       * Na versao anterior isto era um console.warn e o manifest era escrito
+       * assim mesmo. O resultado: sete camadas sem transparencia foram
+       * publicadas com um aviso que ninguem leu, e a cena 2 quebrou. Aviso que
+       * nao bloqueia nao e gate, e decoracao.
+       */
       if (proporcaoFundo < 0.15) {
-        console.warn(`       ⚠ so ${fundo}% virou transparente — confira se o fundo saiu mesmo`);
-      } else if (proporcaoFundo > 0.9) {
-        console.warn(`       ⚠ ${fundo}% transparente — o recorte pode ter comido a camada`);
+        throw new Error(
+          `recorte falhou — so ${fundo}% virou transparente. ` +
+            `Chroma medido a ${desvioChroma} de distancia do magenta puro. ` +
+            'Provavel briga entre a exigencia de fundo e algum bloco de cor do prompt.'
+        );
+      }
+      if (proporcaoFundo > 0.9) {
+        throw new Error(`recorte comeu a camada — ${fundo}% transparente`);
       }
 
       prontas.push({
