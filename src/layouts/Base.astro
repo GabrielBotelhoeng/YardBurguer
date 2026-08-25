@@ -12,6 +12,24 @@
  */
 import '@fontsource/anton/400.css';
 import '@fontsource-variable/inter';
+
+/**
+ * Preload dos subsets latinos.
+ *
+ * A auditoria mediu CLS de 0.059, e o culpado não era imagem: o shift acontece
+ * aos ~2s no bloco do hero, exatamente quando o Anton termina de baixar e o
+ * texto reflui. É FOUT — o @fontsource usa font-display: swap, então a página
+ * pinta com a fonte do sistema e reflui quando a real chega.
+ *
+ * Preload em vez de font-display: optional porque o H1 do hero é o elemento de
+ * LCP e é justamente ele que carrega a personalidade da marca. Com `optional`,
+ * quem estivesse em rede ruim veria a página inteira na fonte do sistema — que
+ * foi o defeito que os prints pegaram lá atrás.
+ *
+ * Só os subsets latinos: os demais nem chegam a ser baixados por unicode-range.
+ */
+import antonLatino from '@fontsource/anton/files/anton-latin-400-normal.woff2?url';
+import interLatino from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 import '../styles/tokens.css';
 import copy from '../content/copy.json';
 
@@ -85,6 +103,9 @@ const jsonLd = {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <link rel="preload" as="font" type="font/woff2" href={antonLatino} crossorigin="anonymous" />
+    <link rel="preload" as="font" type="font/woff2" href={interLatino} crossorigin="anonymous" />
 
     <title>{title}</title>
     <meta name="description" content={description} />

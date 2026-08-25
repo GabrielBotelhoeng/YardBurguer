@@ -188,7 +188,18 @@ body {
   min-height: 44px;
   padding-inline: 1.75rem;
   background-color: var(--color-fogo);
-  color: var(--color-creme);
+  /**
+   * Branco puro, não creme.
+   *
+   * Medido na auditoria: creme #F5EFE4 sobre fogo #D93A2B dá 4.00 de contraste,
+   * e WCAG AA pede 4.5 para texto normal — o CTA em negrito de 16px não alcança
+   * o limite de "texto grande", que começa em 18.66px.
+   *
+   * Branco leva a razão para 4.57. Escurecer o fogo resolveria também, mas o
+   * fogo é token de marca e mexer nele mudaria a cor de todo CTA da página por
+   * causa de um problema que é de texto.
+   */
+  color: #fff;
   font-weight: 700;
   letter-spacing: 0.02em;
   border-radius: 999px;

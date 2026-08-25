@@ -61,6 +61,8 @@ const combos = menu.combos.map((combo) => ({
             src="/assets/hero.webp"
             alt=""
             aria-hidden="true"
+            width="1376"
+            height="768"
             fetchpriority="high"
             data-ken-burns
           />
@@ -275,6 +277,9 @@ const combos = menu.combos.map((combo) => ({
     background-color: var(--color-carvao);
   }
   .nav__logo {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     font-family: var(--font-display);
     font-size: 1.25rem;
     color: var(--color-creme);
@@ -525,7 +530,12 @@ const combos = menu.combos.map((combo) => ({
    * o passo que antes não tinha para onde ir.
    */
   .cta--whats { background-color: var(--color-terracota); }
+  /* Área de toque de 44px: medido 97x24 na auditoria, abaixo do mínimo.
+     O padding vertical resolve sem mudar o peso visual do link. */
   .onde__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     color: var(--color-terracota);
     font-weight: 600;
     text-underline-offset: 3px;
@@ -564,5 +574,12 @@ const combos = menu.combos.map((combo) => ({
   .rodape__marca { font-family: var(--font-display); font-size: 1.25rem; }
   .rodape__tagline, .rodape__direitos { color: var(--color-areia); font-size: 0.9rem; }
   .rodape__direitos { opacity: 0.6; font-size: 0.8rem; margin-top: 0.75rem; }
-  .rodape__link { color: var(--color-brasa); }
+  /* Mesmo motivo do .onde__link: medidos 20px de altura na auditoria. */
+  .rodape__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: 0.5rem;
+    color: var(--color-brasa);
+  }
 </style>
