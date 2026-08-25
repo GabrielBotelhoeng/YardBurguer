@@ -1,0 +1,70 @@
+{
+  "_gerado": "2026-08-25T23:27:15.408Z",
+  "_origem": "demo (composicao das camadas antigas)",
+  "_nota": "Fatias de uma UNICA imagem-mae. Largura identica em todas; o transbordo lateral ja esta desenhado na mae, entao o CSS nao usa larguraRelativa.",
+  "camadas": [
+    {
+      "id": "pao-superior",
+      "src": "/assets/stack/pao-superior.webp",
+      "order": 1,
+      "largura": 1200,
+      "altura": 386,
+      "centro": 0.08731,
+      "mobile": true
+    },
+    {
+      "id": "alface",
+      "src": "/assets/stack/alface.webp",
+      "order": 2,
+      "largura": 1200,
+      "altura": 365,
+      "centro": 0.25806,
+      "mobile": true
+    },
+    {
+      "id": "tomate-cebola",
+      "src": "/assets/stack/tomate-cebola.webp",
+      "order": 3,
+      "largura": 1200,
+      "altura": 229,
+      "centro": 0.40616,
+      "mobile": true
+    },
+    {
+      "id": "queijo",
+      "src": "/assets/stack/queijo.webp",
+      "order": 4,
+      "largura": 1200,
+      "altura": 428,
+      "centro": 0.5459,
+      "mobile": true
+    },
+    {
+      "id": "blend",
+      "src": "/assets/stack/blend.webp",
+      "order": 5,
+      "largura": 1200,
+      "altura": 286,
+      "centro": 0.70747,
+      "mobile": true
+    },
+    {
+      "id": "bacon",
+      "src": "/assets/stack/bacon.webp",
+      "order": 6,
+      "largura": 1200,
+      "altura": 200,
+      "centro": 0.81395,
+      "mobile": true
+    },
+    {
+      "id": "pao-inferior",
+      "src": "/assets/stack/pao-inferior.webp",
+      "order": 7,
+      "largura": 1200,
+      "altura": 322,
+      "centro": 0.92656,
+      "mobile": true
+    }
+  ]
+}
