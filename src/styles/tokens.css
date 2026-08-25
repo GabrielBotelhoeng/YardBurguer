@@ -75,6 +75,34 @@ body {
   }
 }
 
+/**
+ * Scroll reveal sem biblioteca. O JS apenas arma (.reveal-armado) e dispara
+ * (.reveal-visivel) — o movimento é CSS. Sob reduced-motion o JS nunca arma,
+ * então o conteúdo já nasce visível.
+ */
+.reveal-armado {
+  opacity: 0;
+  transform: translateY(2.5rem);
+  transition: opacity 0.6s ease var(--reveal-delay, 0ms),
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms);
+}
+.reveal-visivel {
+  opacity: 1;
+  transform: none;
+}
+
+/* Float loop dos burgers PNG — CSS puro, compositado. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-float] {
+    animation: flutuar 2.6s ease-in-out infinite alternate;
+  }
+}
+@keyframes flutuar {
+  to {
+    transform: translateY(-14px);
+  }
+}
+
 /* Foco visível — exigido pelo gate de acessibilidade. */
 :focus-visible {
   outline: 3px solid var(--color-brasa);

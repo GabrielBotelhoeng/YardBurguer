@@ -39,7 +39,7 @@ const anoAtual = new Date().getFullYear();
       <div class="claro__wrap">
         <h2 id="dif-titulo" class="secao__titulo">{diferenciais.titulo}</h2>
         <p class="secao__texto">{diferenciais.texto}</p>
-        <ul class="pilares" role="list">
+        <ul class="pilares" role="list" data-reveal>
           {
             diferenciais.pilares.map((pilar) => (
               <li class="pilar">
@@ -58,7 +58,7 @@ const anoAtual = new Date().getFullYear();
       <div class="claro__wrap">
         <h2 id="mp-titulo" class="secao__titulo">{maisPedidos.titulo}</h2>
         <p class="secao__texto">{maisPedidos.texto}</p>
-        <ul class="cards" role="list">
+        <ul class="cards" role="list" data-reveal>
           {
             maisPedidos.itens.map((item) => (
               <li class:list={['card', item.destaque && 'card--destaque']}>
@@ -69,6 +69,29 @@ const anoAtual = new Date().getFullYear();
             ))
           }
         </ul>
+      </div>
+    </section>
+
+    <!-- Cena 5 — Cardápio completo (vitrine; o pedido acontece no Brendi) -->
+    <section class="cardapio" id="cardapio" aria-labelledby="cardapio-titulo">
+      <div class="claro__wrap">
+        <h2 id="cardapio-titulo" class="secao__titulo">{copy.cardapio.titulo}</h2>
+        <p class="secao__texto">{copy.cardapio.texto}</p>
+        <a class="cta cardapio__cta" href={marca.cardapioUrl} data-evento="cardapio-secao">
+          {copy.cardapio.cta}
+        </a>
+        <p class="cardapio__nota">{copy.cardapio.nota}</p>
+      </div>
+    </section>
+
+    <!-- Cena 6 — Combos -->
+    <section class="combos" aria-labelledby="combos-titulo">
+      <div class="claro__wrap">
+        <h2 id="combos-titulo" class="secao__titulo">{copy.combos.titulo}</h2>
+        <p class="secao__texto">{copy.combos.texto}</p>
+        <a class="cta combos__cta" href={marca.cardapioUrl} data-evento="cardapio-combos">
+          {copy.combos.cta}
+        </a>
       </div>
     </section>
 
@@ -95,6 +118,10 @@ const anoAtual = new Date().getFullYear();
     </p>
     <p class="rodape__direitos">© {anoAtual} {footer.direitos}</p>
   </footer>
+
+  <script>
+    import '../scripts/motion.js';
+  </script>
 </Base>
 
 <style>
@@ -199,6 +226,19 @@ const anoAtual = new Date().getFullYear();
   .card--destaque .card__selo { color: var(--color-areia); }
   .card__nome { font-family: var(--font-display); font-size: 1.5rem; margin-top: 0.4rem; }
   .card__texto { margin-top: 0.6rem; line-height: 1.6; font-size: 0.95rem; color: var(--color-areia); }
+
+  .cardapio { background-color: var(--color-creme); color: var(--color-carvao); }
+  .cardapio__cta { margin-top: 2rem; }
+  .cardapio__nota {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    opacity: 0.7;
+  }
+
+  /* Cena 6 — a unica secao com fundo brasa inteiro. */
+  .combos { background-color: var(--color-brasa); color: var(--color-carvao); }
+  .combos .secao__texto { color: var(--color-carvao); }
+  .combos__cta { margin-top: 2rem; }
 
   .final {
     background-color: var(--color-carvao);
