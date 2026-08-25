@@ -7,7 +7,15 @@
     "cidade": "Rio Verde",
     "estado": "GO",
     "bairro": "Setor Morada do Sol",
-    "_pendente": "Rua, número, CEP, telefone e WhatsApp ainda não confirmados. O Brendi só publica o bairro. NÃO inventar — pedir ao dono.",
+    "rua": "R. Rozulino Campos, 134",
+    "cep": "75909-235",
+    "enderecoCompleto": "R. Rozulino Campos, 134 — Setor Morada do Sol, Rio Verde – GO, 75909-235",
+    "telefone": "+55 64 8119-3070",
+    "telefoneE164": "+556481193070",
+    "whatsappUrl": "https://wa.me/556481193070?text=Oi%21%20Vim%20pelo%20site%20e%20queria%20fazer%20um%20pedido.",
+    "mapaUrl": "https://www.google.com/maps/search/?api=1&query=R.+Rozulino+Campos%2C+134+-+Setor+Morada+do+Sol%2C+Rio+Verde+-+GO%2C+75909-235",
+    "_telefone": "CONFERIR: 8119-3070 tem 8 dígitos. Celular brasileiro tem 9 (começa com 9). Se for celular, o link do WhatsApp precisa de 5564 9 8119-3070. Link quebrado não dá erro — só não abre conversa.",
+    "_horario": "PENDENTE: só sabemos que abre às 18h (fonte: Brendi). Falta o horário por dia da semana para entrar o openingHoursSpecification no JSON-LD.",
     "instagram": "@yardburguer_rioverde",
     "instagramUrl": "https://www.instagram.com/yardburguer_rioverde/",
     "cardapioUrl": "https://menu.brendi.com.br/yard-burguer?utm_source=landing&utm_medium=site&utm_campaign=cardapio"
@@ -107,6 +115,14 @@
     "titulo": "Combos que valem a pena",
     "texto": "Burger, acompanhamento e bebida. Conta simples, fome resolvida.",
     "cta": "Pedir agora"
+  },
+
+  "ondeEstamos": {
+    "titulo": "Onde a gente fica",
+    "texto": "Setor Morada do Sol, em Rio Verde. Aberto a partir das 18h.",
+    "ctaMapa": "Ver no mapa",
+    "ctaWhats": "Chamar no WhatsApp",
+    "notaWhats": "Dúvida sobre o pedido? Chama que a gente responde."
   },
 
   "ctaFinal": {

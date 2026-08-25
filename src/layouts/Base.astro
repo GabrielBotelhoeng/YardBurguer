@@ -32,26 +32,28 @@ const jsonLd = {
   description: copy.seo.description,
   servesCuisine: 'Hambúrguer artesanal',
   /**
-   * Endereço vai até onde há dado confirmado, e para aí.
+   * Endereço confirmado pelo dono. É este bloco que dá ao Google o que ele
+   * precisa para ranquear "hamburgueria Rio Verde" — a brecha que motivou a
+   * página existir, já que o Brendi não ranqueia para isso.
    *
-   * O cardápio do Brendi publica apenas o bairro. Rua, número, CEP e telefone
-   * não aparecem em lugar nenhum público. Inventar aqui seria pior que omitir:
-   * endereço errado em JSON-LD vira ficha errada no Google, e corrigir depois
-   * custa mais do que nunca ter publicado.
-   *
-   * Assim que o dono confirmar, entram streetAddress, postalCode, telephone,
-   * openingHoursSpecification e geo.
+   * Ainda falta openingHoursSpecification: só sabemos que abre às 18h, e
+   * horário parcial em JSON-LD é pior que ausente — o Google mostra "fechado"
+   * em dia que a casa está aberta.
    */
   address: {
     '@type': 'PostalAddress',
+    streetAddress: marca.rua,
     addressLocality: marca.cidade,
     addressRegion: marca.estado,
+    postalCode: marca.cep,
     addressCountry: 'BR',
     ...(marca.bairro ? { addressNeighborhood: marca.bairro } : {}),
   },
+  telephone: marca.telefoneE164,
+  hasMap: marca.mapaUrl,
   image: new URL('/assets/og.jpg', Astro.site).toString(),
   hasMenu: marca.cardapioUrl,
-  sameAs: [marca.instagramUrl],
+  sameAs: [marca.instagramUrl, marca.whatsappUrl],
   priceRange: '$$',
 };
 ---

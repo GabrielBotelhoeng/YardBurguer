@@ -44,6 +44,7 @@ const combos = menu.combos.map((combo) => ({
     <nav aria-label="Principal">
       <a class="nav__link" href="#mais-pedidos">Destaques</a>
       <a class="nav__link" href="#explode">Nosso hambúrguer</a>
+      <a class="nav__link" href="#onde-estamos">Onde estamos</a>
     </nav>
     <a class="cta nav__cta" href={marca.cardapioUrl} data-evento="cardapio-navbar">
       {copy.navbar.ctaPrimario}
@@ -175,6 +176,41 @@ const combos = menu.combos.map((combo) => ({
         <a class="cta combos__cta" href={marca.cardapioUrl} data-evento="cardapio-combos">
           {copy.combos.cta}
         </a>
+      </div>
+    </section>
+
+    <!--
+      Onde estamos — a seção que faltava.
+
+      A navbar prometia "Onde estamos" no copy.json desde o início e a seção
+      nunca existiu. Mais grave: não havia um único link de WhatsApp na página,
+      enquanto as duas referências brasileiras do briefing põem em destaque. O
+      cardápio no Brendi era o único caminho de conversão; quem tinha dúvida
+      antes de pedir não tinha para onde ir.
+    -->
+    <section class="onde" id="onde-estamos" aria-labelledby="onde-titulo">
+      <div class="claro__wrap">
+        <h2 id="onde-titulo" class="secao__titulo">{copy.ondeEstamos.titulo}</h2>
+        <p class="secao__texto">{copy.ondeEstamos.texto}</p>
+
+        <address class="onde__endereco">{marca.enderecoCompleto}</address>
+
+        <div class="onde__acoes" data-reveal>
+          <a
+            class="cta cta--whats"
+            href={marca.whatsappUrl}
+            target="_blank"
+            rel="noopener"
+            data-evento="whatsapp-onde"
+          >
+            {copy.ondeEstamos.ctaWhats}
+          </a>
+          <a class="onde__link" href={marca.mapaUrl} target="_blank" rel="noopener">
+            {copy.ondeEstamos.ctaMapa}
+          </a>
+        </div>
+
+        <p class="onde__nota">{copy.ondeEstamos.notaWhats}</p>
       </div>
     </section>
 
@@ -431,6 +467,39 @@ const combos = menu.combos.map((combo) => ({
     line-height: 1.45;
     color: var(--color-carvao);
     opacity: 0.85;
+  }
+
+  .onde { background-color: var(--color-creme); color: var(--color-carvao); }
+  .onde__endereco {
+    margin-top: 1.75rem;
+    font-style: normal;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    max-width: 26rem;
+  }
+  .onde__acoes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.25rem;
+    margin-top: 1.75rem;
+  }
+  /**
+   * O WhatsApp é CTA de verdade, então usa a cor de CTA — mas fica visualmente
+   * abaixo do "Ver cardápio" na hierarquia da página, porque o objetivo
+   * primário continua sendo o pedido no Brendi. Aqui ele resolve dúvida, que é
+   * o passo que antes não tinha para onde ir.
+   */
+  .cta--whats { background-color: var(--color-terracota); }
+  .onde__link {
+    color: var(--color-terracota);
+    font-weight: 600;
+    text-underline-offset: 3px;
+  }
+  .onde__nota {
+    margin-top: 1.25rem;
+    font-size: 0.9rem;
+    opacity: 0.75;
   }
 
   .final {
