@@ -1,6 +1,6 @@
 {
-  "_gerado": "2026-08-25T12:57:25.769Z",
-  "_modelo": "gemini-3.1-flash-image",
+  "_gerado": "2026-08-25T13:30:26.220Z",
+  "_modelo": "gemini-3-pro-image",
   "_nota": "Conjunto fechado em uma unica sessao e um unico modelo. Regerar significa regerar TODAS as camadas — misturar modelos vira colagem.",
   "mobileLayers": [
     "pao-superior",
@@ -13,7 +13,7 @@
       "id": "pao-superior",
       "src": "/layers/pao-superior.webp",
       "order": 1,
-      "explodeY": -180,
+      "explodeY": -300,
       "speed": 1,
       "mobile": true,
       "largura": 900,
@@ -23,8 +23,8 @@
       "id": "alface",
       "src": "/layers/alface.webp",
       "order": 2,
-      "explodeY": -120,
-      "speed": 0.85,
+      "explodeY": -195,
+      "speed": 1,
       "mobile": false,
       "largura": 900,
       "altura": 483
@@ -33,8 +33,8 @@
       "id": "tomate-cebola",
       "src": "/layers/tomate-cebola.webp",
       "order": 3,
-      "explodeY": -70,
-      "speed": 0.7,
+      "explodeY": -105,
+      "speed": 1,
       "mobile": false,
       "largura": 900,
       "altura": 552
@@ -43,8 +43,8 @@
       "id": "queijo",
       "src": "/layers/queijo.webp",
       "order": 4,
-      "explodeY": -30,
-      "speed": 0.55,
+      "explodeY": -35,
+      "speed": 1,
       "mobile": true,
       "largura": 762,
       "altura": 354
@@ -54,7 +54,7 @@
       "src": "/layers/blend.webp",
       "order": 5,
       "explodeY": 0,
-      "speed": 0.4,
+      "speed": 1,
       "mobile": true,
       "largura": 900,
       "altura": 259
@@ -63,8 +63,8 @@
       "id": "bacon",
       "src": "/layers/bacon.webp",
       "order": 6,
-      "explodeY": 40,
-      "speed": 0.3,
+      "explodeY": 70,
+      "speed": 1,
       "mobile": false,
       "largura": 871,
       "altura": 372
@@ -73,8 +73,8 @@
       "id": "pao-inferior",
       "src": "/layers/pao-inferior.webp",
       "order": 7,
-      "explodeY": 90,
-      "speed": 0.2,
+      "explodeY": 160,
+      "speed": 1,
       "mobile": true,
       "largura": 900,
       "altura": 313

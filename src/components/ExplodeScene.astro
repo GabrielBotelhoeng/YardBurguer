@@ -55,7 +55,18 @@ const legendas = copy.explode.legendas as Record<string, string>;
  * Sem isso as camadas ficariam empilhadas com respiro entre elas — sete
  * ingredientes flutuando, nao um hamburguer.
  */
-const SOBREPOSICAO = 0.45;
+/**
+ * 0.30, nao 0.45.
+ *
+ * Com 45% os ingredientes se enterravam uns nos outros: sobrava um terco de
+ * cada camada visivel e a pilha lia como massa, nao como sete coisas
+ * empilhadas. Como a cena inteira existe para mostrar *o que tem dentro*,
+ * esconder metade de cada camada destroi o proprio argumento.
+ *
+ * 30% ainda encosta o suficiente para parecer um hamburguer montado — acima de
+ * ~35% some ingrediente, abaixo de ~25% os itens desgrudam e viram lista.
+ */
+const SOBREPOSICAO = 0.3;
 
 function margemDeSobreposicao(camada: Camada, indice: number) {
   if (indice === 0 || !camada.largura || !camada.altura) return undefined;

@@ -76,8 +76,17 @@ const EXIGENCIA_FUNDO = [
 
 /**
  * Contrato espelhado em src/components/ExplodeScene.astro. order define o
- * empilhamento; explodeY e speed alimentam o GSAP na cena 2; mobile marca as
- * quatro que sobrevivem no storyboard de celular.
+ * empilhamento; mobile marca as quatro que sobrevivem no storyboard de celular.
+ *
+ * explodeY agora e o deslocamento FINAL em px, nao um valor a ser multiplicado
+ * por speed. Antes os dois se multiplicavam, e o resultado era invisivel no
+ * codigo: o pao de baixo tinha explodeY 90 mas speed 0.2, entao andava 18px de
+ * verdade — praticamente parado, enquanto o de cima andava 180. A explosao
+ * abria so para cima e a pilha ficava espremida embaixo.
+ *
+ * Os valores sao simetricos em torno do blend, que e o eixo, e a amplitude
+ * cresce conforme a camada se afasta do centro. E assim que uma explosao se
+ * comporta.
  *
  * Os ingredientes seguem o cardapio real (menu.json): blend de 160g, pao
  * brioche, cheddar. Nada aqui e inventado.
@@ -86,7 +95,7 @@ const CAMADAS = [
   {
     id: 'pao-superior',
     order: 1,
-    explodeY: -180,
+    explodeY: -300,
     speed: 1.0,
     mobile: true,
     prompt: 'The top half of a glossy toasted brioche burger bun, golden brown, slightly domed.',
@@ -94,16 +103,16 @@ const CAMADAS = [
   {
     id: 'alface',
     order: 2,
-    explodeY: -120,
-    speed: 0.85,
+    explodeY: -195,
+    speed: 1.0,
     mobile: false,
     prompt: 'A single ruffled leaf of crisp fresh green lettuce, spread flat and wide.',
   },
   {
     id: 'tomate-cebola',
     order: 3,
-    explodeY: -70,
-    speed: 0.7,
+    explodeY: -105,
+    speed: 1.0,
     mobile: false,
     // Cebola roxa e legitimamente mais azul que verde — despill por matiz a
     // destruiria, deixando a cebola cinza.
@@ -114,8 +123,8 @@ const CAMADAS = [
   {
     id: 'queijo',
     order: 4,
-    explodeY: -30,
-    speed: 0.55,
+    explodeY: -35,
+    speed: 1.0,
     mobile: true,
     prompt:
       'A square slice of melted cheddar cheese, deep orange, edges softly drooping as if just melted.',
@@ -124,7 +133,7 @@ const CAMADAS = [
     id: 'blend',
     order: 5,
     explodeY: 0,
-    speed: 0.4,
+    speed: 1.0,
     mobile: true,
     prompt:
       'A thick 160g chargrilled beef burger patty, dark seared crust, visible grill marks, juicy.',
@@ -132,16 +141,16 @@ const CAMADAS = [
   {
     id: 'bacon',
     order: 6,
-    explodeY: 40,
-    speed: 0.3,
+    explodeY: 70,
+    speed: 1.0,
     mobile: false,
     prompt: 'Two strips of crispy fried bacon laid side by side, rippled, deep reddish brown.',
   },
   {
     id: 'pao-inferior',
     order: 7,
-    explodeY: 90,
-    speed: 0.2,
+    explodeY: 160,
+    speed: 1.0,
     mobile: true,
     prompt: 'The bottom half of a toasted brioche burger bun, flat cut side facing up, golden.',
   },

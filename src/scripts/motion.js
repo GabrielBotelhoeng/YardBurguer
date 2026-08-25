@@ -94,28 +94,43 @@ function initExplodeQuandoPerto() {
   observador.observe(secao);
 }
 
-/** Scroll suave — só desktop, e só se o usuário aceita movimento. */
+/**
+ * Scroll suave — só desktop, e só se o usuário aceita movimento.
+ *
+ * O loop de rAF daqui é PROVISÓRIO. Se o GSAP entrar depois (cena 2), ele
+ * assume o Lenis pelo próprio ticker e cancela este loop. Dois laços dirigindo
+ * o mesmo scroll saem de fase e o scrub treme — a doc do ScrollTrigger é
+ * explícita sobre haver um único relógio.
+ *
+ * Retorna a instância para que o explode.js possa esperar por ela em vez de
+ * torcer para que já exista: os dois chunks carregam de forma assíncrona e a
+ * ordem entre eles não é garantida.
+ */
 async function initSmoothScroll() {
-  if (prefereMenosMovimento || ehMobile) return;
+  if (prefereMenosMovimento || ehMobile) return null;
 
   const { default: Lenis } = await import('lenis');
   const lenis = new Lenis({ duration: 1.1, smoothWheel: true });
 
-  const loop = (tempo) => {
+  let quadro = requestAnimationFrame(function loop(tempo) {
     lenis.raf(tempo);
-    requestAnimationFrame(loop);
-  };
-  requestAnimationFrame(loop);
+    quadro = requestAnimationFrame(loop);
+  });
 
-  // Publicado para o explode.js sincronizar o ScrollTrigger se carregar depois.
   window.__yardLenis = lenis;
+  window.__yardPararLoopLenis = () => cancelAnimationFrame(quadro);
+
+  return lenis;
 }
 
 function init() {
   initNavbar();
   initScrollReveal();
   initExplodeQuandoPerto();
-  initSmoothScroll();
+
+  // Publicado como promessa, não como valor: o explode.js pode chegar antes do
+  // Lenis terminar de carregar e precisa de algo em que esperar.
+  window.__yardLenisPronto = initSmoothScroll();
 }
 
 if (document.readyState === 'loading') {
