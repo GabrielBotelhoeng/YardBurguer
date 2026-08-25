@@ -91,6 +91,76 @@ body {
   transform: none;
 }
 
+/**
+ * Parallax fora da cena 2 — scroll-driven animations, zero JS.
+ *
+ * A cena do burger explodido precisa de GSAP porque tem pin + scrub com sete
+ * camadas em velocidades independentes. O resto da pagina nao precisa: um
+ * elemento que anda mais devagar que o scroll e exatamente o que
+ * `animation-timeline: view()` faz nativamente, na thread do compositor.
+ *
+ * Usar GSAP aqui obrigaria o chunk de 45kb a carregar no topo da pagina, que e
+ * justamente o que a arquitetura de peso evita. Onde o browser nao suporta, o
+ * @supports simplesmente nao aplica nada e o elemento fica estatico — nunca
+ * quebrado, so parado.
+ */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    [data-parallax-lento],
+    [data-parallax-rapido] {
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 0% exit 100%;
+    }
+    [data-parallax-lento] {
+      animation-name: parallax-lento;
+    }
+    [data-parallax-rapido] {
+      animation-name: parallax-rapido;
+    }
+  }
+}
+
+/* Fundo: anda pouco, cria a profundidade por contraste com o conteudo. */
+@keyframes parallax-lento {
+  from {
+    transform: translateY(12%);
+  }
+  to {
+    transform: translateY(-12%);
+  }
+}
+
+/* Conteudo: anda mais que o fundo, na direcao oposta. */
+@keyframes parallax-rapido {
+  from {
+    transform: translateY(4%);
+  }
+  to {
+    transform: translateY(-4%);
+  }
+}
+
+/**
+ * Ken Burns — deriva lenta sobre foto de fundo. Baseado em tempo, nao em
+ * scroll: o hero fica parado na tela enquanto o usuario le, e e ai que o
+ * movimento sutil segura a atencao.
+ *
+ * Só ativa quando existir foto de verdade. Enquanto o material em alta nao
+ * chega, o elemento nem e renderizado — ver .hero__foto em index.astro.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  [data-ken-burns] {
+    animation: ken-burns 20s ease-in-out infinite alternate;
+  }
+}
+@keyframes ken-burns {
+  to {
+    transform: scale(1.12) translate3d(1.5%, -1.5%, 0);
+  }
+}
+
 /* Float loop dos burgers PNG — CSS puro, compositado. */
 @media (prefers-reduced-motion: no-preference) {
   [data-float] {

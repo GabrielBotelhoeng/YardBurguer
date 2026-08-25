@@ -1,8 +1,18 @@
 ---
 import Base from '../layouts/Base.astro';
 import ExplodeScene from '../components/ExplodeScene.astro';
+import { existsSync } from 'node:fs';
 import copy from '../content/copy.json';
 import menu from '../content/menu.json';
+
+/**
+ * O hero foi desenhado para foto com Ken Burns, mas ainda nao existe material
+ * em alta — o CDN do Brendi so entrega 240x240, pequeno demais para tela cheia.
+ * Em vez de deixar markup morto ou uma foto borrada no ponto mais visivel da
+ * pagina, a camada de foto so e renderizada quando o arquivo existir no build.
+ * Para ativar: colocar a foto em public/hero.webp. Nada mais precisa mudar.
+ */
+const temFotoHero = existsSync(new URL('../../public/hero.webp', import.meta.url));
 
 const { marca, hero, diferenciais, maisPedidos, ctaFinal, footer } = copy;
 const anoAtual = new Date().getFullYear();
@@ -43,20 +53,37 @@ const combos = menu.combos.map((combo) => ({
   <main>
     <!-- Cena 1 — Hero -->
     <section class="hero textura-brasa" aria-labelledby="hero-titulo">
-      <p class="hero__sobretitulo">{hero.sobretitulo}</p>
-      <h1 id="hero-titulo" class="hero__titulo">
-        {hero.titulo}<br /><span class="hero__destaque">{hero.tituloDestaque}</span>
-      </h1>
-      <p class="hero__subtitulo">{hero.subtitulo}</p>
-      <a class="cta" href={marca.cardapioUrl} data-evento="cardapio-hero">{hero.cta}</a>
+      {
+        temFotoHero && (
+          <img
+            class="hero__foto"
+            src="/hero.webp"
+            alt=""
+            aria-hidden="true"
+            fetchpriority="high"
+            data-ken-burns
+          />
+        )
+      }
+      <div class="hero__conteudo" data-parallax-rapido>
+        <p class="hero__sobretitulo">{hero.sobretitulo}</p>
+        <h1 id="hero-titulo" class="hero__titulo">
+          {hero.titulo}<br /><span class="hero__destaque">{hero.tituloDestaque}</span>
+        </h1>
+        <p class="hero__subtitulo">{hero.subtitulo}</p>
+        <a class="cta" href={marca.cardapioUrl} data-evento="cardapio-hero">{hero.cta}</a>
+      </div>
     </section>
 
     <!-- Cena 2 — Burger explodido -->
     <ExplodeScene />
 
     <!-- Cena 3 — Diferenciais -->
-    <section class="claro" aria-labelledby="dif-titulo">
-      <div class="claro__wrap">
+    <section class="claro diferenciais" aria-labelledby="dif-titulo">
+      <div class="diferenciais__fundo" aria-hidden="true" data-parallax-lento>
+        {diferenciais.textoFundo}
+      </div>
+      <div class="claro__wrap diferenciais__wrap">
         <h2 id="dif-titulo" class="secao__titulo">{diferenciais.titulo}</h2>
         <p class="secao__texto">{diferenciais.texto}</p>
         <ul class="pilares" role="list" data-reveal>
@@ -212,13 +239,33 @@ const combos = menu.combos.map((combo) => ({
   .nav__link:hover { color: var(--color-brasa); }
 
   .hero {
+    position: relative;
     min-height: var(--cena-altura);
     display: grid;
     place-content: center;
     text-align: center;
-    gap: 1.25rem;
     padding: 7rem 1.5rem 4rem;
     background-color: var(--color-carvao);
+    overflow: hidden;
+  }
+  .hero__conteudo {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    gap: 1.25rem;
+    justify-items: center;
+  }
+  /* Overlay carvão por cima da foto: o texto precisa vencer o contraste
+     independente de como a foto for iluminada. */
+  .hero__foto {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.45;
+    will-change: transform;
   }
   .hero__sobretitulo {
     color: var(--color-brasa);
@@ -241,6 +288,27 @@ const combos = menu.combos.map((combo) => ({
   }
 
   .claro { background-color: var(--color-areia); color: var(--color-carvao); }
+
+  /* Mesma gramatica visual da cena 2: palavra grande atras, correndo mais
+     devagar que o conteudo. Aqui sem GSAP — o efeito e nativo do browser. */
+  .diferenciais { position: relative; overflow: hidden; }
+  .diferenciais__fundo {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+    font-size: var(--text-display);
+    line-height: 0.85;
+    text-align: center;
+    color: var(--color-terracota);
+    opacity: 0.12;
+    text-transform: uppercase;
+    user-select: none;
+    pointer-events: none;
+    will-change: transform;
+  }
+  .diferenciais__wrap { position: relative; z-index: 1; }
   .claro__wrap {
     max-width: 68rem;
     margin-inline: auto;

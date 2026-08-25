@@ -1,17 +1,32 @@
 ---
+import { existsSync, readFileSync } from 'node:fs';
 import copy from '../content/copy.json';
 
 /**
  * Cena 2 — o burger explodido. A cena que vende o projeto.
  *
- * Estado atual: estrutura pronta, aguardando os 7 PNGs de
- * produce-ingredient-layers. Assim que assets/layers/manifest.json existir,
- * as camadas entram aqui sem refatorar o markup — cada <li> ja carrega os
- * data-attributes que o GSAP le.
+ * As camadas vem de public/layers/manifest.json, produzido por
+ * produce-layers.mjs. O manifest so e escrito quando as sete camadas fecham na
+ * mesma execucao — entao ou a cena tem o conjunto completo, ou cai no
+ * placeholder. Nunca meio conjunto: meia composicao vira colagem, e colagem e
+ * exatamente o defeito que mata esta cena.
  */
 
-// Fallback ate o manifest real existir. Espelha o contrato documentado na task.
-const camadas = [
+type Camada = {
+  id: string;
+  src?: string;
+  order: number;
+  explodeY: number;
+  speed: number;
+  mobile: boolean;
+  largura?: number;
+  altura?: number;
+};
+
+const caminhoManifest = new URL('../../public/layers/manifest.json', import.meta.url);
+
+/** Contrato de fallback, identico ao do script. Vale enquanto nao ha imagem. */
+const CAMADAS_PLACEHOLDER: Camada[] = [
   { id: 'pao-superior', order: 1, explodeY: -180, speed: 1.0, mobile: true },
   { id: 'alface', order: 2, explodeY: -120, speed: 0.85, mobile: false },
   { id: 'tomate-cebola', order: 3, explodeY: -70, speed: 0.7, mobile: false },
@@ -21,7 +36,32 @@ const camadas = [
   { id: 'pao-inferior', order: 7, explodeY: 90, speed: 0.2, mobile: true },
 ];
 
+const temManifest = existsSync(caminhoManifest);
+const camadas: Camada[] = temManifest
+  ? JSON.parse(readFileSync(caminhoManifest, 'utf8')).camadas
+  : CAMADAS_PLACEHOLDER;
+
 const legendas = copy.explode.legendas as Record<string, string>;
+
+/**
+ * Sobreposicao do empilhamento.
+ *
+ * Margem percentual no CSS e relativa a LARGURA do bloco pai, nunca a altura —
+ * armadilha classica. Como cada camada ocupa 100% da largura, a altura
+ * renderizada e (altura/largura) da largura do pai. Entao sobrepor 45% da
+ * altura da camada equivale a esta porcentagem da largura, e o calculo fecha
+ * em qualquer viewport sem media query.
+ *
+ * Sem isso as camadas ficariam empilhadas com respiro entre elas — sete
+ * ingredientes flutuando, nao um hamburguer.
+ */
+const SOBREPOSICAO = 0.45;
+
+function margemDeSobreposicao(camada: Camada, indice: number) {
+  if (indice === 0 || !camada.largura || !camada.altura) return undefined;
+  const proporcao = camada.altura / camada.largura;
+  return `margin-top: -${(SOBREPOSICAO * proporcao * 100).toFixed(2)}%`;
+}
 ---
 
 <section class="explode textura-brasa" id="explode" aria-labelledby="explode-titulo">
@@ -37,19 +77,34 @@ const legendas = copy.explode.legendas as Record<string, string>;
 
   <ul class="explode__camadas" role="list">
     {
-      camadas.map((camada) => (
+      camadas.map((camada, indice) => (
         <li
           class="explode__camada"
           data-layer={camada.id}
           data-explode-y={camada.explodeY}
           data-speed={camada.speed}
           data-mobile={camada.mobile}
-          style={`z-index: ${10 - camada.order}`}
+          style={[`z-index: ${10 - camada.order}`, margemDeSobreposicao(camada, indice)]
+            .filter(Boolean)
+            .join('; ')}
         >
-          {/* Placeholder ate o PNG real chegar */}
-          <div class="explode__placeholder" role="img" aria-label={legendas[camada.id]}>
-            <span>{legendas[camada.id]}</span>
-          </div>
+          {
+            camada.src ? (
+              <img
+                class="explode__img"
+                src={camada.src}
+                alt={legendas[camada.id]}
+                width={camada.largura}
+                height={camada.altura}
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <div class="explode__placeholder" role="img" aria-label={legendas[camada.id]}>
+                <span>{legendas[camada.id]}</span>
+              </div>
+            )
+          }
         </li>
       ))
     }
@@ -106,9 +161,6 @@ const legendas = copy.explode.legendas as Record<string, string>;
   .explode__camadas {
     position: relative;
     z-index: 15;
-    display: grid;
-    justify-items: center;
-    gap: 0.5rem;
     list-style: none;
     padding: 0;
     margin: 0;
@@ -119,11 +171,23 @@ const legendas = copy.explode.legendas as Record<string, string>;
     will-change: transform;
   }
 
+  .explode__img {
+    display: block;
+    width: 100%;
+    height: auto;
+    /* Sombra propria: as camadas foram geradas sem sombra de fundo, entao a
+       profundidade entre elas vem daqui. Sem isso o empilhamento fica chapado. */
+    filter: drop-shadow(0 12px 18px rgb(0 0 0 / 0.45));
+  }
+
   /* Placeholder visivel enquanto os PNGs nao chegam — some sozinho quando
      a <img> real substituir este bloco. */
   .explode__placeholder {
     display: grid;
     place-items: center;
+    /* A lista deixou de ser grid quando as imagens entraram; o placeholder
+       precisa se centralizar sozinho. */
+    margin-inline: auto;
     width: min(70vw, 22rem);
     height: 3.25rem;
     border: 1px dashed var(--color-brasa);
