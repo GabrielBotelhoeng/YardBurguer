@@ -322,7 +322,18 @@ const CAMADAS = [
     larguraRelativa: 1.16,
     assentamento: 0.21,
     prompt:
-      'A slice of cheddar cheese caught mid-melt seen from the side, a thin deep orange band whose softened corners droop and hang down over the edge, one corner still holding its shape. Matte surface with slight oil separation, never a smooth plastic sheet.',
+      /*
+       * "corners droop and hang down" virou uma TENDA: o modelo levantou as
+       * pontas e deixou um bico descendo no meio. Empilhado, esse bico aparecia
+       * por baixo do tomate e lia como queijo levitando — reclamacao do cliente
+       * em 2026-08-25.
+       *
+       * Fatia derretida vista de lado e uma faixa FINA e plana no topo, que so
+       * escorre nas extremidades. O centro nunca sobe. E precisa ser muito mais
+       * larga do que alta: 900x361 dava proporcao de 0.40, grossa demais para
+       * queijo.
+       */
+      'A slice of cheddar cheese caught mid-melt seen from the side, reading as a THIN horizontal band, much wider than it is tall, flat and level across the whole top. Only at the far left and right ends does the softened cheese sag and drip downward. The centre stays flat — never peaked, never tent-shaped, never a triangle, no point hanging down in the middle. Deep orange, matte surface with slight oil separation, never a smooth plastic sheet.',
   },
   {
     id: 'blend',

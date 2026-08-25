@@ -171,6 +171,9 @@ function estiloDaCamada(camada: Camada) {
               </div>
             )
           }
+          {/* Sombra de contato: a camada precisa POUSAR sobre a de baixo, nao
+              pairar sobre ela. Ver nota no CSS. */}
+          <span class="explode__sombra" aria-hidden="true" />
         </li>
       ))
     }
@@ -294,6 +297,33 @@ function estiloDaCamada(camada: Camada) {
     /* Centraliza sem gastar o transform. */
     margin-left: calc(var(--ratio, 1) * var(--largura-base) / -2);
     will-change: transform;
+  }
+
+  /**
+   * Sombra de CONTATO — o que faz a camada pousar em vez de pairar.
+   *
+   * O cliente relatou "o queijo esta levitando" e "o tomate parece dentro do
+   * pao". Nao era z-index: z-index resolve ORDEM, nunca CONTATO. A literatura de
+   * compositing e direta — objeto sem sombra de contato le como falso na hora, e
+   * nenhuma calibragem de empilhamento substitui isso.
+   *
+   * A sombra e uma elipse achatada logo abaixo da camada, encolhida nas laterais
+   * para nao virar barra reta. Nasce VISIVEL: o estado de repouso do HTML e o
+   * hamburguer montado, entao ele ja vem com as sombras assentadas, e o GSAP
+   * apenas as apaga no inicio do trilho, quando as pecas estao no ar.
+   */
+  .explode__sombra {
+    position: absolute;
+    left: 12%;
+    right: 12%;
+    bottom: -2%;
+    height: 7%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, rgb(0 0 0 / 0.7), transparent 70%);
+    filter: blur(8px);
+    pointer-events: none;
+    /* Atras da propria camada: a sombra pertence ao que esta EMBAIXO dela. */
+    z-index: -1;
   }
 
   .explode__img {

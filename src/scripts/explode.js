@@ -173,6 +173,27 @@ export async function initExplodeScene({ secao, ehMobile }) {
       },
       posicao * PASSO
     );
+
+    /**
+     * A sombra de contato acompanha a chegada da camada.
+     *
+     * Peca no ar nao projeta sombra sobre a de baixo — ela ainda nao encostou.
+     * A sombra entra no ULTIMO terco da queda e fecha junto com o pouso, que e
+     * o instante em que o olho decide se a camada assentou ou esta pairando.
+     *
+     * Comeca em 0 e termina no valor do CSS, entao o fim da animacao coincide
+     * de novo com o estado estatico do HTML — sob reduced-motion a sombra ja
+     * nasce assentada e nada disso roda.
+     */
+    const sombra = camada.querySelector('.explode__sombra');
+    if (sombra) {
+      trilho.fromTo(
+        sombra,
+        { opacity: 0, scaleX: 0.6 },
+        { opacity: 1, scaleX: 1, ease: 'none', duration: DURACAO / 3 },
+        posicao * PASSO + (DURACAO * 2) / 3
+      );
+    }
   });
 
   /**

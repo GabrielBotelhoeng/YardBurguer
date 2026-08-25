@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  
+
+    <link rel="apple-touch-icon" type="image/png" href="https://cpwebassets.codepen.io/assets/favicon/apple-touch-icon-5ae1a0698dcc2402e9712f7d01ed509a57814f994c660df9f7a952f3060705ee.png" />
+
+    <meta name="apple-mobile-web-app-title" content="CodePen">
+
+    <link rel="icon" type="image/x-icon" href="https://cpwebassets.codepen.io/assets/favicon/favicon-aec34940fbc1a6e787974dcd360f2c6b63348d4b1f4e06c77743096d55480f33.ico" />
+
+    <link rel="mask-icon" type="image/x-icon" href="https://cpwebassets.codepen.io/assets/favicon/logo-pin-b4b4269c16397ad2f0f7a01bcdf513a1994f4c94b8af2f191c09eb0d601762b1.svg" color="#111" />
+
+
+
+  <meta charset="utf-8">
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+
+  <title>Burger stacking GSAP + ScrollMagic</title>
+
+  <link rel="stylesheet" href="https://cpwebassets.codepen.io/assets/fullpage/fullpage-defe0b00ddddc98ad4bc2c428e9d6182cd7742e2624f558656dbfb986d4ba13c.css" />
+  
+
+    <link rel="apple-touch-icon" type="image/png" href="https://cpwebassets.codepen.io/assets/favicon/apple-touch-icon-5ae1a0698dcc2402e9712f7d01ed509a57814f994c660df9f7a952f3060705ee.png" />
+
+    <meta name="apple-mobile-web-app-title" content="CodePen">
+
+    <link rel="icon" type="image/x-icon" href="https://cpwebassets.codepen.io/assets/favicon/favicon-aec34940fbc1a6e787974dcd360f2c6b63348d4b1f4e06c77743096d55480f33.ico" />
+
+    <link rel="mask-icon" type="image/x-icon" href="https://cpwebassets.codepen.io/assets/favicon/logo-pin-b4b4269c16397ad2f0f7a01bcdf513a1994f4c94b8af2f191c09eb0d601762b1.svg" color="#111" />
+
+
+
+
+
+  <title>Burger stacking GSAP + ScrollMagic</title>
+
+  <style>
+    html { font-size: 15px; }
+    html, body { margin: 0; padding: 0; min-height: 100%; }
+    body { height:100%; display: flex; flex-direction: column; }
+    .referer-warning {
+      background: black;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+      padding: 0.75em;
+      color: white;
+      text-align: center;
+      font-family: 'Lato', 'Lucida Grande', 'Lucida Sans Unicode', Tahoma, system-ui, Sans-Serif;
+      line-height: 1.2;
+      font-size: 1rem;
+      position: relative;
+      z-index: 2;
+    }
+    .referer-warning span { font-family: initial; }
+    .referer-warning h1 { font-size: 1.2rem; margin: 0; }
+    .referer-warning a { color: #56bcf9; }
+  </style>
+</head>
+
+<body class="">
+  <div class="referer-warning">
+    <h1><span>⚠️</span> Do not enter passwords or personal information on this page. <span>⚠️</span></h1>
+      This is a code demo posted by a web developer on <a href="https://codepen.io">CodePen</a>.
+    <br />
+    A referer from CodePen is required to render this page view, and your browser is not sending one (<a href="https://blog.codepen.io/2017/10/05/regarding-referer-headers/" target="_blank" rel="noreferrer noopener">more details</a>).</h1>
+  </div>
+
+  <div id="result-iframe-wrap" role="main">
+    <iframe
+      id="result"
+      srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot; >
+
+<head>
+  <meta charset=&quot;UTF-8&quot;>
+  
+
+    <link rel=&quot;apple-touch-icon&quot; type=&quot;image/png&quot; href=&quot;https://cpwebassets.codepen.io/assets/favicon/apple-touch-icon-5ae1a0698dcc2402e9712f7d01ed509a57814f994c660df9f7a952f3060705ee.png&quot; />
+
+    <meta name=&quot;apple-mobile-web-app-title&quot; content=&quot;CodePen&quot;>
+
+    <link rel=&quot;icon&quot; type=&quot;image/x-icon&quot; href=&quot;https://cpwebassets.codepen.io/assets/favicon/favicon-aec34940fbc1a6e787974dcd360f2c6b63348d4b1f4e06c77743096d55480f33.ico&quot; />
+
+    <link rel=&quot;mask-icon&quot; type=&quot;image/x-icon&quot; href=&quot;https://cpwebassets.codepen.io/assets/favicon/logo-pin-b4b4269c16397ad2f0f7a01bcdf513a1994f4c94b8af2f191c09eb0d601762b1.svg&quot; color=&quot;#111&quot; />
+
+
+
+  
+    <script src=&quot;https://cpwebassets.codepen.io/assets/common/stopExecutionOnTimeout-f07739098a39bd4e74ddd974652dac904146f33fdc1ecab356e8c809a05faccb.js&quot;></script>
+
+
+  <title>Burger stacking GSAP + ScrollMagic</title>
+
+    <link rel=&quot;canonical&quot; href=&quot;https://codepen.io/salamandr/pen/wdGNwe&quot;>
+  
+  
+  
+  
+<style>
+/*! HTML5 Boilerplate v5.0 | MIT License | http://h5bp.com/ */*{box-sizing:border-box}html{color:#222;font-size:1em;line-height:1.4}::-moz-selection{background:#b3d4fc;text-shadow:none}::selection{background:#b3d4fc;text-shadow:none}hr{display:block;height:1px;border:0;border-top:1px solid #ccc;margin:1em 0;padding:0}audio,canvas,iframe,img,svg,video{vertical-align:middle}fieldset{border:0;margin:0;padding:0}textarea{resize:vertical}.browserupgrade{margin:.2em 0;background:#ccc;color:#000;padding:.2em 0}.clearfix:before,.clearfix:after{content:&quot; &quot;;display:table}.clearfix:after{clear:both}body{background:-webkit-linear-gradient(left, #6D0302 0, #ffffff 20%, #ffffff 80%, #5B93AA 100%);background:linear-gradient(to right, #6D0302 0, #ffffff 20%, #ffffff 80%, #5B93AA 100%)}.large-sc-inner{max-width:1280px;margin-left:auto;margin-right:auto}.lets-serve{padding:300px 0;font-family:'Pacifico',cursive;font-size:80px;text-align:center;text-shadow:2px 2px #d1d1d1}.lets-serve span{display:block;-webkit-transform:rotate(-10deg);-ms-transform:rotate(-10deg);transform:rotate(-10deg)}.layer-wrap{text-align:center;height:255px}.layer-wrap.fixed img{position:fixed;top:0;left:calc(50% - 150px)}.layers img{width:300px;height:255px;z-index:2}.magic{height:100vh;position:relative}.plate{position:absolute;width:500px;top:calc(50% + 10px);left:calc(50% - 250px)}.fixed{position:fixed;top:0;left:calc(50% - 150px)}.sprite{background:url(http://jakubzavrel.cz/img/sprite.png);width:300px;height:255px;overflow:hidden;position:fixed;top:calc(50% - 150px);left:calc(50% - 150px)}
+</style>
+
+  <script>
+  window.console = window.console || function(t) {};
+</script>
+
+  
+  
+</head>
+
+<body translate=&quot;no&quot;>
+  <main>
+         
+        <div class=&quot;lets-serve&quot;>
+            <span>Let's serve<br />tasty burger</span>
+        </div>
+        <div class=&quot;layers&quot;>
+          <div class=&quot;layer-wrap layer-wrap1&quot;>
+            <img src=&quot;http://jakubzavrel.cz/img/burger1.png&quot; alt=&quot;burger-1&quot; class=&quot;burger-1&quot;>
+          </div>
+          <div class=&quot;layer-wrap layer-wrap2&quot;>
+            <img src=&quot;http://jakubzavrel.cz/img/burger2.png&quot; alt=&quot;burger-2&quot; class=&quot;burger-2&quot;>
+          </div>
+          <div class=&quot;layer-wrap layer-wrap3&quot;>
+            <img src=&quot;http://jakubzavrel.cz/img/burger3.png&quot; alt=&quot;burger-3&quot; class=&quot;burger-3&quot;>
+          </div>
+          <div class=&quot;layer-wrap layer-wrap4&quot;>
+            <img src=&quot;http://jakubzavrel.cz/img/burger4.png&quot; alt=&quot;burger-4&quot; class=&quot;burger-4&quot;>
+          </div>
+        </div>
+        
+        <!-- <div class=&quot;bottom&quot;></div> -->
+        <div class=&quot;magic&quot;>
+            <img src=&quot;http://jakubzavrel.cz/img/plate.png&quot; alt=&quot;plate&quot; class=&quot;plate&quot;>
+            <div class=&quot;sprite&quot;></div>
+        </div>
+
+
+        </main>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.2/jquery.min.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/1.17.0/TweenMax.min.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/ScrollMagic/2.0.5/ScrollMagic.min.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/ScrollMagic/2.0.5/plugins/animation.gsap.min.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/ScrollMagic/2.0.5/plugins/debug.addIndicators.min.js'></script>
+    <script id=&quot;rendered-js&quot; >
+(function ($) {
+
+  // Variables
+  var tlMove, tlSet;
+
+  var controller = new ScrollMagic.Controller();
+
+  // Main projects timeline
+  //https://greensock.com/forums/topic/11557-sprite-animation-plugin-for-tweenmax/
+  tlSet = new TimelineMax();
+  tlSet.set('.sprite', { autoAlpha: 0 });
+
+
+  tlMove = new TimelineMax();
+  tlMove.
+  from('.plate', 0.5, { autoAlpha: 0, ease: Linear.easeNone }).
+  to('.burger-1, .burger-2, .burger-3, .burger-4', 1, { top: '50%', yPercent: -50, ease: Linear.easeNone }).
+  set('.burger-1, .burger-2, .burger-3, .burger-4', { autoAlpha: 0 }).
+  set('.sprite', { autoAlpha: 1 }).
+  to('.sprite', 1.5, { backgroundPosition: &quot;-3000px&quot;, ease: SteppedEase.config(10) }, '-=0.25');
+  //repeat: -1, yoyo: true
+
+  new ScrollMagic.Scene({
+    triggerElement: '.layer-wrap1',
+    triggerHook: 'onLeave' }).
+
+  setClassToggle(&quot;.burger-1&quot;, &quot;fixed&quot;).
+  addIndicators().
+  addTo(controller);
+
+  new ScrollMagic.Scene({
+    triggerElement: '.layer-wrap2',
+    triggerHook: 'onLeave' }).
+
+  setClassToggle(&quot;.burger-2&quot;, &quot;fixed&quot;).
+  addIndicators().
+  addTo(controller);
+
+  new ScrollMagic.Scene({
+    triggerElement: '.layer-wrap3',
+    triggerHook: 'onLeave' }).
+
+  setClassToggle(&quot;.burger-3&quot;, &quot;fixed&quot;).
+  addIndicators().
+  addTo(controller);
+
+  new ScrollMagic.Scene({
+    triggerElement: '.layer-wrap4',
+    triggerHook: 'onLeave' }).
+
+  setClassToggle(&quot;.burger-4&quot;, &quot;fixed&quot;).
+  addIndicators().
+  addTo(controller);
+
+  new ScrollMagic.Scene({
+    triggerElement: '.magic',
+    triggerHook: 'onLeave' }).
+
+  setTween(tlMove).
+  addIndicators().
+  addTo(controller);
+})(jQuery);
+//# sourceURL=pen.js
+  </script>
+
+  
+</body>
+
+</html>
+"
+      sandbox="allow-downloads allow-forms allow-modals allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts allow-top-navigation-by-user-activation" allow="accelerometer *; bluetooth *; camera *; clipboard-read *; clipboard-write *; display-capture *; encrypted-media *; geolocation *; gyroscope *; language-detector *; language-model *; local-network-access *; microphone *; midi *; rewriter *; serial *; summarizer *; translator *; web-share *; writer *; xr-spatial-tracking *" allowTransparency="true"
+      allowpaymentrequest="true" allowfullscreen="true" class="result-iframe">
+      </iframe>
+  </div>
+
+</body>
+
+</html>
