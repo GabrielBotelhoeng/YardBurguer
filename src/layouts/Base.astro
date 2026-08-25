@@ -31,12 +31,25 @@ const jsonLd = {
   name: marca.nome,
   description: copy.seo.description,
   servesCuisine: 'Hambúrguer artesanal',
+  /**
+   * Endereço vai até onde há dado confirmado, e para aí.
+   *
+   * O cardápio do Brendi publica apenas o bairro. Rua, número, CEP e telefone
+   * não aparecem em lugar nenhum público. Inventar aqui seria pior que omitir:
+   * endereço errado em JSON-LD vira ficha errada no Google, e corrigir depois
+   * custa mais do que nunca ter publicado.
+   *
+   * Assim que o dono confirmar, entram streetAddress, postalCode, telephone,
+   * openingHoursSpecification e geo.
+   */
   address: {
     '@type': 'PostalAddress',
     addressLocality: marca.cidade,
     addressRegion: marca.estado,
     addressCountry: 'BR',
+    ...(marca.bairro ? { addressNeighborhood: marca.bairro } : {}),
   },
+  image: new URL('/assets/og.jpg', Astro.site).toString(),
   hasMenu: marca.cardapioUrl,
   sameAs: [marca.instagramUrl],
   priceRange: '$$',
@@ -54,11 +67,26 @@ const jsonLd = {
     <meta name="description" content={description} />
     <link rel="canonical" href={Astro.site} />
 
+    <!--
+      og:image nao e detalhe de SEO aqui — e o caso de uso principal. O trafego
+      vem do link na bio e de link colado no WhatsApp e no story; sem imagem, o
+      compartilhamento aparece como caixa de texto cinza e a pagina perde a
+      primeira impressao antes de ser aberta.
+
+      A imagem e recorte do proprio hero, de proposito: o preview precisa
+      parecer a pagina que o clique vai abrir.
+    -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content={copy.seo.ogTitle} />
     <meta property="og:description" content={copy.seo.ogDescription} />
     <meta property="og:locale" content="pt_BR" />
+    <meta property="og:url" content={Astro.site} />
+    <meta property="og:image" content={new URL('/assets/og.jpg', Astro.site)} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={copy.seo.ogTitle} />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={new URL('/assets/og.jpg', Astro.site)} />
 
     <!-- Geo local — reforça o alvo "hamburgueria Rio Verde" -->
     <meta name="geo.region" content="BR-GO" />
