@@ -378,11 +378,35 @@ const CAMADAS = [
   },
 ];
 
+/**
+ * Argumentos do CLI.
+ *
+ * Andava de dois em dois e gravava sempre o item seguinte como valor. Duas
+ * consequencias, achadas no review de 2026-08-26 e ambas caras:
+ *
+ * 1. `--reuse` sozinho gravava `undefined`, e as checagens la embaixo
+ *    perguntavam por `!== undefined`. A flag fazia o OPOSTO do que promete:
+ *    regerava as sete camadas pagas em vez de reaproveitar o JPEG — e ainda
+ *    liberava as re-rolagens, que tambem custam.
+ * 2. `--reuse --only queijo` engolia o `--only`, porque o passo de dois lia a
+ *    flag seguinte como valor da primeira.
+ *
+ * Agora anda de um em um: flag seguida de outra flag (ou de nada) e booleana e
+ * vale `true`; o resto guarda o valor que veio.
+ */
 function parseArgs(argv) {
   const args = {};
-  for (let i = 0; i < argv.length; i += 2) {
-    const chave = argv[i]?.replace(/^--/, '');
-    if (chave) args[chave] = argv[i + 1];
+  for (let i = 0; i < argv.length; i++) {
+    if (!argv[i].startsWith('--')) continue;
+    const chave = argv[i].slice(2);
+    if (!chave) continue;
+    const proximo = argv[i + 1];
+    if (proximo !== undefined && !proximo.startsWith('--')) {
+      args[chave] = proximo;
+      i += 1;
+    } else {
+      args[chave] = true;
+    }
   }
   return args;
 }
@@ -685,12 +709,36 @@ async function recortar(bufferJpeg, choke, despillForte) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const modelo = args.model || MODELO_PADRAO;
-  const choke = args.choke !== undefined ? Number(args.choke) : CHOKE_PADRAO;
-  const alvo = args.only ? CAMADAS.filter((c) => c.id === args.only) : CAMADAS;
+  /**
+   * Flag booleana nao serve como valor: `--model` sozinho nao nomeia modelo, e
+   * `--choke` sozinho nao vira choke 1. Quem chega como `true` cai no padrao.
+   */
+  const texto = (chave) => (typeof args[chave] === 'string' ? args[chave] : undefined);
+
+  /**
+   * `--only` sem id REPROVA em vez de virar "todas".
+   *
+   * A flag existe para gerar UMA camada de teste. Sem valor ela caia no ramo
+   * de conjunto completo e mandava gerar as sete — pagas — e, como a flag
+   * continuava presente, o manifest nao era escrito no fim. Sete geracoes
+   * cobradas para produzir nada publicavel, por causa de um valor esquecido.
+   */
+  const somente = texto('only');
+  if ('only' in args && !somente) {
+    throw new Error(
+      '--only exige o id da camada. Sem valor isto geraria as SETE, e pagas. ' +
+        `Opcoes: ${CAMADAS.map((c) => c.id).join(', ')}`
+    );
+  }
+
+  const modelo = texto('model') ?? MODELO_PADRAO;
+  const choke = texto('choke') !== undefined ? Number(texto('choke')) : CHOKE_PADRAO;
+  const alvo = somente ? CAMADAS.filter((c) => c.id === somente) : CAMADAS;
+  /** Presenca da flag, nao o valor dela: `--reuse` e `--reuse sim` querem a mesma coisa. */
+  const reaproveitar = 'reuse' in args;
 
   if (!alvo.length) {
-    throw new Error(`camada "${args.only}" nao existe. Opcoes: ${CAMADAS.map((c) => c.id).join(', ')}`);
+    throw new Error(`camada "${somente}" nao existe. Opcoes: ${CAMADAS.map((c) => c.id).join(', ')}`);
   }
 
   const chave = await carregarChave();
@@ -727,7 +775,7 @@ async function main() {
       let resultado;
 
       for (let tentativa = 1; ; tentativa++) {
-        if (args.reuse !== undefined && existsSync(caminhoRaw)) {
+        if (reaproveitar && existsSync(caminhoRaw)) {
           raw = await readFile(caminhoRaw);
         } else {
           raw = await gerarComRetry({ camada, modelo, chave });
@@ -743,7 +791,7 @@ async function main() {
           // estocastica e a regra de composicao unica exige as sete na MESMA
           // execucao, mais re-rolagens por camada saem mais barato que outra
           // rodada completa.
-          const podeRepetir = chromaRuim && args.reuse === undefined && tentativa < 6;
+          const podeRepetir = chromaRuim && !reaproveitar && tentativa < 6;
           if (!podeRepetir) throw erro;
           console.log(`       ${camada.id}: fundo derivou, nova rolagem (${tentativa}/5)`);
         }
@@ -798,7 +846,7 @@ async function main() {
 
   // Manifest so e reescrito em execucao completa. Rodar --only e teste, e teste
   // nao deve publicar um manifest de uma camada so.
-  if (!args.only && prontas.length === CAMADAS.length) {
+  if (!somente && prontas.length === CAMADAS.length) {
     const manifest = {
       _gerado: new Date().toISOString(),
       _modelo: modelo,
@@ -809,7 +857,7 @@ async function main() {
     };
     await writeFile(join(dirSaida, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
     console.log(`\nmanifest.json escrito com ${prontas.length} camadas.`);
-  } else if (args.only) {
+  } else if (somente) {
     console.log('\n--only e teste: manifest nao foi tocado.');
   } else {
     console.error('\nConjunto incompleto — manifest NAO foi escrito para nao publicar colagem.');

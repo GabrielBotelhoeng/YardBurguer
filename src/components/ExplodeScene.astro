@@ -29,15 +29,40 @@ type Camada = {
 
 const caminhoManifest = new URL('../../public/assets/layers/manifest.json', import.meta.url);
 
-/** Contrato de fallback, identico ao do script. Vale enquanto nao ha imagem. */
+/**
+ * Contrato de fallback, identico ao do script. Vale enquanto nao ha imagem.
+ *
+ * `largura` e `altura` NAO sao decoracao aqui: `alturaVisual()` devolve 0 para
+ * quem nao tem as duas, e a pilha e acumulada a partir dessa altura. Sem elas
+ * todo `--topo` saia 0 e as sete camadas se sobrepunham no mesmo ponto — o
+ * placeholder, que existe para mostrar a cena montada quando falta imagem,
+ * mostrava um borrao unico.
+ *
+ * Os numeros sao proporcoes plausiveis de cada ingrediente visto de lado, na
+ * mesma escala de referencia do pao (1000 de largura). Nao vem de arquivo: sao
+ * um desenho de emergencia, e e assim que devem ser lidos.
+ *
+ * `mobile: true` em TODAS, como no contrato do produce-layers.mjs. Alface,
+ * tomate-cebola e bacon estavam em `false` aqui — as tres exatas que o
+ * storyboard cortava do celular e que a decisao documentada no script reverteu,
+ * porque sao justamente a cor: sem elas sobra pao, queijo e carne, marrom sobre
+ * marrom. O fallback ficava pior no aparelho onde a cena mais e vista.
+ */
 const CAMADAS_PLACEHOLDER: Camada[] = [
-  { id: 'pao-superior', order: 1, explodeY: -180, speed: 1.0, mobile: true },
-  { id: 'alface', order: 2, explodeY: -120, speed: 0.85, mobile: false },
-  { id: 'tomate-cebola', order: 3, explodeY: -70, speed: 0.7, mobile: false },
-  { id: 'queijo', order: 4, explodeY: -30, speed: 0.55, mobile: true },
-  { id: 'blend', order: 5, explodeY: 0, speed: 0.4, mobile: true },
-  { id: 'bacon', order: 6, explodeY: 40, speed: 0.3, mobile: false },
-  { id: 'pao-inferior', order: 7, explodeY: 90, speed: 0.2, mobile: true },
+  { id: 'pao-superior', order: 1, explodeY: -180, speed: 1.0, mobile: true,
+    largura: 1000, altura: 420, larguraRelativa: 1.0, assentamento: 0.9 },
+  { id: 'alface', order: 2, explodeY: -120, speed: 0.85, mobile: true,
+    largura: 1000, altura: 180, larguraRelativa: 1.18, assentamento: 0.5 },
+  { id: 'tomate-cebola', order: 3, explodeY: -70, speed: 0.7, mobile: true,
+    largura: 1000, altura: 150, larguraRelativa: 1.08, assentamento: 0.55 },
+  { id: 'queijo', order: 4, explodeY: -30, speed: 0.55, mobile: true,
+    largura: 1000, altura: 110, larguraRelativa: 1.05, assentamento: 0.35 },
+  { id: 'blend', order: 5, explodeY: 0, speed: 0.4, mobile: true,
+    largura: 1000, altura: 260, larguraRelativa: 1.02, assentamento: 0.85 },
+  { id: 'bacon', order: 6, explodeY: 40, speed: 0.3, mobile: true,
+    largura: 1000, altura: 120, larguraRelativa: 1.1, assentamento: 0.4 },
+  { id: 'pao-inferior', order: 7, explodeY: 90, speed: 0.2, mobile: true,
+    largura: 1000, altura: 300, larguraRelativa: 1.0, assentamento: 0.42 },
 ];
 
 const temManifest = existsSync(caminhoManifest);
@@ -262,10 +287,16 @@ function estiloDaCamada(camada: Camada) {
     /* Dividido por --transbordo: a camada mais larga (alface, 1.18) precisa
        caber na tela, e nao so a largura base. Sem isso a alface e o bacon saem
        pela lateral do viewport. */
+    /* O termo da altura precisa de PISO: ele fica negativo quando 100svh e menor
+       que --desconto-altura, e o min() escolhe justamente o menor. Em celular
+       deitado (390px de altura contra 26.5rem de desconto) dava -28px, que
+       tambem alimentava height e o top de cada camada — a pilha inteira
+       desaparecia. max() garante que a pilha nunca some; em tela baixa demais
+       ela transborda, e transbordar e visivel, some nao. */
     --largura-base: min(
       calc(100% / var(--transbordo, 1.18)),
       24rem,
-      calc((100svh - var(--desconto-altura)) / var(--razao-pilha, 1.2))
+      max(8rem, calc((100svh - var(--desconto-altura)) / var(--razao-pilha, 1.2)))
     );
     width: var(--largura-base);
     /* A pilha deixou de ser fluxo normal: as camadas sao absolutas e o container
@@ -353,7 +384,15 @@ function estiloDaCamada(camada: Camada) {
     opacity: 0.75;
   }
 
-  @media (max-width: 767px) {
+  /* A MESMA pergunta que `ehMobile` faz em motion.js e `CONSULTA_CELULAR` em
+     VideoScene.astro — perguntada pelo LADO CURTO, nao pela largura.
+
+     Era `(max-width: 767px)` e ficou para tras quando as outras duas foram
+     corrigidas. A consequencia media: celular deitado (844x390) passava por
+     desktop, mantinha o desconto de 26.5rem contra 390px de altura, e era
+     exatamente ai que a --largura-base virava negativa. Se a consulta mudar em
+     um lugar, muda nos tres. */
+  @media (max-width: 900px), (max-height: 500px) {
     /* A cena e pinada: ela precisa caber EXATAMENTE na tela, senao o pin
        reserva altura que nao existe e o fim do trilho cai fora do quadro.
        Medido em Pixel 5, a secao fechava 793px num viewport de 727 — o padrao

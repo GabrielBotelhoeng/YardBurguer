@@ -200,7 +200,7 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
    * lado. O cliente vai julgar o material, não o comprimento do trilho.
    *
    * QUEM DECIDE É `ehTelaDeCelular`, NÃO `ehMobile`. Esta linha usava o
-   * `ehMobile` do motion.js, que é `matchMedia('(max-width: 767px)')` avaliado
+   * `ehMobile` do motion.js, que era `matchMedia('(max-width: 767px)')` avaliado
    * UMA VEZ no load — o mesmo defeito que já tinha sido corrigido para a escolha
    * do arquivo, ainda vivo num segundo consumidor. Consertaram o arquivo e
    * esqueceram o trilho.
@@ -265,8 +265,9 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
    */
   const QUADRO = 1 / FPS;
   let aplicado = -1;
-  let seeksPedidos = 0;
   let seeksAtendidos = 0;
+  /** Timer do vigia. Nasce nulo: o relogio so comeca quando ha o que vigiar. */
+  let vigia = null;
 
   video.addEventListener('seeked', () => {
     seeksAtendidos += 1;
@@ -308,7 +309,9 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
         if (video.readyState < 2) return;
         if (Math.abs(estado.t - aplicado) < QUADRO) return;
         aplicado = estado.t;
-        seeksPedidos += 1;
+        // O vigia conta a partir DAQUI — do primeiro seek de verdade, nao da
+        // inicializacao da cena, que acontece uma tela antes de alguem rolar.
+        armarVigia();
         video.currentTime = estado.t;
       },
     },
@@ -418,13 +421,26 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
    * estado de repouso — o hambúrguer montado. Perde-se a animação; não se perde
    * a página.
    *
+   * QUANDO O RELÓGIO COMEÇA — e por que não é aqui.
+   *
+   * Até o review de 2026-08-26 este `setTimeout` era armado na inicialização da
+   * cena e disparava uma única vez, 2,5s depois. Só que a cena inicializa com
+   * `rootMargin: '100% 0px'` — uma tela inteira ANTES de aparecer. Quem rola em
+   * ritmo humano chega no trilho muito depois desses 2,5s, o vigia já disparou
+   * sem nenhum seek pedido, voltou pelo `return` de "nada a julgar" e nunca mais
+   * foi consultado. Ou seja: a rede de segurança desta cena não pegava ninguém,
+   * exceto quem rolasse a página em menos de dois segundos e meio.
+   *
+   * Agora o relógio parte do PRIMEIRO seek pedido (ver `armarVigia` no
+   * `onUpdate`), que é o instante em que passa a existir algo para julgar.
+   *
    * O QUE ESTE VIGIA **NÃO** COBRE — medido em 2026-08-26, e vale saber antes de
    * confiar nele:
    *
    * Ele só enxerga o caso "seek pedido e não atendido". O caso do vídeo que
    * nunca bufferiza passa por fora: o `onUpdate` do tween sai cedo no
-   * `readyState < 2` ANTES de incrementar `seeksPedidos`, então o contador fica
-   * em 0 e a primeira linha daqui de baixo devolve sem julgar nada.
+   * `readyState < 2`, antes de pedir qualquer seek, então o vigia nem chega a
+   * ser armado.
    *
    * Testado pendurando o mp4 (conexão aberta, zero bytes — o 4G do interior
    * travando, não um 404): a cena não prende o usuário, mas quem salva NÃO é
@@ -438,13 +454,19 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
    * assumir o posto sozinho — vai precisar contar também os seeks recusados por
    * falta de dado.
    */
-  setTimeout(() => {
-    if (seeksPedidos === 0) return; // ninguém rolou ainda; nada a julgar
-    if (seeksAtendidos > 0) return; // está buscando, a cena é válida
-    degradarParaEstatico();
-  }, LIMITE_VIGIA_MS);
+  function armarVigia() {
+    // Uma vez só: o prazo vale a partir do primeiro seek e não se renova a cada
+    // quadro de ticker, senão ele nunca vence e o julgamento nunca acontece.
+    if (vigia !== null) return;
+    vigia = setTimeout(() => {
+      if (seeksAtendidos > 0) return; // está buscando, a cena é válida
+      degradarParaEstatico();
+    }, LIMITE_VIGIA_MS);
+  }
 
   function degradarParaEstatico() {
+    // A cena já foi julgada; um timer sobrevivente só faria isto de novo.
+    clearTimeout(vigia);
     trilho.scrollTrigger?.kill(true); // true = reverte o pin e o pinSpacing
     trilho.kill();
     gsap.set([conteudo, veu].filter(Boolean), { clearProps: 'all' });

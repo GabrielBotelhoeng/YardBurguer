@@ -208,6 +208,22 @@ function corDoFundoNaBorda(arquivo, largura, y, alturaFaixa) {
     '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-',
   ], { maxBuffer: 1 << 24 });
 
+  /**
+   * Amostra incompleta REPROVA em vez de virar cor.
+   *
+   * O `-ss 4` presume um take com mais de 4s. Num take curto o ffmpeg sai com
+   * codigo 0 e zero byte de video: o laco abaixo lia `undefined`, a media dava
+   * NaN, e o `toString(16)` devolvia "0xNaNNaNNaN" — que o ffmpeg aceita como
+   * cor mais adiante e pinta de preto. O defeito so aparecia na margem do
+   * video final, longe daqui.
+   */
+  if (bruto.length < largura * 3) {
+    throw new Error(
+      `amostra de cor vazia em ${arquivo} (y=${y}): ${bruto.length} bytes, ` +
+        `esperado ${largura * 3}. O take provavelmente e mais curto que os 4s do -ss.`
+    );
+  }
+
   const px = [];
   for (let i = 0; i < largura; i++) {
     px.push([bruto[i * 3], bruto[i * 3 + 1], bruto[i * 3 + 2]]);
@@ -430,5 +446,11 @@ for (const p of POSTERS) {
   console.log(`   ${p.nome}: ${kb(saida)}`);
 }
 
+// A duracao nao diz nada sobre faststart: ela sai igual com o moov no fim. O
+// que se quer verificar e a ORDEM dos atomos — moov antes de mdat, senao o
+// browser espera o arquivo inteiro antes do primeiro quadro.
 console.log('\npronto. Confira o faststart com:');
-console.log(`   ffprobe -v error -show_entries format=duration -of default=nw=1 ${resolve(DESTINO, VARIANTES[0].nome)}`);
+console.log(
+  `   ffprobe -v trace -i ${resolve(DESTINO, VARIANTES[0].nome)} 2>&1 | grep -m 2 -E "type:'(moov|mdat)'"`
+);
+console.log('   o moov precisa aparecer ANTES do mdat.');
