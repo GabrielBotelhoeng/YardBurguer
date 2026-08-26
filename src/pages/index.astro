@@ -311,7 +311,19 @@ const combos = menu.combos.map((combo) => ({
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: 1rem 1.5rem;
+    /**
+     * A navbar e o container que mais encosta em borda: fixa, no topo, indo de
+     * ponta a ponta. Com viewport-fit=cover ela passa por baixo do notch e do
+     * indicador de home se nao pagar o recorte.
+     *
+     * Os env() sao somados ao padding que ja existia, nunca o substituem — onde
+     * nao ha recorte valem 0 e o resultado e exatamente 1rem/1.5rem de sempre.
+     * Esquerda e direita separadas porque em paisagem o notch fica so de um
+     * lado, e um padding simetrico desperdicaria o lado limpo.
+     */
+    padding-block: calc(1rem + env(safe-area-inset-top)) 1rem;
+    padding-left: calc(1.5rem + env(safe-area-inset-left));
+    padding-right: calc(1.5rem + env(safe-area-inset-right));
     transition: background-color 0.3s ease;
   }
   .nav[data-scrolled] {
@@ -345,7 +357,10 @@ const combos = menu.combos.map((combo) => ({
    */
   @media (max-width: 639px) {
     .nav nav { display: none; }
-    .nav { padding-inline: 1rem; }
+    .nav {
+      padding-left: calc(1rem + env(safe-area-inset-left));
+      padding-right: calc(1rem + env(safe-area-inset-right));
+    }
     .nav__logo { font-size: 1.05rem; white-space: nowrap; }
     .nav__cta { padding-inline: 1.1rem; font-size: 0.9rem; }
   }
@@ -402,10 +417,14 @@ const combos = menu.combos.map((combo) => ({
   .claro { background-color: var(--color-areia); color: var(--color-carvao); }
 
   .diferenciais { position: relative; }
+  /* O wrap so encosta na borda em tela estreita (abaixo dos 68rem de max-width),
+     que e justamente onde ha notch. Os env() valem 0 no resto. */
   .claro__wrap {
     max-width: 68rem;
     margin-inline: auto;
-    padding: 5rem 1.5rem;
+    padding-block: 5rem;
+    padding-left: calc(1.5rem + env(safe-area-inset-left));
+    padding-right: calc(1.5rem + env(safe-area-inset-right));
   }
   .secao__titulo {
     font-family: var(--font-display);
@@ -626,7 +645,9 @@ const combos = menu.combos.map((combo) => ({
     display: grid;
     gap: 1.25rem;
     place-content: center;
-    padding: 6rem 1.5rem;
+    padding-block: 6rem;
+    padding-left: calc(1.5rem + env(safe-area-inset-left));
+    padding-right: calc(1.5rem + env(safe-area-inset-right));
   }
   .final__titulo {
     font-family: var(--font-display);
@@ -640,7 +661,10 @@ const combos = menu.combos.map((combo) => ({
   .rodape {
     background-color: var(--color-carvao);
     border-top: 1px solid rgb(232 220 200 / 0.12);
-    padding: 3rem 1.5rem;
+    /* Ultimo elemento da pagina: paga tambem o indicador de home embaixo. */
+    padding-block: 3rem calc(3rem + env(safe-area-inset-bottom));
+    padding-left: calc(1.5rem + env(safe-area-inset-left));
+    padding-right: calc(1.5rem + env(safe-area-inset-right));
     text-align: center;
     display: grid;
     gap: 0.5rem;

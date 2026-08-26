@@ -101,7 +101,18 @@ const jsonLd = {
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      viewport-fit=cover: sem ele o iOS mantem a pagina dentro da safe area e
+      desenha tarja preta no notch — o que transformava a Cena 2 full-bleed em
+      uma cena com moldura justamente no aparelho para o qual ela foi feita.
+
+      Com cover a area util vai ate a borda fisica, e ai o recorte passa a ser
+      responsabilidade de quem encosta nas bordas: a navbar, os wraps das secoes
+      e o texto da Cena 2 pagam padding de env(safe-area-inset-*). Ligar o cover
+      sem esse padding jogaria a navbar por baixo do notch — os dois andam
+      juntos, nunca um sem o outro.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <link rel="preload" as="font" type="font/woff2" href={antonLatino} crossorigin="anonymous" />

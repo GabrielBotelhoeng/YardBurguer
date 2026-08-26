@@ -215,7 +215,18 @@ const CONSULTA_CELULAR = '(max-width: 500px), (max-height: 500px)';
      * já estava perdido atrás de uma barra opaca — a diferença é que agora nada
      * fica escondido.
      */
-    --faixa-nav: 4.75rem;
+    /**
+     * Os 76px medidos da navbar MAIS o que o notch come no topo.
+     *
+     * Desde que a página passou a declarar `viewport-fit=cover`, a área útil vai
+     * até a borda física da tela e a navbar precisou de padding de safe-area
+     * para não ficar por baixo do notch — ou seja, ela ficou mais alta em
+     * aparelho com recorte. Se esta faixa não crescesse junto, o palco voltaria
+     * a começar por baixo de uma barra opaca, que é exatamente o problema que
+     * ela existe para resolver. Onde não há notch, `env()` vale 0 e isto
+     * continua sendo os mesmos 4,75rem de sempre.
+     */
+    --faixa-nav: calc(4.75rem + env(safe-area-inset-top));
   }
 
   .cenavideo__palco {
@@ -349,7 +360,9 @@ const CONSULTA_CELULAR = '(max-width: 500px), (max-height: 500px)';
     z-index: 30;
     left: 0;
     right: 0;
-    bottom: clamp(2rem, 7svh, 5rem);
+    /* O indicador de home do iOS mora nos ~34px de baixo. Sem o env() o
+       parágrafo passa por baixo dele em tela cheia. */
+    bottom: calc(clamp(2rem, 7svh, 5rem) + env(safe-area-inset-bottom));
     width: min(100% - 3rem, 40rem);
     margin-inline: auto;
     text-align: center;
@@ -396,7 +409,7 @@ const CONSULTA_CELULAR = '(max-width: 500px), (max-height: 500px)';
     }
 
     .cenavideo__conteudo {
-      bottom: clamp(1.5rem, 5svh, 3rem);
+      bottom: calc(clamp(1.5rem, 5svh, 3rem) + env(safe-area-inset-bottom));
       width: min(100% - 2.5rem, 34rem);
     }
   }
