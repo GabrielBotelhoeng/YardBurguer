@@ -80,6 +80,34 @@ async function auditar() {
   });
 
   await mobile.goto(URL_BASE, { waitUntil: 'load', timeout: 120000 });
+
+  /**
+   * LCP À CHEGADA — medido ANTES de `medirWebVitals`, que rola a página.
+   *
+   * O LCP só congela no primeiro input REAL, e scroll programático não é input.
+   * Então o número que sai depois da rolagem é o maior elemento pintado em
+   * QUALQUER ponto da página: em 26/08 deu 4,8s apontando para uma foto de
+   * cardápio que a pessoa só vê depois de rolar. O LCP que descreve a chegada é
+   * este aqui — 1,69s, no H1 do hero.
+   */
+  relatorio.lcpChegada = await mobile.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const r = { lcp: 0, elemento: null, cls: 0 };
+        new PerformanceObserver((l) => {
+          const u = l.getEntries().at(-1);
+          r.lcp = u.startTime;
+          r.elemento = u.element
+            ? `${u.element.tagName}${u.element.className ? '.' + String(u.element.className).split(' ')[0] : ''}`
+            : u.url || null;
+        }).observe({ type: 'largest-contentful-paint', buffered: true });
+        new PerformanceObserver((l) => {
+          for (const e of l.getEntries()) if (!e.hadRecentInput) r.cls += e.value;
+        }).observe({ type: 'layout-shift', buffered: true });
+        setTimeout(() => resolve(r), 6000);
+      })
+  );
+
   relatorio.vitals = await medirWebVitals(mobile);
   relatorio.erros = erros;
 
@@ -94,16 +122,29 @@ async function auditar() {
   };
 
   // ---------- Área de toque dos CTAs ----------
+  /**
+   * Só entra o que EXISTE na tela.
+   *
+   * A versão anterior media todo `a` e `button` do documento, inclusive os
+   * ocultos por `display: none` — que devolvem 0x0 e eram contados como
+   * reprovados. Em 26/08 isso produziu "3 alvos de 0px na navbar" em retrato,
+   * onde esses links nem aparecem. Alvo invisível não é alvo de toque, e falso
+   * positivo em gate com veto manda corrigir o que não está quebrado.
+   */
   relatorio.toque = await mobile.evaluate(() =>
-    Array.from(document.querySelectorAll('a, button')).map((el) => {
-      const r = el.getBoundingClientRect();
-      return {
-        texto: (el.textContent || '').trim().slice(0, 32),
-        largura: Math.round(r.width),
-        altura: Math.round(r.height),
-        ok: r.width >= 44 && r.height >= 44,
-      };
-    })
+    Array.from(document.querySelectorAll('a, button'))
+      .map((el) => {
+        const r = el.getBoundingClientRect();
+        return {
+          texto: (el.textContent || '').trim().slice(0, 32),
+          classe: String(el.className || '').split(' ')[0],
+          largura: Math.round(r.width),
+          altura: Math.round(r.height),
+          visivel: el.offsetParent !== null && r.width > 0 && r.height > 0,
+          ok: r.width >= 44 && r.height >= 44,
+        };
+      })
+      .filter((t) => t.visivel)
   );
 
   // ---------- Acessibilidade ----------
@@ -222,6 +263,16 @@ async function auditar() {
   const rm = await ctxRM.newPage();
   const errosRM = [];
   rm.on('pageerror', (e) => errosRM.push(e.message));
+  /**
+   * Byte de vídeo pedido sob reduced-motion é falha de contrato, não detalhe de
+   * peso: a variante `video` promete que nada de mídia é buscado quando o
+   * usuário recusa movimento. O gate anterior não checava isto porque só
+   * conhecia a variante `camadas`.
+   */
+  const videosPedidos = [];
+  rm.on('request', (r) => {
+    if (r.url().endsWith('.mp4')) videosPedidos.push(r.url());
+  });
   await rm.goto(URL_BASE, { waitUntil: 'load', timeout: 120000 });
   await rm.waitForTimeout(2500);
 
@@ -229,13 +280,22 @@ async function auditar() {
     const camadas = Array.from(document.querySelectorAll('.explode__camada'));
     const conteudoExplode = document.querySelector('.explode__conteudo');
     const revelaveis = Array.from(document.querySelectorAll('[data-reveal] > *'));
+    // A variante `video` não tem camada nenhuma: o estado de repouso dela é o
+    // <picture> do último quadro. Sem isto o gate media zero de zero e passava.
+    const posterVideo = document.querySelector('#explode picture img');
     return {
+      variante: document.querySelector('#explode')?.dataset.cena ?? null,
       gsapCarregado: typeof window.gsap !== 'undefined',
       lenisAtivo: typeof window.__yardLenis !== 'undefined' && window.__yardLenis !== null,
+      pinSpacers: document.querySelectorAll('.pin-spacer').length,
       camadasComTransform: camadas.filter(
         (c) => getComputedStyle(c).transform !== 'none'
       ).length,
       totalCamadas: camadas.length,
+      posterVisivel: posterVideo
+        ? posterVideo.offsetParent !== null &&
+          Number(getComputedStyle(posterVideo).opacity) > 0.5
+        : null,
       conteudoExplodeVisivel: conteudoExplode
         ? Number(getComputedStyle(conteudoExplode).opacity) > 0.9
         : null,
@@ -245,6 +305,7 @@ async function auditar() {
       totalRevelaveis: revelaveis.length,
     };
   });
+  relatorio.reducedMotion.videosPedidos = videosPedidos.length;
   relatorio.errosReducedMotion = errosRM;
   await ctxRM.close();
 
@@ -262,6 +323,41 @@ async function auditar() {
     ).length,
   }));
   await ctxSemJs.close();
+
+  /**
+   * ---------- PAISAGEM ----------
+   *
+   * O gate media só retrato até 26/08, e as três divergências conhecidas da
+   * Cena 2 estão TODAS em paisagem: contraste do título, alvos de toque da
+   * navbar e o enquadramento com `contain`. Medir só em pé respondia a pergunta
+   * fácil.
+   *
+   * Celular deitado não é caso raro aqui: a cena é full-bleed e a pessoa gira o
+   * aparelho justamente para vê-la maior.
+   */
+  const ctxPaisagem = await navegador.newContext({ ...devices['Pixel 5 landscape'] });
+  const paisagem = await ctxPaisagem.newPage();
+  await paisagem.goto(URL_BASE, { waitUntil: 'load', timeout: 120000 });
+  await paisagem.waitForTimeout(2000);
+
+  relatorio.paisagem = {
+    toque: await paisagem.evaluate(() =>
+      Array.from(document.querySelectorAll('a, button'))
+        .map((el) => {
+          const r = el.getBoundingClientRect();
+          return {
+            texto: (el.textContent || '').trim().slice(0, 32),
+            classe: String(el.className || '').split(' ')[0],
+            largura: Math.round(r.width),
+            altura: Math.round(r.height),
+            visivel: el.offsetParent !== null && r.width > 0 && r.height > 0,
+            ok: r.width >= 44 && r.height >= 44,
+          };
+        })
+        .filter((t) => t.visivel && !t.ok)
+    ),
+  };
+  await ctxPaisagem.close();
 
   await navegador.close();
   writeFileSync('audit.json', JSON.stringify(relatorio, null, 2));

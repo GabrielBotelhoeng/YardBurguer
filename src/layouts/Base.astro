@@ -115,6 +115,22 @@ const jsonLd = {
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
+    <!--
+      "Esta página vai ter JavaScript?" — respondido ANTES do primeiro paint.
+
+      Uma linha, inline e síncrona de propósito: o CSS da Cena 2 reserva o
+      espaço do trilho de pin a partir deste atributo, e reserva precisa valer
+      já no primeiro quadro pintado. Um módulo externo chegaria depois, e o
+      espaço apareceria com a página na tela — que é exatamente o salto de
+      layout que a reserva existe para eliminar.
+
+      Sem JS o atributo nunca aparece, nenhum pin é criado e nada é reservado.
+      É o que mantém o fallback sem um buraco de uma tela e meia no meio.
+    -->
+    <script is:inline>
+      document.documentElement.setAttribute('data-js', '');
+    </script>
+
     <link rel="preload" as="font" type="font/woff2" href={antonLatino} crossorigin="anonymous" />
     <link rel="preload" as="font" type="font/woff2" href={interLatino} crossorigin="anonymous" />
 

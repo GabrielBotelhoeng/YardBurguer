@@ -77,7 +77,39 @@ function esperarVideoUtil(video) {
 export async function initVideoScrubScene({ secao, ehMobile }) {
   const video = secao.querySelector('[data-video]');
   const palco = secao.querySelector('[data-palco]');
-  if (!video || !palco) return;
+
+  /**
+   * A CONTRAPARTIDA DA RESERVA.
+   *
+   * O CSS reserva `--trilho-pin` desde o primeiro paint para o pin não precisar
+   * inserir espaço com a cena na tela. Mas há caminhos em que o pin NUNCA é
+   * criado — sem `<video>`, sem fonte para este aparelho, erro de mídia, ou o
+   * arquivo pendurado numa conexão que aceita a conexão e não entrega byte. Em
+   * qualquer um deles a reserva viraria um buraco de uma tela e meia entre a
+   * cena e a seção seguinte, e ninguém ligaria o vazio à causa.
+   *
+   * Então a reserva é uma promessa com prazo: se em 8s não existir pin para
+   * ocupá-la, ela é devolvida. Some um espaço que ninguém estava usando — o
+   * caso ruim de um caminho que já era o caminho ruim.
+   */
+  /**
+   * O trilho é o div vazio logo depois da seção — irmão, não filho.
+   *
+   * Precisa ser irmão: quando o ScrollTrigger pina, a seção sai do fluxo e
+   * qualquer espaço reservado DENTRO dela sai junto. A primeira tentativa de
+   * correção usava `margin-bottom` na própria seção e o layout continuava
+   * saltando exatamente por isso — o documento nascia com a altura certa e
+   * perdia 800px no instante do pin.
+   */
+  const reservaDoTrilho = secao.parentElement?.querySelector('[data-reserva-trilho]');
+  const liberarReserva = () => reservaDoTrilho?.setAttribute('data-sem-trilho', '');
+  const relogioDaReserva = setTimeout(liberarReserva, 8000);
+  const desistir = () => {
+    clearTimeout(relogioDaReserva);
+    liberarReserva();
+  };
+
+  if (!video || !palco) return desistir();
 
   await ligarPonteLenis(ScrollTrigger, gsap);
 
@@ -121,7 +153,7 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
     : ehMobile; // sem o atributo, o comportamento antigo em vez de nenhum vídeo
 
   const fonte = ehTelaDeCelular ? video.dataset.srcVertical : video.dataset.srcLarga;
-  if (!fonte) return;
+  if (!fonte) return desistir();
 
   video.src = fonte;
   // preload só entra junto com o src: antes disso não há o que pré-carregar, e
@@ -130,7 +162,7 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
   video.load();
 
   const desfecho = await esperarVideoUtil(video);
-  if (desfecho === 'erro') return; // fica o <picture>, que é o estado de repouso
+  if (desfecho === 'erro') return desistir(); // fica o <picture>, o estado de repouso
 
   /**
    * Destrava de seek do iOS.
@@ -222,11 +254,44 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
    */
   const estado = { t: 0 };
 
+  /**
+   * O COMPRIMENTO DO TRILHO VEM DO CSS, e por um motivo específico.
+   *
+   * Era `'+=110%'` / `'+=180%'` aqui, e o ScrollTrigger reservava o espaço
+   * sozinho, com `pinSpacing`. O problema não era o número: era QUANDO ele
+   * passava a existir. O pin só é montado depois que o chunk do GSAP e o
+   * primeiro quadro do vídeo chegam, e em 4G do interior isso acontece com a
+   * cena já na tela — 1527px de espaçador entrando de uma vez, 800px de
+   * conteúdo empurrados na cara da pessoa. CLS 1,8473 contra meta de 0,1.
+   *
+   * Agora `--trilho-pin` no CSS reserva esse espaço desde o primeiro paint, e
+   * este `end` LÊ o que foi reservado em vez de trazer o próprio número. Os
+   * dois não podem divergir: se divergissem, sobraria espaço vazio no fim da
+   * cena ou o trilho terminaria fora do quadro.
+   *
+   * `getComputedStyle` devolve px resolvidos, então svh, notch e barra de URL
+   * já vêm embutidos — e `invalidateOnRefresh` faz a conta de novo quando o
+   * aparelho gira.
+   */
+  /**
+   * Sem arredondar: 110svh de uma tela de 727px são 799,7px, e `Math.round`
+   * fazia o trilho medir 800. A diferença de 0,04% deslocava o scrub em meio
+   * quadro no meio da cena — invisível para uma pessoa, mas suficiente para o
+   * A/B de pixels acusar 16% de diferença e mandar procurar defeito onde não
+   * havia. O valor fracionário reproduz exatamente o `+=110%` de antes.
+   */
+  const comprimentoDoTrilho = () => reservaDoTrilho?.getBoundingClientRect().height ?? 0;
+
   const trilho = gsap.timeline({
     scrollTrigger: {
       trigger: secao,
       start: 'top top',
-      end: ehTelaDeCelular ? '+=110%' : '+=180%',
+      end: () => `+=${comprimentoDoTrilho()}`,
+      /**
+       * O espaço já existe no documento (ver `--trilho-pin`); se o
+       * ScrollTrigger criasse o dele, a cena passaria a ocupar o dobro.
+       */
+      pinSpacing: false,
       /**
        * scrub 0.5, e não o 1 da variante em camadas.
        *
@@ -245,6 +310,9 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
       invalidateOnRefresh: true,
     },
   });
+
+  // O pin existe: a reserva tem dono e o prazo não corre mais.
+  clearTimeout(relogioDaReserva);
 
   /**
    * O guarda de quadro.
@@ -469,6 +537,9 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
     clearTimeout(vigia);
     trilho.scrollTrigger?.kill(true); // true = reverte o pin e o pinSpacing
     trilho.kill();
+    // Sem pin, a reserva do CSS não tem mais ocupante: devolver, senão fica um
+    // vão de uma tela e meia entre a cena degradada e a seção seguinte.
+    liberarReserva();
     gsap.set([conteudo, veu].filter(Boolean), { clearProps: 'all' });
     palco.removeAttribute('data-pronto');
 

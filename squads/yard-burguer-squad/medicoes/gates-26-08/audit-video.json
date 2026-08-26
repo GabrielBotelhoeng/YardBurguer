@@ -1,0 +1,292 @@
+{
+  "lcpChegada": {
+    "lcp": 1652,
+    "elemento": "H1.hero__titulo",
+    "cls": 0
+  },
+  "vitals": {
+    "lcp": 9964,
+    "cls": 0,
+    "lcpElemento": "IMG.card__foto"
+  },
+  "erros": [],
+  "rede": {
+    "requisicoes": 17,
+    "quatroCentoQuatro": [],
+    "porTipo": {
+      "document": 21491,
+      "stylesheet": 67389,
+      "image": 359578,
+      "script": 120757,
+      "font": 66868,
+      "media": 1002587
+    },
+    "totalBytes": 1638670
+  },
+  "toque": [
+    {
+      "texto": "YARD Burguer",
+      "classe": "nav__logo",
+      "largura": 99,
+      "altura": 44,
+      "visivel": true,
+      "ok": true
+    },
+    {
+      "texto": "Ver Cardápio",
+      "classe": "cta",
+      "largura": 130,
+      "altura": 44,
+      "visivel": true,
+      "ok": true
+    },
+    {
+      "texto": "Ver o cardápio",
+      "classe": "cta",
+      "largura": 173,
+      "altura": 44,
+      "visivel": true,
+      "ok": true
+    },
+    {
+      "texto": "Ver cardápio e pedir",
+      "classe": "cta",
+      "largura": 219,
+      "altura": 44,
+      "visivel": true,
+      "ok": true
+    },
+    {
+      "texto": "Pedir agora",
+      "classe": "cta",
+      "largura": 149,
+      "altura": 44,
+      "visivel": true,
+      "ok": true
+    },
+    {
+      "texto": "Chamar no WhatsApp",
+      "classe": "cta",
+      "largura": 233,
+      "altura": 44,
+      "visivel": true,
+      "ok": true
+    },
+    {
+      "texto": "Ver no mapa",
+      "classe": "onde__link",
+      "largura": 97,
+      "altura": 44,
+      "visivel": true,
+      "ok": true
+    },
+    {
+      "texto": "Pedir meu YARD",
+      "classe": "cta",
+      "largura": 345,
+      "altura": 44,
+      "visivel": true,
+      "ok": true
+    },
+    {
+      "texto": "@yardburguer_rioverde",
+      "classe": "rodape__link",
+      "largura": 195,
+      "altura": 44,
+      "visivel": true,
+      "ok": true
+    },
+    {
+      "texto": "Cardápio",
+      "classe": "rodape__link",
+      "largura": 84,
+      "altura": 44,
+      "visivel": true,
+      "ok": true
+    }
+  ],
+  "a11y": {
+    "contrastes": [],
+    "totalTextos": 79,
+    "imagens": [
+      {
+        "src": "/assets/hero.webp",
+        "alt": "",
+        "ariaHidden": true,
+        "temDimensoes": true
+      },
+      {
+        "src": "/assets/video/burger-stack-poster-16x9.webp",
+        "alt": "O hambúrguer do YARD montado sobre a tábua de madeira: pão brioche, dois blends e cheddar derretido.",
+        "ariaHidden": false,
+        "temDimensoes": true
+      },
+      {
+        "src": "/assets/produtos/tapera-do-sertao.webp",
+        "alt": "Tápera do Sertão do YARD Burguer",
+        "ariaHidden": false,
+        "temDimensoes": true
+      },
+      {
+        "src": "/assets/produtos/supremo.webp",
+        "alt": "Supremo do YARD Burguer",
+        "ariaHidden": false,
+        "temDimensoes": true
+      },
+      {
+        "src": "/assets/produtos/yard-king.webp",
+        "alt": "Yard King do YARD Burguer",
+        "ariaHidden": false,
+        "temDimensoes": true
+      },
+      {
+        "src": "/assets/produtos/combo-mega.webp",
+        "alt": "Combo Mega: 2 Tápera + Batata + Refrigerante 1L",
+        "ariaHidden": false,
+        "temDimensoes": true
+      },
+      {
+        "src": "/assets/produtos/combo-casal.webp",
+        "alt": "Combo Casal: King + Apólo + Batata + Refrigerante 1L",
+        "ariaHidden": false,
+        "temDimensoes": true
+      },
+      {
+        "src": "/assets/produtos/combo-familia.webp",
+        "alt": "Combo Família: 4 Burguer Salad + Batata + Refrigerante 1L",
+        "ariaHidden": false,
+        "temDimensoes": true
+      },
+      {
+        "src": "/assets/produtos/combo-solteiro.webp",
+        "alt": "Combo Solteiro: Cheese Burger + Refrigerante lata + Batata",
+        "ariaHidden": false,
+        "temDimensoes": true
+      }
+    ],
+    "imagensSemAlt": [],
+    "semDimensoes": [],
+    "idioma": "pt-BR",
+    "h1": 1,
+    "landmarks": {
+      "header": 1,
+      "main": 1,
+      "footer": 1,
+      "nav": 1
+    }
+  },
+  "teclado": [
+    {
+      "tag": "A",
+      "texto": "YARD Burguer",
+      "outline": true
+    },
+    {
+      "tag": "A",
+      "texto": "Ver Cardápio",
+      "outline": true
+    },
+    {
+      "tag": "A",
+      "texto": "Ver o cardápio",
+      "outline": true
+    },
+    {
+      "tag": "A",
+      "texto": "Ver cardápio e pedir",
+      "outline": true
+    },
+    {
+      "tag": "A",
+      "texto": "Pedir agora",
+      "outline": true
+    },
+    {
+      "tag": "A",
+      "texto": "Chamar no WhatsApp",
+      "outline": true
+    },
+    {
+      "tag": "A",
+      "texto": "Ver no mapa",
+      "outline": true
+    },
+    {
+      "tag": "A",
+      "texto": "Pedir meu YARD",
+      "outline": true
+    },
+    {
+      "tag": "A",
+      "texto": "@yardburguer_rioverde",
+      "outline": true
+    },
+    {
+      "tag": "A",
+      "texto": "Cardápio",
+      "outline": true
+    },
+    {
+      "tag": "A",
+      "texto": "YARD Burguer",
+      "outline": true
+    },
+    {
+      "tag": "A",
+      "texto": "Ver Cardápio",
+      "outline": true
+    },
+    {
+      "tag": "A",
+      "texto": "Ver o cardápio",
+      "outline": true
+    }
+  ],
+  "reducedMotion": {
+    "variante": "video",
+    "gsapCarregado": false,
+    "lenisAtivo": false,
+    "pinSpacers": 0,
+    "camadasComTransform": 0,
+    "totalCamadas": 0,
+    "posterVisivel": true,
+    "conteudoExplodeVisivel": null,
+    "itensInvisiveis": 0,
+    "totalRevelaveis": 13,
+    "videosPedidos": 0
+  },
+  "errosReducedMotion": [],
+  "semJs": {
+    "textoVisivel": 2713,
+    "ctasVisiveis": 6,
+    "camadasVisiveis": 0
+  },
+  "paisagem": {
+    "toque": [
+      {
+        "texto": "Destaques",
+        "classe": "nav__link",
+        "largura": 77,
+        "altura": 19,
+        "visivel": true,
+        "ok": false
+      },
+      {
+        "texto": "Nosso hambúrguer",
+        "classe": "nav__link",
+        "largura": 138,
+        "altura": 19,
+        "visivel": true,
+        "ok": false
+      },
+      {
+        "texto": "Onde estamos",
+        "classe": "nav__link",
+        "largura": 104,
+        "altura": 19,
+        "visivel": true,
+        "ok": false
+      }
+    ]
+  }
+}

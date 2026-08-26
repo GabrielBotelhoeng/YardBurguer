@@ -196,6 +196,22 @@ const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
   </div>
 </section>
 
+{/*
+  O ESPAÇO QUE O PIN VAI PERCORRER — fora da seção, de propósito.
+
+  Este div vazio é o trilho. Ele existe porque a reserva não pode morar na
+  própria seção: quando o ScrollTrigger pina, a seção sai do fluxo, e qualquer
+  margem dela sai junto. Foi exatamente o que aconteceu na primeira tentativa de
+  correção — o documento passou a nascer com a altura certa, e mesmo assim o
+  layout saltava na hora do pin, porque 800px de margem evaporavam.
+
+  Sendo irmão, ele segura o espaço independente do que acontece com a seção.
+
+  aria-hidden e sem conteúdo: para o leitor de tela isto não existe, é
+  puramente o comprimento da cena.
+*/}
+<div class="cenavideo__trilho" data-reserva-trilho aria-hidden="true"></div>
+
 <style>
   /**
    * A seção é EXATAMENTE uma tela. Não "pelo menos", não "mais ou menos".
@@ -215,6 +231,30 @@ const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
     min-height: var(--cena-altura);
     background-color: var(--color-carvao);
     overflow: hidden;
+
+    /**
+     * O ESPAÇO DO TRILHO NASCE COM O HTML — não com o GSAP.
+     *
+     * Este é o comprimento que o pin percorre: 110% de uma tela no celular,
+     * 180% no desktop. Quem o consome é o `end` do ScrollTrigger, que lê este
+     * valor computado em vez de trazer o próprio número. Ou seja: o CSS é a
+     * fonte da verdade do tamanho da cena, e os dois não podem divergir.
+     *
+     * O DEFEITO QUE ISTO CORRIGE (medido em 26/08, gate mobile):
+     *
+     * O ScrollTrigger montava o pin só quando o chunk do GSAP e o primeiro
+     * quadro do vídeo chegavam — em 4G do interior, depois de a cena já estar
+     * na tela. Nesse instante ele inseria um `pin-spacer` de 1527px e o
+     * documento saltava de 7449px para 8249px: 800px de conteúdo empurrados
+     * com a pessoa olhando. CLS de 1,8473 contra meta de 0,1, reprodutível até
+     * a quarta casa.
+     *
+     * Reservando, o espaço existe desde o primeiro paint e o pin só ocupa o
+     * que já era dele — por isso o `pinSpacing: false` lá no script. Não
+     * depende mais de quando a rede entrega o quê.
+     *
+     * O número mora em `.cenavideo__trilho`, o irmão logo abaixo desta seção.
+     */
 
     /**
      * A navbar é `position: fixed`, 76px medidos nos dois breakpoints, e ganha
@@ -359,6 +399,44 @@ const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
    * some e o vídeo ainda não buscou, e o que se veria era o hambúrguer piscando
    * entre dois estados.
    */
+  /**
+   * A reserva só existe quando alguém vai ocupá-la.
+   *
+   * `data-js` é escrito por um script inline no <head>, antes do primeiro
+   * paint. Sem JavaScript o atributo nunca aparece, nenhum pin vai existir, e
+   * reservar 110svh de nada deixaria um buraco de uma tela e meia entre a cena
+   * e a seção seguinte — o fallback é o contrato mais importante desta página.
+   *
+   * Sob reduced-motion vale o mesmo: o motion.js retorna antes de importar o
+   * chunk, o pin não é criado, e a cena fica sendo o <picture> parado.
+   */
+  .cenavideo__trilho {
+    /* 180% de uma tela no desktop; o breakpoint de celular baixa para 110%. */
+    --trilho-pin: 180svh;
+    height: 0;
+  }
+
+  :global(html[data-js]) .cenavideo__trilho {
+    height: var(--trilho-pin);
+  }
+
+  /**
+   * A devolução da reserva.
+   *
+   * Escrito pelo script quando o pin não vai existir — vídeo sem fonte, erro de
+   * mídia, arquivo pendurado, ou a cena degradada pelo vigia. Sem isto sobraria
+   * um vão de uma tela e meia que ninguém ocupa.
+   */
+  :global(html[data-js]) .cenavideo__trilho[data-sem-trilho] {
+    height: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(html[data-js]) .cenavideo__trilho {
+      height: 0;
+    }
+  }
+
   .cenavideo__video {
     opacity: 0;
     transition: opacity 0.25s ease;
@@ -459,6 +537,11 @@ const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
    * MUDA AQUI JUNTO. As duas strings são a mesma pergunta.
    */
   @media (max-width: 900px), (max-height: 500px) {
+    /* Mesmo trilho da variante em camadas: 110% de tela no celular. */
+    .cenavideo__trilho {
+      --trilho-pin: 110svh;
+    }
+
     .cenavideo__veu {
       height: 48%;
     }
