@@ -9,13 +9,21 @@ import copy from '../content/copy.json';
  * uma das versões apagada não é comparação.
  *
  * O que é COMPARTILHADO de propósito: o id `#explode` (a navbar aponta para
- * ele), a copy, o texto de fundo em parallax e o comprimento do trilho de pin.
- * Só o material muda. Se o trilho mudasse junto, ninguém saberia se o que
+ * ele), a copy e o comprimento do trilho de pin. Só o material e o
+ * enquadramento mudam. Se o trilho mudasse junto, ninguém saberia se o que
  * melhorou foi o vídeo ou o ritmo.
  *
  * O ARQUIVO É REVERTIDO. O take do cliente vai de montado para explodido; o
  * storyboard pede o contrário desde 2026-08-25. A reversão acontece no ffmpeg
  * (ver o cabeçalho de video-scrub.js), não aqui e não no runtime.
+ *
+ * ENQUADRAMENTO FULL-BLEED (2026-08-26). A cena era uma moldura de 736x414 no
+ * meio de uma tela de 1920 — 38% da largura, com o resto sendo padding. O vídeo
+ * agora ocupa a tela, e o título virou legenda sobre um véu na base. O que
+ * decidiu a regra de corte está medido no frame: em 16:9 o hambúrguer tem ~30%
+ * de margem lateral, mas o pão de cima ENCOSTA na borda superior no quadro 0
+ * (peças espalhadas). Cortar na horizontal é de graça; cortar na vertical
+ * decepa o pão. Toda a matemática abaixo existe para honrar isso.
  */
 
 const { explode } = copy;
@@ -26,15 +34,24 @@ const QUADRADA = { largura: 640, altura: 640 };
 ---
 
 <section class="cenavideo textura-brasa" id="explode" data-cena="video" aria-labelledby="explode-titulo">
-  <!-- Texto de fundo: parallax mais lento que o vídeo. Mesmo papel da outra variante. -->
-  <div class="cenavideo__fundo" aria-hidden="true" data-parallax="0.15">
-    {explode.textoFundo}
-  </div>
+  {/*
+    O texto de fundo `YARD BURGUER` em parallax foi REMOVIDO desta variante —
+    markup, CSS e o tween em video-scrub.js. Não ficou escondido: saiu.
 
-  <div class="cenavideo__conteudo" data-conteudo>
-    <h2 id="explode-titulo" class="cenavideo__titulo">{explode.titulo}</h2>
-    <p class="cenavideo__texto">{explode.texto}</p>
-  </div>
+    Motivo, e é o mesmo que a própria página já registrou na Cena 3 quando tirou
+    o "DO SERTÃO" gigante: palavra de fundo só funciona onde existe espaço vazio
+    para ela ocupar. Full-bleed acabou com o vazio. Não há mais um "atrás": o
+    quadro inteiro é o hambúrguer, e a palavra passaria a cruzar o produto e a
+    disputar o mesmo espaço do título do véu — três camadas de tipografia no
+    mesmo frame.
+
+    E o parallax perdeu o sentido junto: profundidade por parallax exige dois
+    planos em velocidades diferentes. Com um plano só, os -33px de deriva não
+    são profundidade, são um elemento tremendo sozinho em cima do vídeo.
+
+    A ExplodeScene continua com o dela, onde ainda há carvão vazio de sobra —
+    por isso a chave `explode.textoFundo` do copy.json segue viva e usada.
+  */}
 
   <div class="cenavideo__palco" data-palco>
     {/*
@@ -46,6 +63,9 @@ const QUADRADA = { largura: 640, altura: 640 };
       inteiro, nunca peças soltas. Por isso ele é uma <img> de verdade, com alt,
       e não o atributo `poster` do <video>: o atributo desapareceria junto com o
       vídeo, e é justamente quando o vídeo não existe que ele precisa aparecer.
+
+      No full-bleed ele recebe exatamente a mesma caixa do vídeo, então o que
+      vale para um vale para o outro: hambúrguer inteiro, nunca decepado.
     */}
     <picture>
       <source
@@ -90,103 +110,127 @@ const QUADRADA = { largura: 640, altura: 640 };
       aria-hidden="true"
       tabindex="-1"></video>
   </div>
+
+  {/*
+    O VÉU — é ele que torna o texto legível, não a sorte do quadro.
+
+    O último quadro do vídeo tem pão claro e tábua clara justamente na metade de
+    baixo, que é onde o título entra. Sem véu, o contraste dependeria de qual
+    frame o scroll parou. Com véu, o pior caso está medido (ver o relatório da
+    entrega): creme #F5EFE4 e areia #E8DCC8 passam AA com folga sobre qualquer
+    quadro do take.
+
+    Só carvão, em opacidade crescente. Nada de --color-fogo aqui: fogo é cor de
+    elemento clicável que leva ao cardápio, e um gradiente não clica em nada.
+
+    Ele ENTRA JUNTO COM O TÍTULO, não antes. Durante os 86% em que o hambúrguer
+    está se montando não há texto nenhum para proteger, e um véu permanente só
+    apagaria o terço de baixo do take — justamente onde ficam a tábua e o pão de
+    baixo. Quem o acende é video-scrub.js, no mesmo ponto do trilho que acende o
+    texto; sem JS e sob reduced-motion ele já nasce aceso, porque aí o texto
+    também está.
+  */}
+  <div class="cenavideo__veu" data-veu aria-hidden="true"></div>
+
+  <div class="cenavideo__conteudo" data-conteudo>
+    <h2 id="explode-titulo" class="cenavideo__titulo">{explode.titulo}</h2>
+    <p class="cenavideo__texto">{explode.texto}</p>
+  </div>
 </section>
 
 <style>
-  /* Mesma moldura da variante em camadas: coluna, texto em faixa própria acima
-     do material. A cena é pinada, então tudo precisa caber em uma tela. */
+  /**
+   * A seção é EXATAMENTE uma tela. Não "pelo menos", não "mais ou menos".
+   *
+   * A cena é pinada: o ScrollTrigger reserva o espaçamento do pin a partir da
+   * altura medida aqui. Se a seção passar do viewport, o fim do trilho cai fora
+   * do quadro — não há para onde rolar dentro de uma seção travada. Por isso
+   * height e min-height travados no mesmo valor, e todo o conteúdo em posição
+   * absoluta: nada aqui dentro pode empurrar a caixa.
+   *
+   * svh e não vh: no celular a barra de URL colapsa, vh muda com ela e o pin
+   * passa a estar medido para uma altura que não existe mais.
+   */
   .cenavideo {
     position: relative;
+    height: var(--cena-altura);
     min-height: var(--cena-altura);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2.5rem;
-    padding: 6rem 1.5rem;
     background-color: var(--color-carvao);
     overflow: hidden;
+
+    /**
+     * A navbar é `position: fixed`, 76px medidos nos dois breakpoints, e ganha
+     * fundo carvão opaco assim que a página rola — ou seja, quando esta cena
+     * está em quadro ela SEMPRE está por cima.
+     *
+     * Isso não importava quando o vídeo era uma moldura de 736x414 no meio da
+     * tela. Em full-bleed importa muito: medido, a navbar cobria 45px do
+     * arquivo, e o pão de cima ocupa os primeiros ~110px do quadro 0. Ela
+     * escondia quase metade do pão exatamente no quadro de abertura da cena.
+     *
+     * Então o palco começa ABAIXO da navbar. A seção continua tendo exatamente
+     * uma tela (o pin não admite outra coisa), e o que se perde de área é o que
+     * já estava perdido atrás de uma barra opaca — a diferença é que agora nada
+     * fica escondido.
+     */
+    --faixa-nav: 4.75rem;
+
+    /* Altura de referência do palco. Existe como variável porque a caixa da
+       mídia é derivada dela por multiplicação — ver .cenavideo__poster. */
+    --palco-altura: calc(var(--cena-altura) - var(--faixa-nav));
   }
 
-  .cenavideo__fundo {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    font-family: var(--font-display);
-    font-size: var(--text-display);
-    line-height: 0.85;
-    text-align: center;
-    color: var(--color-terracota);
-    text-transform: uppercase;
-    user-select: none;
-    will-change: transform;
-  }
-
-  .cenavideo__conteudo {
-    position: relative;
-    z-index: 20;
-    max-width: 34rem;
-    text-align: center;
-    flex-shrink: 0;
-  }
-
-  .cenavideo__titulo {
-    font-family: var(--font-display);
-    font-size: var(--text-titulo);
-    color: var(--color-creme);
-    text-transform: uppercase;
-  }
-
-  .cenavideo__texto {
-    margin-top: 1rem;
-    color: var(--color-areia);
-    line-height: 1.6;
-  }
-
-  /**
-   * O PALCO — a caixa é limitada pela ALTURA, nunca por uma largura fixa.
-   *
-   * Mesma restrição que governa a pilha de camadas e pelo mesmo motivo: a cena
-   * é pinada. Se o palco passar do viewport, o pin reserva altura que não
-   * existe e o fim do trilho cai fora do quadro — não há para onde rolar dentro
-   * de uma seção travada.
-   *
-   * --desconto-altura é o que o palco NÃO pode ocupar: padding da seção (12rem),
-   * o bloco de texto, o gap entre os dois e uma folga. Muda por breakpoint
-   * porque o mobile tem padding menor e um parágrafo que quebra em mais linhas.
-   *
-   * A largura sai da altura útil multiplicada pela proporção do arquivo, então
-   * a caixa encolhe sozinha em tela baixa em vez de estourar.
-   */
   .cenavideo__palco {
-    position: relative;
-    z-index: 15;
-    --desconto-altura: 26.5rem;
-    --altura-util: calc(100svh - var(--desconto-altura));
-    aspect-ratio: 16 / 9;
-    width: min(100%, 46rem, calc(var(--altura-util) * 16 / 9));
-    margin-inline: auto;
-    border-radius: 0.75rem;
+    position: absolute;
+    inset: var(--faixa-nav) 0 0 0;
+    z-index: 10;
+    /* O corte lateral do full-bleed acontece AQUI, e só na horizontal. */
     overflow: hidden;
-    background-color: #000;
     isolation: isolate;
+    /* Sem cor de fundo de propósito: onde a mídia não alcança (tela mais larga
+       que 16:9, ou a faixa do celular) quem aparece é o carvão da seção com a
+       textura de brasa. Barra preta seria uma moldura; carvão é a própria cena. */
   }
 
   /**
-   * Poster e vídeo ocupam exatamente a mesma caixa, empilhados.
+   * A CAIXA DA MÍDIA — a regra inteira do enquadramento cabe em uma frase:
    *
-   * object-fit: cover é rede de segurança, não enquadramento: os arquivos já
-   * são cortados na proporção de cada breakpoint (16:9 no desktop, 1:1 no
-   * celular), então na prática não há corte nenhum. O cover só garante que uma
-   * troca futura de material não distorça o hambúrguer.
+   *   a caixa tem exatamente a proporção do arquivo, é dimensionada pela
+   *   ALTURA, e o que sobrar de largura o palco corta.
+   *
+   * Consequências, todas desejadas:
+   *
+   * 1. Como a proporção da caixa é igual à do arquivo, `object-fit: cover`
+   *    nunca corta nada — ele volta a ser só a rede de segurança que sempre
+   *    dizia ser, para o caso de uma troca futura de material.
+   * 2. Corte só existe na horizontal, por overflow do palco. Nunca na vertical.
+   *    Isso não é preferência estética: no quadro 0 (peças espalhadas) o pão de
+   *    cima ENCOSTA na borda superior do arquivo. Qualquer corte vertical
+   *    decepa o pão logo no primeiro quadro da cena.
+   * 3. MEDIDO (2026-08-26, três viewports, palco = tela menos a faixa da
+   *    navbar): 1440x900 dá mídia de 1465x824 e o palco corta ~1% de cada lado;
+   *    1920x1080 dá 1785x1004; 2560x1080 (21:9) dá os mesmos 1785x1004 com
+   *    faixas de carvão nas laterais. Essa faixa é o limite honesto de material
+   *    16:9 numa tela ultrawide — encher a largura exigiria cortar 33% da
+   *    altura, ou seja, decepar o pão. Contra os 736x414 de antes, é de 3,9x a
+   *    5,9x mais área em todos os casos.
+   *
+   * Centralizada por left/top + margin negativo em vez de transform: o GSAP
+   * escreve `transform` no bloco de texto, e misturar centralização com
+   * animação no mesmo canal é como se perde um layout meses depois.
    */
   .cenavideo__poster,
   .cenavideo__video {
+    --midia-altura: var(--palco-altura);
     position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
+    top: 50%;
+    left: 50%;
+    height: var(--midia-altura);
+    /* material 16:9 */
+    width: calc(var(--midia-altura) * 16 / 9);
+    max-width: none;
+    margin-top: calc(var(--midia-altura) / -2);
+    margin-left: calc(var(--midia-altura) * -8 / 9);
     object-fit: cover;
     display: block;
   }
@@ -214,22 +258,103 @@ const QUADRADA = { largura: 640, altura: 640 };
     }
   }
 
+  .cenavideo__veu {
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 62%;
+    z-index: 20;
+    pointer-events: none;
+    /**
+     * A curva não foi escolhida no olho — foi calibrada contra o pior pixel.
+     *
+     * Medido: sob o parágrafo, na tábua, existe um reflexo especular perto de
+     * 255. Com a curva anterior (0.55 na altura do texto) a areia #E8DCC8 dava
+     * 4,44:1 em 1440x900 — reprovado, AA pede 4,5. Subindo a alfa para ~0,86
+     * naquela faixa o mesmo pixel passa a 9,9:1.
+     */
+    background: linear-gradient(
+      to top,
+      rgb(20 12 6 / 0.96) 0%,
+      rgb(20 12 6 / 0.94) 25%,
+      rgb(20 12 6 / 0.82) 45%,
+      rgb(20 12 6 / 0.5) 68%,
+      rgb(20 12 6 / 0.18) 86%,
+      rgb(20 12 6 / 0) 100%
+    );
+  }
+
+  /**
+   * O texto vira legenda de cinema: ancorado na base, sobre o véu.
+   *
+   * Centralizado por left/right + margin auto, NÃO por transform. O GSAP anima
+   * `y` neste elemento; se a centralização morasse no transform, o primeiro
+   * tween a tocar nele resolveria o -50% para pixels e o bloco sairia do lugar
+   * na primeira mudança de largura.
+   *
+   * Opacidade padrão 1 no CSS: sem JS e sob reduced-motion o GSAP nunca roda, e
+   * o texto precisa estar lá. Quem esconde é o tween, no runtime — nunca o CSS.
+   */
+  .cenavideo__conteudo {
+    position: absolute;
+    z-index: 30;
+    left: 0;
+    right: 0;
+    bottom: clamp(2rem, 7svh, 5rem);
+    width: min(100% - 3rem, 40rem);
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .cenavideo__titulo {
+    font-family: var(--font-display);
+    font-size: var(--text-titulo);
+    color: var(--color-creme);
+    text-transform: uppercase;
+    /* Reforço, não a garantia: quem faz o AA é o véu, e está medido. */
+    text-shadow: 0 1px 14px rgb(20 12 6 / 0.55);
+  }
+
+  .cenavideo__texto {
+    margin-top: 1rem;
+    color: var(--color-areia);
+    line-height: 1.6;
+    text-shadow: 0 1px 10px rgb(20 12 6 / 0.5);
+  }
+
   @media (max-width: 767px) {
-    /* Mesma cessão de respiro vertical da outra variante: a cena é pinada e
-       precisa caber EXATAMENTE na tela, então o padding cede para o material,
-       que é o que a pessoa veio ver. */
-    .cenavideo {
-      padding-block: 3rem;
-      gap: 1.5rem;
+    /**
+     * O celular não aceita full-bleed literal, e fingir que aceita é decepar o
+     * produto.
+     *
+     * O arquivo do celular é 1:1 (640x640) e a tela é 390x844. Preencher a
+     * altura exigiria 844x844 dentro de 390 de largura — 54% da largura
+     * cortada, comendo as bordas do pão e as pontas do queijo.
+     *
+     * Então aqui a caixa é limitada pela LARGURA e o carvão da seção faz
+     * letterbox de propósito. O corte lateral é calibrado, não herdado: medido
+     * no quadro mais espalhado do take (n=40), o ponto mais largo do hambúrguer
+     * — a ponta do queijo escorrido — vive entre 14,8% e 86,7% da largura. Uma
+     * caixa 5:6 corta 8,33% de cada lado e para a ~6% de distância dele.
+     *
+     * Resultado: 390x468 contra os 342x342 de antes. 1,37x na linha, 1,87x em
+     * área, e o texto do véu cai na faixa de carvão abaixo da imagem, onde a
+     * leitura é ainda mais limpa.
+     */
+    .cenavideo__poster,
+    .cenavideo__video {
+      --midia-altura: min(var(--palco-altura), calc(100vw * 6 / 5));
+      /* material 1:1 */
+      width: var(--midia-altura);
+      margin-left: calc(var(--midia-altura) / -2);
     }
 
-    .cenavideo__palco {
-      --desconto-altura: 22rem;
-      /* O arquivo do celular é quadrado: o material 16:9 desperdiçaria os
-         pixels das laterais, que no take são só bokeh do balcão. Cortado no
-         ffmpeg, o mesmo peso entrega o hambúrguer maior. */
-      aspect-ratio: 1 / 1;
-      width: min(100%, 30rem, var(--altura-util));
+    .cenavideo__veu {
+      height: 48%;
+    }
+
+    .cenavideo__conteudo {
+      bottom: clamp(1.5rem, 5svh, 3rem);
+      width: min(100% - 2.5rem, 34rem);
     }
   }
 </style>

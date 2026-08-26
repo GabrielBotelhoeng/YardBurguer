@@ -219,6 +219,24 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
    * hambúrguer fica pronto, o título aparece e nomeia o que foi montado.
    */
   const conteudo = secao.querySelector('[data-conteudo]');
+
+  /**
+   * O véu vem UM POUCO ANTES do texto — 0.82 contra 0.86.
+   *
+   * Não é capricho: quando o texto começa a aparecer o fundo já precisa estar
+   * escuro, ou existe uma janela de poucos quadros em que o creme entra em cima
+   * da tábua clara sem proteção nenhuma. Acendendo o véu primeiro, o texto
+   * sempre pousa sobre base pronta.
+   *
+   * E ele não fica aceso a cena inteira porque, enquanto as peças estão no ar,
+   * não há texto para proteger — só teria o efeito de apagar o terço de baixo
+   * do take.
+   */
+  const veu = secao.querySelector('[data-veu]');
+  if (veu) {
+    trilho.fromTo(veu, { opacity: 0 }, { opacity: 1, ease: 'none', duration: 0.14 }, 0.82);
+  }
+
   if (conteudo) {
     trilho.fromTo(
       conteudo,
@@ -228,13 +246,20 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
     );
   }
 
-  // Texto de fundo: mais lento que o vídeo. A diferença de velocidade é o que
-  // cria profundidade — é a mesma regra da variante em camadas.
-  const fundo = secao.querySelector('[data-parallax]');
-  if (fundo) {
-    const fator = Number(fundo.dataset.parallax ?? 0.15);
-    trilho.to(fundo, { y: -220 * fator, ease: 'none', duration: 1 }, 0);
-  }
+  /*
+   * NÃO existe mais parallax de texto de fundo aqui — e a ausência é a decisão,
+   * não um esquecimento.
+   *
+   * Enquanto o vídeo era uma moldura no meio do carvão, o `YARD BURGUER` ao
+   * fundo era o plano de trás e a diferença de velocidade criava profundidade.
+   * Com o vídeo em full-bleed existe UM plano só: a palavra passaria a andar por
+   * cima do próprio produto. Parallax sem segundo plano não é profundidade, é
+   * tremida.
+   *
+   * O elemento saiu do VideoScene.astro junto com este tween. A variante em
+   * camadas (explode.js / ExplodeScene.astro) mantém o dela, porque lá o carvão
+   * vazio continua existindo.
+   */
 
   /**
    * Remedição depois que o vídeo virou conteúdo real.
@@ -269,7 +294,7 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
   function degradarParaEstatico() {
     trilho.scrollTrigger?.kill(true); // true = reverte o pin e o pinSpacing
     trilho.kill();
-    gsap.set([conteudo, fundo].filter(Boolean), { clearProps: 'all' });
+    gsap.set([conteudo, veu].filter(Boolean), { clearProps: 'all' });
     palco.removeAttribute('data-pronto');
 
     /**
