@@ -143,8 +143,45 @@ const SEEKAVEL = [
  */
 const RECUO = 0.85;
 
-const LARGA = { largura: 1600, altura: 800 };   // 2:1 — ver "DESKTOP" acima
-const CELULAR = { largura: 640, altura: 1138 }; // 9:16 nativo do take
+/**
+ * RESOLUÇÃO SAI DE PIXEL FÍSICO, NÃO DE PIXEL CSS. Foi o que faltava aqui.
+ *
+ * O celular saía em 640 de largura, dimensionado contra os ~390 CSS px do palco
+ * — o que parecia downscale confortável. Mas o iPhone 14 tem `devicePixelRatio`
+ * 3: o palco tem 1170 pixels FÍSICOS. O arquivo de 640 era esticado 1,83x, e a
+ * cena que estava nítida no desktop amolecia no celular. O cliente viu na hora:
+ * "no desktop ficou muito bonitos os hambúrgueres, já no mobile parece que a
+ * qualidade caiu um pouco".
+ *
+ * O desktop escapava por acidente — DPR 1 na maioria dos monitores. Num MacBook
+ * Retina de 1440 (2880 físicos) o 1600 sofria o mesmo esticão de 1,8x.
+ *
+ * MEDIDO, e o resultado inverte a intuição: resolução NATIVA com mais compressão
+ * ganha de resolução menor com menos compressão, nos dois eixos ao mesmo tempo.
+ * Nitidez medida como gradiente médio por pixel, no recorte do blend, já no
+ * tamanho real de exibição:
+ *
+ *   celular, exibido a 1170px físicos
+ *     640x1138  crf34 →  664 kB   estica 1,83x   nitidez 13,29   (o que havia)
+ *     900x1600  crf34 → 1116 kB   estica 1,30x   nitidez 15,60
+ *     1080x1920 crf38 →  980 kB   estica 1,08x   nitidez 15,87   ← escolhido
+ *     1080x1920 crf34 → 1452 kB   estica 1,08x   nitidez 16,43
+ *
+ *   desktop, exibido a 2880px físicos (Retina 1440)
+ *     1600x800  crf33 →  972 kB   nitidez 15,28   (o que havia)
+ *     1920x960  crf37 →  840 kB   nitidez 15,90   ← escolhido
+ *     1920x960  crf35 → 1024 kB   nitidez 16,27
+ *
+ * Em ambos, o nativo com crf alto é MAIS LEVE e MAIS NÍTIDO que o intermediário
+ * com crf baixo. Faz sentido: mais amostras preservam a estrutura fina melhor do
+ * que menos amostras bem descritas, e o quadro tem muita área lisa de fundo, que
+ * comprime de graça em qualquer crf.
+ *
+ * Não passa de 1080/1920 porque é a resolução dos takes. Acima disso seria
+ * inventar pixel — o upscale no encode custa bytes e não devolve detalhe.
+ */
+const LARGA = { largura: 1920, altura: 960 };    // 2:1 — ver "DESKTOP" acima
+const CELULAR = { largura: 1080, altura: 1920 }; // 9:16 nativo do take
 
 /** Lê as dimensões reais da fonte — as margens dependem delas. */
 function medir(arquivo) {
@@ -189,13 +226,33 @@ function medir(arquivo) {
 const compor = (fonte, l, a, escala = 1) => {
   // Quanto o take cabe dentro de `escala` do quadro, preservando a proporção.
   const fator = Math.min((l * escala) / fonte.w, (a * escala) / fonte.h);
-  const fw = Math.round((fonte.w * fator) / 2) * 2;
-  const fh = Math.round((fonte.h * fator) / 2) * 2;
-  const esq = Math.floor((l - fw) / 2);
-  const topo = Math.floor((a - fh) / 2);
+  /**
+   * MARGENS PARES, e isso não é preciosismo de alinhamento.
+   *
+   * Em yuv420p o plano de croma tem METADE da resolução. Com margem ímpar o
+   * `fillborders` cobre o plano de luma e deixa parte do croma por preencher, e
+   * o resultado é uma faixa que o `pad` deixou preta permanecendo preta.
+   *
+   * Aconteceu exatamente assim: em 1080x1920 a margem deu 81px, e as colunas de
+   * x=999 a 1079 saíram com luminância 0,0 — uma tarja preta vertical no lado
+   * direito da tela do celular, enquanto a esquerda (também 81px) vinha correta.
+   * O encode anterior, em 640x1138, tinha margem 48 e passou ileso; o defeito só
+   * apareceu quando a resolução subiu e a conta caiu num número ímpar.
+   *
+   * Arredondar o quadro do take para múltiplo de 4 faz as duas margens saírem
+   * pares. O `format=yuv444p` abaixo é o cinto além do suspensório — resolve na
+   * raiz, fazendo o filtro trabalhar sem subamostragem de croma.
+   */
+  const fw = Math.round((fonte.w * fator) / 4) * 4;
+  const fh = Math.round((fonte.h * fator) / 4) * 4;
+  const esq = Math.floor((l - fw) / 4) * 2;
+  const topo = Math.floor((a - fh) / 4) * 2;
   return (
     `scale=${fw}:${fh},` +
     `pad=${l}:${a}:${esq}:${topo},` +
+    // Sem subamostragem de croma, o fillborders cobre os três planos por igual.
+    // O encoder devolve para yuv420p depois, via -pix_fmt.
+    `format=yuv444p,` +
     `fillborders=left=${esq}:right=${l - fw - esq}:top=${topo}:bottom=${a - fh - topo}:mode=smear,` +
     `setsar=1`
   );
@@ -217,7 +274,7 @@ const VARIANTES = [
     origem: 'larga',
     nome: 'burger-stack-16x9.mp4',
     vf: compor(FONTE.larga, LARGA.largura, LARGA.altura, RECUO),
-    crf: '33',
+    crf: '37',
     nivel: '4.2',
     para: 'desktop — 2:1 composto, margem lateral para o cover cortar',
   },
@@ -225,8 +282,8 @@ const VARIANTES = [
     origem: 'vertical',
     nome: 'burger-stack-vertical.mp4',
     vf: compor(FONTE.vertical, CELULAR.largura, CELULAR.altura, RECUO),
-    crf: '34',
-    nivel: '4.0',
+    crf: '38',
+    nivel: '4.2',
     para: 'celular — 9:16 composto, margem em volta',
   },
 ];
