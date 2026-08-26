@@ -81,12 +81,6 @@ const SEEKAVEL = [
 ];
 
 /**
- * O corte 1:1 do mobile parte de x=420 numa fonte 1920x1080: o hambúrguer está
- * centrado e ocupa a faixa central; o que sai são as laterais, que no take são
- * só bokeh do balcão. Enquadrar por object-fit desperdiçaria esses pixels DEPOIS
- * de baixá-los.
- */
-/**
  * A RESOLUÇÃO SAI DO TAMANHO DE EXIBIÇÃO, NÃO DE UM NÚMERO REDONDO.
  *
  * O 16:9 era 960x540 e estava certo enquanto o palco tinha 736px de largura: o
@@ -108,12 +102,89 @@ const SEEKAVEL = [
  * para 33 porque quadro maior perdoa mais compressão: o mesmo artefato ocupa
  * proporcionalmente menos da tela.
  *
- * O 1:1 do mobile NÃO muda, e a razão importa: o palco do celular exibe 468px e
- * o arquivo tem 640 — ele já é reduzido 0,73x, que é o regime saudável. Subir a
- * resolução ali seria pagar banda de celular por pixel que não chega ao olho.
- * É também por isso que o desktop pode ser generoso: são arquivos separados,
- * escolhidos em video-scrub.js, e o celular nunca baixa o 16:9.
+ * O celular tem a sua própria conta, logo abaixo.
  */
+
+/**
+ * O CELULAR DEIXOU DE SER QUADRADO (2026-08-26).
+ *
+ * O corte 1:1 era honesto e ainda assim ficava feio: um quadrado de 468x468
+ * parado no meio de uma tela de 390x844, com carvão liso ocupando o resto. O
+ * cliente descreveu como "esse quadrado na tela do mobile acaba ficando muito
+ * feio", e tinha razão — a cena é full-bleed em toda parte menos justamente
+ * onde a maioria das pessoas vai vê-la.
+ *
+ * Encher a tela CORTANDO não é possível, e vale registrar o número: a tela é
+ * 0,46 de proporção, o take é 1,78. Cobrir uma com a outra exigiria uma faixa
+ * de 498px de largura do original — e o hambúrguer sozinho tem 780px. Qualquer
+ * corte que preencha a altura decepa o pão pelas laterais.
+ *
+ * Então o quadro é COMPOSTO, não cortado:
+ *
+ *   crop=780:1080:570:0   isola o hambúrguer com a moldura justa (x 570..1350,
+ *                         medido por energia de borda no frame mais espalhado)
+ *   [bg] o mesmo recorte ampliado até a tela cheia, desfocado e escurecido
+ *   [fg] o recorte na largura real, centrado por cima
+ *
+ * O hambúrguer passa a ocupar 100% da largura da tela e continua inteiro — o
+ * contrato do storyboard segue de pé. O que preenche o resto é o próprio
+ * ambiente do take, e como o fundo já é bokeh escuro de balcão, ele funde com o
+ * carvão em vez de ler como faixa.
+ *
+ * Medido: 640x1388 crf35 = 688 kB contra 582 kB do quadrado. 106 kB a mais
+ * (+18%) para a cena deixar de ter buraco. O crf pode subir para 35 porque a
+ * maior parte do quadro agora é borrão — área lisa comprime de graça, e o teste
+ * de textura na carne a 4s não mostrou artefato.
+ *
+ * 640 de largura para uma tela de 390 CSS px é redução de 1,64x, que é o regime
+ * saudável. 720 custaria +132 kB para um ganho que não chega ao olho em banda
+ * de celular.
+ */
+const RECORTE_CELULAR = 'crop=780:1080:570:0';
+const CELULAR = { largura: 640, altura: 1388 };
+
+/**
+ * Compõe [fundo desfocado] + [recorte nítido centrado] no tamanho pedido.
+ *
+ * `setsar=1` no fim NÃO é decoração. `crop` preserva o SAR do stream mas muda o
+ * DAR, e o `scale` seguinte tenta reconciliar os dois mexendo no SAR em vez das
+ * dimensões. Sem forçar, o encode saiu 640x1388 com SAR 4511:2880 — ou seja, um
+ * arquivo que o browser exibia como 1002x1388 (proporção 0,72) em vez dos 0,46
+ * verticais. Medido no `videoWidth` do DOM: a cena preenchia menos do que devia
+ * e ninguém saberia dizer por quê, porque o ffprobe do width/height mostra o
+ * número certo. É o SAR que mente.
+ */
+const comporVertical = (l, a) =>
+  `${RECORTE_CELULAR},split[a][b];` +
+  // O fundo COBRE preservando a proporção e depois é cortado — nunca esticado.
+  // `scale=l:a` puro deformava o recorte 0,72 até 0,46, então o que ficava
+  // encostado na borda do primeiro plano não era a mesma coisa que estava atrás
+  // dele, e a emenda aparecia como um degrau reto atravessando a tela. Medido no
+  // quadro montado, onde o balcão claro do primeiro plano encontrava fundo
+  // escuro esticado. Cobrindo e cortando, as duas camadas mostram a mesma região
+  // da cena na altura da emenda e ela some.
+  `[a]scale=${l}:${a}:force_original_aspect_ratio=increase,crop=${l}:${a},setsar=1,` +
+  // -0.06 e não -0.15: escurecer demais era metade do degrau. O bastante para o
+  // fundo recuar e o hambúrguer continuar sendo o assunto, sem virar uma faixa.
+  `gblur=sigma=30,eq=brightness=-0.06[bg];` +
+  /**
+   * O FEATHER — sem ele a composição não engana ninguém.
+   *
+   * `overlay` cola o primeiro plano com alfa 1 até a última linha, então por
+   * mais que fundo e frente combinem de cor, a emenda ainda é uma reta perfeita
+   * atravessando a tela — e olho humano acha reta perfeita em qualquer lugar.
+   * Aparecia com força no quadro montado, onde a borda superior do primeiro
+   * plano é balcão claro.
+   *
+   * A rampa de 90px leva o alfa de 0 a 1 nas bordas de cima e de baixo, e a
+   * transição deixa de existir como linha. 90 e não 40: abaixo disso a rampa
+   * ainda lê como borda; acima, começa a comer o pão no quadro 0, que encosta
+   * na borda do recorte.
+   */
+  `[b]scale=${l}:-2,setsar=1,format=rgba,` +
+  `geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='255*min(1,min(Y,H-Y)/90)'[fg];` +
+  `[bg][fg]overlay=(W-w)/2:(H-h)/2:format=auto,setsar=1`;
+
 const VARIANTES = [
   {
     nome: 'burger-stack-16x9.mp4',
@@ -123,24 +194,26 @@ const VARIANTES = [
     para: 'desktop — quadro cheio, 16:9, dimensionado para o palco full-bleed',
   },
   {
-    nome: 'burger-stack-1x1.mp4',
-    vf: 'crop=1080:1080:420:0,scale=640:640:flags=lanczos',
-    crf: '32',
-    nivel: '3.1',
-    para: 'mobile — corte quadrado, a cena é vertical no celular',
+    nome: 'burger-stack-vertical.mp4',
+    vf: comporVertical(CELULAR.largura, CELULAR.altura),
+    crf: '35',
+    nivel: '4.0',
+    para: 'celular — 9:19,5 composto, o hambúrguer inteiro na largura toda',
   },
 ];
 
 /**
- * Os posters acompanham a resolução do vídeo que substituem.
+ * Os posters acompanham o vídeo que substituem — mesma resolução E mesma
+ * composição.
  *
- * Sob prefers-reduced-motion o poster é a cena inteira — e agora ocupa a tela
- * inteira. Um poster de 960px esticado 1,86x entregaria justamente a quem pediu
- * menos movimento a pior imagem da página.
+ * Sob prefers-reduced-motion o poster é a cena inteira. Se ele fosse o corte
+ * quadrado enquanto o vídeo é o vertical composto, quem pediu menos movimento
+ * veria um enquadramento que ninguém mais vê — e veria o buraco de carvão que
+ * acabamos de fechar.
  */
 const POSTERS = [
   { nome: 'burger-stack-poster-16x9.webp', vf: 'scale=1600:900:flags=lanczos' },
-  { nome: 'burger-stack-poster-1x1.webp', vf: 'crop=1080:1080:420:0,scale=640:640:flags=lanczos' },
+  { nome: 'burger-stack-poster-vertical.webp', vf: comporVertical(CELULAR.largura, CELULAR.altura) },
 ];
 
 function ff(args) {

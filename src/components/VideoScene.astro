@@ -32,12 +32,14 @@ const { explode } = copy;
  * Dimensões reais dos encodes. Reservam a caixa e evitam CLS.
  *
  * Precisam bater com `encodar-video-cena2.mjs` — é ele quem produz os arquivos,
- * e é lá que está escrito por que o 16:9 subiu para 1600x900 quando a cena virou
- * full-bleed (o palco passou a exibir 1785px e o arquivo de 960 era esticado
- * 1,86x) e por que o 1:1 continua em 640, exibido a 468px, já reduzido.
+ * e é lá que está escrito por que o 16:9 subiu para 1600x900 e por que o celular
+ * deixou de ser quadrado: um recorte 1:1 de 468x468 no meio de uma tela de
+ * 390x844 é um buraco, e o quadro vertical é COMPOSTO (hambúrguer inteiro na
+ * largura toda, bordas preenchidas com o próprio take desfocado) em vez de
+ * cortado — cortar para preencher decapitaria o pão.
  */
 const LARGA = { largura: 1600, altura: 900 };
-const QUADRADA = { largura: 640, altura: 640 };
+const VERTICAL = { largura: 640, altura: 1388 };
 
 /**
  * QUEM É CELULAR — uma única string, e ela mora aqui.
@@ -111,9 +113,9 @@ const CONSULTA_CELULAR = '(max-width: 500px), (max-height: 500px)';
     <picture>
       <source
         media={CONSULTA_CELULAR}
-        srcset="/assets/video/burger-stack-poster-1x1.webp"
-        width={QUADRADA.largura}
-        height={QUADRADA.altura}
+        srcset="/assets/video/burger-stack-poster-vertical.webp"
+        width={VERTICAL.largura}
+        height={VERTICAL.altura}
       />
       <img
         class="cenavideo__poster"
@@ -141,7 +143,7 @@ const CONSULTA_CELULAR = '(max-width: 500px), (max-height: 500px)';
       class="cenavideo__video"
       data-video
       data-src-larga="/assets/video/burger-stack-16x9.mp4"
-      data-src-quadrada="/assets/video/burger-stack-1x1.mp4"
+      data-src-vertical="/assets/video/burger-stack-vertical.mp4"
       data-consulta-celular={CONSULTA_CELULAR}
       width={LARGA.largura}
       height={LARGA.altura}
@@ -242,58 +244,76 @@ const CONSULTA_CELULAR = '(max-width: 500px), (max-height: 500px)';
   }
 
   /**
-   * A CAIXA DA MÍDIA — a regra inteira do enquadramento cabe em uma frase:
+   * A CAIXA DA MÍDIA — preenche o palco inteiro, e a proteção mudou de lugar.
    *
-   *   a caixa NÃO declara proporção nenhuma; ela é uma janela de 120% x 100% do
-   *   palco, e a mídia se encaixa dentro dela com a proporção REAL do arquivo.
+   * Até agora era `contain` numa janela de 120%: nunca cortava, mas também nunca
+   * preenchia. No celular isso deixava um quadrado de 468x468 parado no meio de
+   * uma tela de 390x844, com carvão liso em volta. O cliente chamou de "esse
+   * quadrado na tela do mobile acaba ficando muito feio" e pediu a tela toda,
+   * aqui e no desktop.
    *
-   * O CSS não sabe — e não precisa saber — se o arquivo é 16:9, 1:1 ou o que
-   * vier no próximo encode. Quem informa a proporção é o próprio arquivo, via
-   * `object-fit: contain`. Não existe um número de proporção escrito em lugar
-   * nenhum daqui para divergir do material.
+   * `cover` voltou, mas o que o torna seguro agora NÃO é o CSS — é o material.
+   * Cada formato passou a ter um arquivo com a proporção do seu destino
+   * (encodar-video-cena2.mjs), e o vertical do celular carrega uma MARGEM DE
+   * SEGURANÇA embutida: o hambúrguer ocupa 886px de altura no meio de um quadro
+   * de 1388, deixando 251px de preenchimento desfocado em cima e embaixo. Todo
+   * corte de `cover` cai nessa margem antes de chegar perto do pão.
    *
-   * POR QUE ISSO MUDOU, e não é elegância: até 2026-08-26 a proporção da caixa
-   * era escolhida por BREAKPOINT (16:9 acima de 767px, 1:1 abaixo) enquanto a
-   * escolha do ARQUIVO era feita uma única vez em JS, no load. Girar o celular
-   * movia a media query e não movia o arquivo — a caixa virava 16:9 com o
-   * arquivo 1:1 dentro, e o `object-fit: cover` de então cortava 43,7% da
-   * ALTURA. Medido em 844x390 (iPhone 14 deitado): pão decepado em cima e
-   * embaixo, exatamente o que toda esta matemática existe para impedir.
+   * A conta que prova, no pior caso de proporção entre celulares: iPhone SE
+   * 375x667 é 0,562 contra 0,4615 do arquivo, então `cover` corta 21% da altura
+   * — 146px de 1388, contra os 251px de margem. Sobram 105px de folga. No
+   * iPhone 14 (0,462) a diferença é de milésimos e não corta praticamente nada.
    *
-   * `contain` em vez de `cover` é o coração da correção. `cover` corta para
-   * preencher; `contain` NUNCA corta. Com contain, decepar o pão deixa de ser
-   * um bug que se conserta e passa a ser um estado impossível de representar —
-   * mesmo que um dia a caixa e o arquivo voltem a discordar.
+   * ULTRAWIDE É A EXCEÇÃO, e por isso tem a regra logo abaixo. O 16:9 do desktop
+   * não tem margem embutida — encher 2560x1080 exigiria cortar 33% da ALTURA,
+   * que é onde o pão de cima encosta na borda. Acima de 1,9:1 a mídia volta para
+   * `contain` e aceita faixas de carvão nas laterais. Faixa é feia; pão decepado
+   * é pior, e é o único limite honesto de material 16:9 numa tela dessas.
    *
-   * De onde vem o corte lateral, então: da caixa ser mais larga que o palco.
-   * `width: 120%` transborda 20%, o palco tem `overflow: hidden` e corta 8,33%
-   * de cada lado. Corte só na horizontal, nunca na vertical — que é a regra de
-   * sempre, agora garantida pela estrutura em vez de pela aritmética. Em % do
-   * palco e não em `100vw` de propósito: `vw` ignora a barra de rolagem.
-   *
-   * MEDIDO (2026-08-26, depois da mudança — os números de desktop são idênticos
-   * aos que a regra por breakpoint produzia): 1440x900 dá mídia de 1465x824 e o
-   * palco corta ~1% de cada lado; 1920x1080 dá 1785x1004; 2560x1080 (21:9) dá os
-   * mesmos 1785x1004 com faixas de carvão nas laterais — o limite honesto de
-   * material 16:9 numa ultrawide, já que encher a largura exigiria cortar 33% da
-   * altura. 390x844 dá 468x468 e 375x667 dá 450x450, também idênticos. E o caso
-   * que decepava, 844x390 com o arquivo 1:1, agora dá 314x314 inteiro.
-   *
-   * Centralizada por transform, e não mais por margin negativo: sem largura
-   * declarada não há metade para negativar. O canal está livre — o GSAP anima
-   * `opacity` no véu e `opacity`/`y` no bloco de texto, nunca a mídia.
+   * O canal de transform está livre — o GSAP anima `opacity` no véu e
+   * `opacity`/`y` no bloco de texto, nunca a mídia.
    */
   .cenavideo__poster,
   .cenavideo__video {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 120%;
+    inset: 0;
+    width: 100%;
     height: 100%;
     max-width: none;
-    transform: translate(-50%, -50%);
-    object-fit: contain;
+    object-fit: cover;
+    /**
+     * ANCORADO NO TOPO — a única linha que impede o pão de ser decepado.
+     *
+     * `cover` centraliza por padrão, então um corte vertical de 7% sai metade em
+     * cima e metade embaixo. Como o pão de cima ENCOSTA na borda superior do
+     * quadro 0, esses 3,5% de cima saem direto do pão: medido em 1920x1080, onde
+     * o palco fica 1920x1004 (a navbar come 76px e deixa a caixa em 1,912
+     * contra 1,778 do arquivo) e 35px do topo do pão sumiam.
+     *
+     * Ancorando no topo, o mesmo corte de 70px sai INTEIRO de baixo, onde há a
+     * madeira da tábua e o take tem folga de sobra. O produto fica inteiro; o
+     * que se perde é chão.
+     *
+     * Vale para o vertical do celular pela mesma razão, e lá é ainda mais barato:
+     * o que sai de baixo é preenchimento desfocado, não imagem.
+     */
+    object-position: center top;
     display: block;
+  }
+
+  /**
+   * Telas mais largas que 1,9:1 — ultrawide de verdade, não notebook.
+   *
+   * 1,9 e não 16:9 (1,778) exatos: numa tela de exatamente 16:9 o cover não
+   * corta nada, e a folga até 1,9 absorve a faixa da navbar sem que a regra
+   * dispare em monitor comum. Acima disso o corte vertical começaria a comer o
+   * pão, então a mídia recua para `contain`.
+   */
+  @media (min-aspect-ratio: 1.9 / 1) {
+    .cenavideo__poster,
+    .cenavideo__video {
+      object-fit: contain;
+    }
   }
 
   /**
