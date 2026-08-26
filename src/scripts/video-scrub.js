@@ -217,12 +217,36 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
     seeksAtendidos += 1;
   });
 
+  /**
+   * O QUADRO DE RECOMPENSA — por que a montagem acaba em 0.94 e não em 1.00.
+   *
+   * A cena inteira existe para chegar em um instante: o hambúrguer fechado, o
+   * título aceso por cima dele, e tudo parado tempo suficiente para a pessoa
+   * olhar. Até 2026-08-26 esse instante NÃO EXISTIA, e a causa era aritmética.
+   *
+   * O tween do texto começava em 0.86 e durava 0.16, terminando em 1.02. O GSAP
+   * não trunca: ele estica a duração da timeline para 1.02 e o ScrollTrigger
+   * passa a mapear o trilho inteiro sobre 0→1.02. Medido: no último quadro ainda
+   * pinado a opacidade do título era 0,918 em 390x844 e 0,991 em 375x667 — ele
+   * só fechava DEPOIS que o pin soltava e a cena já estava subindo.
+   *
+   * Fechar em 1.00 corrige a conta e não entrega a cena: aí o título completa
+   * exatamente no ÚLTIMO PIXEL do pin. Medido também, e dá zero quadro de
+   * recompensa — um ponto não é uma pausa.
+   *
+   * Então a montagem toda (vídeo, véu e texto) acaba em 0.94 e os últimos 6% do
+   * trilho não animam nada. Não é tempo perdido: é o único trecho em que existe
+   * o quadro que a cena promete. Em números, 6% de 110% de uma tela de 844 são
+   * ~56px de rolagem com tudo pronto e a seção ainda travada.
+   */
+  const FIM_DA_MONTAGEM = 0.94;
+
   trilho.to(
     estado,
     {
       t: duracao,
       ease: 'none',
-      duration: 1,
+      duration: FIM_DA_MONTAGEM,
       onUpdate: () => {
         // readyState 2 = HAVE_CURRENT_DATA: abaixo disso o seek entra numa fila
         // que nunca esvazia e a cena engasga em vez de esperar.
@@ -256,18 +280,49 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
    * do take.
    */
   const veu = secao.querySelector('[data-veu]');
+  const DUR_VEU = 0.14;
   if (veu) {
-    trilho.fromTo(veu, { opacity: 0 }, { opacity: 1, ease: 'none', duration: 0.14 }, 0.82);
+    trilho.fromTo(
+      veu,
+      { opacity: 0 },
+      { opacity: 1, ease: 'none', duration: DUR_VEU },
+      FIM_DA_MONTAGEM - DUR_VEU
+    );
   }
 
+  /**
+   * O texto fecha JUNTO com o véu, em 0.94 — nunca depois.
+   *
+   * A duração é menor que a do véu (0.10 contra 0.14) de propósito: é isso que
+   * mantém a regra antiga de que o véu entra primeiro. Ele começa 0.04 antes e
+   * os dois terminam no mesmo ponto, então em qualquer instante da entrada do
+   * texto o véu está mais adiantado na própria rampa — o creme nunca pousa sobre
+   * a tábua clara desprotegida.
+   *
+   * A duração encolheu de 0.16 para 0.10 porque 0.16 não cabia: começando em
+   * 0.86, ela terminava em 1.02 e era exatamente o que impedia o título de
+   * fechar enquanto a cena ainda estava pinada.
+   */
+  const DUR_TEXTO = 0.1;
   if (conteudo) {
     trilho.fromTo(
       conteudo,
       { opacity: 0, y: 24 },
-      { opacity: 1, y: 0, ease: 'none', duration: 0.16 },
-      0.86
+      { opacity: 1, y: 0, ease: 'none', duration: DUR_TEXTO },
+      FIM_DA_MONTAGEM - DUR_TEXTO
     );
   }
+
+  /**
+   * O HOLD. Um tween vazio que não move nada e existe só para a timeline durar
+   * 1.00 em vez de 0.94.
+   *
+   * Sem ele o GSAP encerraria a timeline no último tween (0.94) e o
+   * ScrollTrigger normalizaria o trilho sobre 0→0.94 — o que reescalaria tudo e
+   * devolveria o problema: o fim da montagem voltaria a coincidir com o fim do
+   * pin. É este trecho morto que transforma os 6% finais em pausa de verdade.
+   */
+  trilho.to({}, { duration: 1 - FIM_DA_MONTAGEM }, FIM_DA_MONTAGEM);
 
   /*
    * NÃO existe mais parallax de texto de fundo aqui — e a ausência é a decisão,
@@ -307,6 +362,26 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
    * nenhum, ela desiste do scrub, solta o pin e vira o que sempre foi seu
    * estado de repouso — o hambúrguer montado. Perde-se a animação; não se perde
    * a página.
+   *
+   * O QUE ESTE VIGIA **NÃO** COBRE — medido em 2026-08-26, e vale saber antes de
+   * confiar nele:
+   *
+   * Ele só enxerga o caso "seek pedido e não atendido". O caso do vídeo que
+   * nunca bufferiza passa por fora: o `onUpdate` do tween sai cedo no
+   * `readyState < 2` ANTES de incrementar `seeksPedidos`, então o contador fica
+   * em 0 e a primeira linha daqui de baixo devolve sem julgar nada.
+   *
+   * Testado pendurando o mp4 (conexão aberta, zero bytes — o 4G do interior
+   * travando, não um 404): a cena não prende o usuário, mas quem salva NÃO é
+   * este vigia. O que salva é o `await video.play()` lá em cima nunca resolver
+   * com `readyState 0`, de modo que a timeline e o pin jamais chegam a ser
+   * criados e a seção rola normalmente com o `<picture>` na tela. Verificado:
+   * 12s depois, sem pin-spacer e sem trava.
+   *
+   * O resultado para o usuário está certo. A rede que o segura é outra. Se um
+   * dia alguém trocar aquele `await` por algo com timeout, este vigia não vai
+   * assumir o posto sozinho — vai precisar contar também os seeks recusados por
+   * falta de dado.
    */
   setTimeout(() => {
     if (seeksPedidos === 0) return; // ninguém rolou ainda; nada a julgar
