@@ -183,6 +183,23 @@ const RECUO = 0.85;
 const LARGA = { largura: 1920, altura: 960 };    // 2:1 — ver "DESKTOP" acima
 const CELULAR = { largura: 1080, altura: 1920 }; // 9:16 nativo do take
 
+/**
+ * Amostra a cor média de um retângulo do take, no meio do vídeo.
+ *
+ * Serve para pintar as margens de cima e de baixo, que não podem ser estendidas
+ * por smear — ver o comentário de `compor`.
+ */
+function amostrarCor(arquivo, x, y, w, h) {
+  const bruto = execFileSync('ffmpeg', [
+    '-v', 'error', '-ss', '4', '-i', arquivo,
+    '-frames:v', '1',
+    '-vf', `crop=${w}:${h}:${x}:${y},scale=1:1`,
+    '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-',
+  ], { maxBuffer: 1 << 20 });
+  const hex = (n) => n.toString(16).padStart(2, '0');
+  return `0x${hex(bruto[0])}${hex(bruto[1])}${hex(bruto[2])}`;
+}
+
 /** Lê as dimensões reais da fonte — as margens dependem delas. */
 function medir(arquivo) {
   const saida = execFileSync('ffprobe', [
@@ -224,6 +241,7 @@ function medir(arquivo) {
  * ffprobe de width/height mostra o número certo; é o SAR que mente.
  */
 const compor = (fonte, l, a, escala = 1) => {
+  const { corTopo, corBase } = fonte;
   // Quanto o take cabe dentro de `escala` do quadro, preservando a proporção.
   const fator = Math.min((l * escala) / fonte.w, (a * escala) / fonte.h);
   /**
@@ -247,21 +265,67 @@ const compor = (fonte, l, a, escala = 1) => {
   const fh = Math.round((fonte.h * fator) / 4) * 4;
   const esq = Math.floor((l - fw) / 4) * 2;
   const topo = Math.floor((a - fh) / 4) * 2;
+  const dir = l - fw - esq;
+  const base = a - fh - topo;
   return (
     `scale=${fw}:${fh},` +
-    `pad=${l}:${a}:${esq}:${topo},` +
     // Sem subamostragem de croma, o fillborders cobre os três planos por igual.
     // O encoder devolve para yuv420p depois, via -pix_fmt.
     `format=yuv444p,` +
-    `fillborders=left=${esq}:right=${l - fw - esq}:top=${topo}:bottom=${a - fh - topo}:mode=smear,` +
+    /**
+     * SMEAR SÓ NA LATERAL. No topo e na base ele produzia um defeito grosseiro.
+     *
+     * `mode=smear` replica a linha da borda para fora. Isso é seguro onde a
+     * borda é fundo — e na lateral é: o take tem 17,6% de folga no 16:9.
+     *
+     * No TOPO não é. Medido quadro a quadro, o produto toca a linha 0 em 114 dos
+     * 192 quadros: quando o pão sobe, ele encosta na borda do take. O smear então
+     * replicava o PÃO, esticando a coroa dele numa coluna clara que atravessava a
+     * margem inteira até o alto da tela. O cliente descreveu como "um feixo de
+     * luz gigante em cima do pão". Medido no pior quadro: a linha 2 do terço
+     * central marcava 150 de luminância média, pico 250, contra 45-60 do fundo.
+     *
+     * Por isso topo e base são PINTADOS com a cor do fundo, amostrada do próprio
+     * take. O pão continua vindo decepado do gerador — isso é o material, e não
+     * tem conserto aqui —, mas ao menos deixa de ser amplificado num pilar.
+     *
+     * Duas cores, e não uma: o fundo tem gradiente vertical (medido 51 no alto e
+     * 88 embaixo, no vertical), e pintar tudo do mesmo tom criaria uma emenda
+     * onde antes não havia.
+     */
+    // A ordem importa: primeiro abre a margem LATERAL e a preenche por smear,
+    // depois abre a vertical e a PINTA. `fillborders` não cria espaço — ele
+    // substitui pixels dentro do quadro que já existe.
+    `pad=${l}:${fh}:${esq}:0,` +
+    `fillborders=left=${esq}:right=${dir}:top=0:bottom=0:mode=smear,` +
+    `pad=${l}:${a}:0:${topo}:color=${corTopo},` +
+    `drawbox=x=0:y=0:w=${l}:h=${topo}:color=${corTopo}:t=fill,` +
+    `drawbox=x=0:y=${a - base}:w=${l}:h=${base}:color=${corBase}:t=fill,` +
     `setsar=1`
   );
 };
 
-/** As duas fontes, medidas uma vez. `compor` precisa das dimensões reais. */
+/**
+ * As duas fontes, medidas uma vez: dimensões e a cor do fundo nas duas pontas.
+ *
+ * As cores saem de uma faixa larga e baixa colada no canto ESQUERDO, em cima e
+ * embaixo — região que é fundo em qualquer quadro, porque o produto é centrado e
+ * tem folga lateral. Amostrar do centro pegaria o pão.
+ */
+function descrever(arquivo) {
+  const { w, h } = medir(arquivo);
+  const faixaW = Math.round(w * 0.12);
+  const faixaH = Math.round(h * 0.03);
+  return {
+    w, h,
+    corTopo: amostrarCor(arquivo, 0, 0, faixaW, faixaH),
+    corBase: amostrarCor(arquivo, 0, h - faixaH, faixaW, faixaH),
+  };
+}
+
 const FONTE = {
-  larga: medir(ORIGEM_LARGA),
-  vertical: medir(ORIGEM_VERTICAL),
+  larga: descrever(ORIGEM_LARGA),
+  vertical: descrever(ORIGEM_VERTICAL),
 };
 
 /**
