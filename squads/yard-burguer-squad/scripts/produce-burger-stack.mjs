@@ -135,9 +135,12 @@ function parseArgs(argv) {
 }
 
 async function gerarMae(modelo, chave) {
-  const resposta = await fetch(`${API}/${modelo}:generateContent?key=${chave}`, {
+  // Chave por HEADER, nunca na query: URL vaza em log de proxy, em historico de
+  // shell e na mensagem de erro que este proprio script imprime abaixo. E o
+  // mesmo padrao que produce-layers.mjs ja usa.
+  const resposta = await fetch(`${API}/${modelo}:generateContent`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', 'x-goog-api-key': chave },
     body: JSON.stringify({
       contents: [{ parts: [{ text: `${PROMPT_MAE} ${EXIGENCIA_FUNDO}` }] }],
     }),
@@ -396,13 +399,40 @@ async function main() {
     mae = await gerarMae(modelo, chave);
   }
 
-  await writeFile(caminhoMae, mae);
+  /**
+   * O demo NUNCA escreve por cima da mae paga.
+   *
+   * Antes o writeFile era um so, no fim dos tres caminhos: uma rodada com
+   * --demo trocava burger-mae.png pela composicao local, e o --reuse seguinte
+   * reaproveitava essa composicao achando que era a imagem do modelo. O
+   * conjunto saia de uma origem que ninguem pediu, sem nenhum aviso.
+   */
+  await writeFile(args.demo ? join(dirRaw, 'burger-mae-demo.png') : caminhoMae, mae);
 
   const { buffer: recortada, proporcaoFundo } = await recortarChroma(mae);
   console.log(`fundo removido: ${(proporcaoFundo * 100).toFixed(0)}%`);
 
   const faixas = await detectarFaixas(recortada, fatias);
   console.log(`faixas detectadas: ${faixas.blocos.length} (canvas ${faixas.largura}x${faixas.altura})`);
+
+  /**
+   * Contagem errada REPROVA a execucao — mesma regra que produce-layers.mjs ja
+   * aplica ao recorte.
+   *
+   * Os nomes sao atribuidos por POSICAO: NOMES[i] para o bloco i. Se a deteccao
+   * devolver 6 faixas onde deviam existir 7, tudo abaixo da faixa perdida anda
+   * uma casa — o queijo publicado como blend, o bacon como pao-inferior. O
+   * manifest sai completo, valido e errado, e nada na cena denuncia a troca.
+   * Meio conjunto vira colagem; conjunto trocado e pior, porque parece certo.
+   */
+  if (faixas.blocos.length !== fatias) {
+    throw new Error(
+      `faixas detectadas: ${faixas.blocos.length}, esperado ${fatias}. Os nomes sairiam ` +
+        'deslocados por posicao — manifest NAO escrito. Confira a separacao entre as ' +
+        'camadas na imagem-mae antes de repetir.'
+    );
+  }
+
   faixas.blocos.forEach((b, i) =>
     console.log(`       ${i + 1}: y ${b.topo}-${b.base}  altura ${b.base - b.topo}`)
   );
