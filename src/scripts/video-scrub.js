@@ -89,7 +89,7 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
    * Como o src já era atribuído por JS de qualquer forma (para não baixar nada
    * sob reduced-motion), escolher aqui não custa nada e é determinístico.
    *
-   * O arquivo do celular é um quadro VERTICAL COMPOSTO (9:19,5), não um corte do
+   * O arquivo do celular é um quadro VERTICAL COMPOSTO (9:16), não um corte do
    * 16:9. O material é horizontal e a tela do celular é altíssima: cortar para
    * preencher exigiria uma faixa de 498px do original, e o hambúrguer sozinho
    * tem 780px — decaparia o pão pelas laterais. Então o ffmpeg monta o quadro:
@@ -160,14 +160,65 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
   palco.setAttribute('data-pronto', '');
 
   /**
+   * DECIDE `cover` vs `contain` COMPARANDO ARQUIVO E PALCO.
+   *
+   * O CSS não consegue fazer esta conta: ele não conhece a proporção do arquivo,
+   * e o palco é o viewport menos a navbar, então nem a proporção da tela serve
+   * de proxy — 1440x900 é 1,60 de viewport e 1,748 de palco. Uma tentativa de
+   * escrever isso em `aspect-ratio` derrubou 1440x900 e o iPhone 14 para
+   * `contain` e liberou o iPad mini para um `cover` que cortava 20% da altura.
+   *
+   * Aqui as duas grandezas estão à mão. `cover` só entra se o corte couber na
+   * margem que o encode embutiu; caso contrário fica o `contain` do CSS, que
+   * mostra o produto inteiro e aceita faixa de carvão.
+   *
+   * MARGEM_SEGURA é 0,15 porque o encode compõe com RECUO = 0,85 — 7,5% de
+   * preenchimento por lado, ou 15% num eixo. Se aquele número mudar, este muda
+   * junto; são o mesmo fato escrito nas duas pontas.
+   */
+  const MARGEM_SEGURA = 0.15;
+
+  function ajustarEnquadramento() {
+    const r = palco.getBoundingClientRect();
+    if (!r.width || !r.height || !video.videoWidth || !video.videoHeight) return;
+    const arquivo = video.videoWidth / video.videoHeight;
+    const caixa = r.width / r.height;
+    // Quanto o cover comeria do eixo mais apertado.
+    const corte = 1 - Math.min(arquivo, caixa) / Math.max(arquivo, caixa);
+    palco.toggleAttribute('data-fit', false);
+    if (corte <= MARGEM_SEGURA) palco.setAttribute('data-fit', 'cover');
+  }
+
+  ajustarEnquadramento();
+  // Girar o aparelho muda o palco e pode virar o veredito. `resize` cobre a
+  // rotação em todo browser; `orientationchange` sozinho não dispara em desktop.
+  window.addEventListener('resize', ajustarEnquadramento, { passive: true });
+
+  /**
    * O trilho é o MESMO da variante em camadas: +=180% no desktop, +=110% no
    * mobile. Não é preguiça — é o que torna as duas versões comparáveis lado a
-   * lado. O cliente vai julgar o material, não o comprimento do trilho, e
-   * mudar as duas variáveis ao mesmo tempo destruiria a comparação.
+   * lado. O cliente vai julgar o material, não o comprimento do trilho.
    *
-   * Em números: 10s a 24fps são 240 quadros. No desktop, 180% de uma tela de
-   * 900px são 1620px de scroll — ~6,8px por quadro. É denso o bastante para o
-   * movimento ler como contínuo e curto o bastante para ninguém cansar.
+   * QUEM DECIDE É `ehTelaDeCelular`, NÃO `ehMobile`. Esta linha usava o
+   * `ehMobile` do motion.js, que é `matchMedia('(max-width: 767px)')` avaliado
+   * UMA VEZ no load — o mesmo defeito que já tinha sido corrigido para a escolha
+   * do arquivo, ainda vivo num segundo consumidor. Consertaram o arquivo e
+   * esqueceram o trilho.
+   *
+   * O que isso produzia, medido em A/B no build de produção, com o viewport
+   * final IDÊNTICO em 390x844: 928px de trilho se a página abriu em pé, 1519px
+   * se abriu deitada e girou. +64% de trilho, metade do ritmo da cena, decidido
+   * por uma coisa que o usuário não escolheu.
+   *
+   * `ehTelaDeCelular` sai da consulta por LADO CURTO, que é invariante à
+   * rotação. Ela dá a mesma resposta em pé e deitado, então o trilho para de
+   * depender de como a página nasceu — e continua não havendo o que retrocarregar
+   * ao girar, porque é a mesma pergunta que escolheu o arquivo.
+   *
+   * Em números com o material atual: 8s a 24fps são 192 quadros. No desktop,
+   * 180% de uma tela de 900px são 1620px de scroll — ~7,9px por quadro (era 6,3
+   * com os 240 quadros do take de 10s). No celular são ~4,5px. Um clique de roda
+   * avança 12 a 25 quadros: continua lendo como contínuo.
    */
   const estado = { t: 0 };
 
@@ -175,7 +226,7 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
     scrollTrigger: {
       trigger: secao,
       start: 'top top',
-      end: ehMobile ? '+=110%' : '+=180%',
+      end: ehTelaDeCelular ? '+=110%' : '+=180%',
       /**
        * scrub 0.5, e não o 1 da variante em camadas.
        *
@@ -204,9 +255,10 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
    * cancela cada um no meio para atender o próximo e o resultado é um vídeo que
    * trava justamente enquanto se rola.
    *
-   * MEDIDO (2026-08-25, trilho inteiro percorrido em 4,3s, build de produção):
-   * 261 quadros de ticker produziram 160 seeks em vez de 261 — 39% a menos, com
-   * 0 seeks perdidos e o currentTime chegando aos 10,00s. O corte é maior quanto
+   * MEDIDO (2026-08-25, trilho inteiro percorrido em 4,3s, build de produção,
+   * com o take de 10s que havia então): 261 quadros de ticker produziram 160
+   * seeks em vez de 261 — 39% a menos, com 0 seeks perdidos e o currentTime
+   * chegando ao fim da duração. O corte é maior quanto
    * mais devagar se rola, que é justamente quando mais quadros de ticker caem
    * dentro do mesmo quadro de vídeo. E não muda um pixel do que se vê: buscar
    * duas posições dentro do mesmo quadro mostra o mesmo quadro.
@@ -345,9 +397,9 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
   /**
    * Remedição depois que o vídeo virou conteúdo real.
    *
-   * O palco tem aspect-ratio no CSS, então o layout não salta quando o vídeo
-   * chega — mas o trilho de pin foi medido antes de o `<video>` ter dimensão
-   * intrínseca, e medir de novo custa um quadro. Em 4G do interior é a
+   * O palco é dimensionado por CSS antes de qualquer byte chegar, então o layout
+   * não salta quando o vídeo chega — mas o trilho de pin foi medido antes de o
+   * `<video>` ter dimensão intrínseca, e medir de novo custa um quadro. Em 4G do interior é a
    * diferença entre a cena terminar no lugar certo e terminar depois do fim.
    */
   ScrollTrigger.refresh();

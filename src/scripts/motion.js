@@ -14,7 +14,23 @@
  */
 
 const prefereMenosMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const ehMobile = window.matchMedia('(max-width: 767px)').matches;
+
+/**
+ * "Isto é um aparelho pequeno?" — perguntado pelo LADO CURTO, não pela largura.
+ *
+ * Era `(max-width: 767px)`, e a largura muda quando o aparelho gira: um iPhone
+ * 14 deitado tem 844px e passava por desktop. A consequência que mais doía
+ * estava logo abaixo, no Lenis — celular aberto na horizontal ligava o smooth
+ * scroll, que a arquitetura de peso exclui de propósito em mobile. Medido:
+ * `lenisNaCarga: true` em 844x390 e em 915x412.
+ *
+ * O lado curto de um aparelho não muda ao girar, então esta resposta é estável
+ * na rotação. É a MESMA pergunta que `CONSULTA_CELULAR` faz em VideoScene.astro
+ * para escolher o arquivo de vídeo — e ela precisa continuar sendo a mesma. Toda
+ * vez que estas duas divergiram, alguma coisa quebrou em silêncio: o arquivo
+ * errado baixado, o véu errado aplicado, o trilho com 64% a mais de comprimento.
+ */
+const ehMobile = window.matchMedia('(max-width: 900px), (max-height: 500px)').matches;
 
 /**
  * Navbar ganha fundo sólido ao sair do topo.

@@ -32,14 +32,17 @@ const { explode } = copy;
  * Dimensões reais dos encodes. Reservam a caixa e evitam CLS.
  *
  * Precisam bater com `encodar-video-cena2.mjs` — é ele quem produz os arquivos,
- * e é lá que está escrito por que o 16:9 subiu para 1600x900 e por que o celular
- * deixou de ser quadrado: um recorte 1:1 de 468x468 no meio de uma tela de
- * 390x844 é um buraco, e o quadro vertical é COMPOSTO (hambúrguer inteiro na
- * largura toda, bordas preenchidas com o próprio take desfocado) em vez de
- * cortado — cortar para preencher decapitaria o pão.
+ * e é lá que está a conta que decidiu cada número. O resumo: desde 2026-08-26 há
+ * DOIS takes nativos do cliente (1920x1080 e 1080x1920), e cada saída é composta
+ * com uma margem de preenchimento para que o corte do `cover` caia no fundo e
+ * nunca no pão — medido, o produto encosta nas bordas dos dois takes.
+ *
+ * O 16:9 sai em 2:1 porque o palco do desktop é a tela MENOS a navbar, e isso o
+ * deixa sempre mais largo que 16:9; compondo em 2:1, o corte acontece na lateral,
+ * onde o take tem 17,6% de folga, em vez da vertical, onde tem 4,1%.
  */
-const LARGA = { largura: 1600, altura: 900 };
-const VERTICAL = { largura: 640, altura: 1388 };
+const LARGA = { largura: 1600, altura: 800 };
+const VERTICAL = { largura: 640, altura: 1138 };
 
 /**
  * QUEM É CELULAR — uma única string, e ela mora aqui.
@@ -67,13 +70,24 @@ const VERTICAL = { largura: 640, altura: 1388 };
  * nada para retrocarregar, nenhum scrub para reposicionar, nenhum salto para o
  * usuário ver. O problema não foi remediado, ele deixou de existir.
  *
- * 500px e não 767px porque é o vão honesto entre as duas famílias: o maior lado
- * curto de celular é 430 (iPhone 14 Pro Max) e o menor lado curto de tablet é
- * 744 (iPad mini). 500 separa os dois sem encostar em nenhum, e mantém os
- * laptops de 1280x720 — lado curto 720 — do lado do arquivo grande, que é onde
- * eles devem estar.
+ * POR QUE 900 E NÃO 500 (corrigido em 2026-08-26, segunda passada):
+ *
+ * O corte em 500 separava celular de tablet, e era exatamente esse o erro: o
+ * tablet ficava do lado errado. Um iPad em pé tem lado curto 768, então recebia
+ * o arquivo 2:1 do desktop num palco de 768x948 — proporção 0,81 contra 2,0 do
+ * arquivo. O `cover` cortava 59,5% da LARGURA e a tira de bacon atravessava a
+ * borda direita. Medido em três tablets: 59,5%, 62,7% e 64,8%.
+ *
+ * A pergunta nunca foi "isto é um telefone?". É "esta tela é alta ou larga?" —
+ * e tablet em pé é uma tela alta, que quer o arquivo vertical, exatamente como
+ * um celular em pé. 900 põe iPad (768), iPad mini (744) e iPad Pro (834) do lado
+ * certo, e continua deixando laptop de 1280x720 no arquivo largo.
+ *
+ * O `max-height: 500` continua ali pelo motivo original: manter a resposta
+ * invariante à rotação de um celular. iPhone 14 deitado é 844x390 — a altura o
+ * pega, e nada é retrocarregado ao girar.
  */
-const CONSULTA_CELULAR = '(max-width: 500px), (max-height: 500px)';
+const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
 ---
 
 <section class="cenavideo textura-brasa" id="explode" data-cena="video" aria-labelledby="explode-titulo">
@@ -252,23 +266,21 @@ const CONSULTA_CELULAR = '(max-width: 500px), (max-height: 500px)';
    * quadrado na tela do mobile acaba ficando muito feio" e pediu a tela toda,
    * aqui e no desktop.
    *
-   * `cover` voltou, mas o que o torna seguro agora NÃO é o CSS — é o material.
-   * Cada formato passou a ter um arquivo com a proporção do seu destino
-   * (encodar-video-cena2.mjs), e o vertical do celular carrega uma MARGEM DE
-   * SEGURANÇA embutida: o hambúrguer ocupa 886px de altura no meio de um quadro
-   * de 1388, deixando 251px de preenchimento desfocado em cima e embaixo. Todo
-   * corte de `cover` cai nessa margem antes de chegar perto do pão.
+   * `cover` voltou, mas o que o torna seguro NÃO é o CSS — é o material. Cada
+   * formato tem um arquivo na proporção do seu destino, COMPOSTO com margem de
+   * preenchimento desfocado em volta (ver encodar-video-cena2.mjs, que é onde a
+   * conta mora). O take entra inteiro no quadro, a 85% dele, e os 7,5% de sobra
+   * por lado são o que o `cover` come antes de chegar ao pão.
    *
-   * A conta que prova, no pior caso de proporção entre celulares: iPhone SE
-   * 375x667 é 0,562 contra 0,4615 do arquivo, então `cover` corta 21% da altura
-   * — 146px de 1388, contra os 251px de margem. Sobram 105px de folga. No
-   * iPhone 14 (0,462) a diferença é de milésimos e não corta praticamente nada.
+   * As duas exceções em que `cover` deixa de ser seguro estão na regra logo
+   * abaixo: tela larga demais (>1,9:1) e tela alta demais (<1,15:1). Fora dessa
+   * faixa a mídia recua para `contain`.
    *
-   * ULTRAWIDE É A EXCEÇÃO, e por isso tem a regra logo abaixo. O 16:9 do desktop
-   * não tem margem embutida — encher 2560x1080 exigiria cortar 33% da ALTURA,
-   * que é onde o pão de cima encosta na borda. Acima de 1,9:1 a mídia volta para
-   * `contain` e aceita faixas de carvão nas laterais. Faixa é feia; pão decepado
-   * é pior, e é o único limite honesto de material 16:9 numa tela dessas.
+   * OS NÚMEROS DESTE BLOCO SÃO DERIVADOS DO ARQUIVO, e o arquivo muda quando o
+   * cliente manda take novo. Não confie neles sem remedir — já houve um caso em
+   * que este comentário descrevia um encode de 640x1388 enquanto o arquivo real
+   * era 640x1138, e num código em que o comentário carrega o argumento de
+   * segurança, número velho é exatamente como a decapitação volta.
    *
    * O canal de transform está livre — o GSAP anima `opacity` no véu e
    * `opacity`/`y` no bloco de texto, nunca a mídia.
@@ -280,7 +292,15 @@ const CONSULTA_CELULAR = '(max-width: 500px), (max-height: 500px)';
     width: 100%;
     height: 100%;
     max-width: none;
-    object-fit: cover;
+    /**
+     * O PADRÃO É `contain`, e as exceções é que liberam `cover`.
+     *
+     * Estava ao contrário — `cover` por padrão, com dois escapes para `contain`
+     * nos extremos — e a inversão importa: com `cover` no padrão, toda tela de
+     * proporção não prevista decepa o produto por omissão. Com `contain`, o pior
+     * caso de uma tela nova é faixa de carvão. Errar para o lado da faixa.
+     */
+    object-fit: contain;
     /**
      * ANCORADO NO TOPO — a única linha que impede o pão de ser decepado.
      *
@@ -302,18 +322,32 @@ const CONSULTA_CELULAR = '(max-width: 500px), (max-height: 500px)';
   }
 
   /**
-   * Telas mais largas que 1,9:1 — ultrawide de verdade, não notebook.
+   * QUEM LIBERA `cover` É O JS, e a media query não daria conta.
    *
-   * 1,9 e não 16:9 (1,778) exatos: numa tela de exatamente 16:9 o cover não
-   * corta nada, e a folga até 1,9 absorve a faixa da navbar sem que a regra
-   * dispare em monitor comum. Acima disso o corte vertical começaria a comer o
-   * pão, então a mídia recua para `contain`.
+   * `cover` é seguro enquanto o corte couber na margem composta — 7,5% por lado,
+   * ou seja até 15% em um eixo. Isso é uma comparação entre a proporção do
+   * ARQUIVO e a do PALCO, e nenhuma das duas cabe numa media query:
+   *
+   * - o palco é o viewport MENOS a navbar, e a diferença entre as duas
+   *   proporções depende da altura. 1440x900 é 1,60 de viewport e 1,748 de
+   *   palco; 1920x1080 é 1,778 e 1,912. Uma faixa escrita em `aspect-ratio`
+   *   acerta uma e erra a outra — foi o que aconteceu: derrubou 1440x900 e o
+   *   iPhone 14 para `contain` e liberou o iPad mini para um `cover` que cortava
+   *   20% da altura.
+   * - a proporção do arquivo o CSS simplesmente não conhece. Uma janela de
+   *   880x489 tem 1,80, que estaria na faixa boa para o arquivo 2:1, mas por ter
+   *   880px de largura ela recebe o VERTICAL. A proporção sozinha mente.
+   *
+   * O video-scrub.js sabe as duas coisas — `videoWidth/videoHeight` do arquivo
+   * que ele mesmo carregou e o retângulo real do palco — e escreve o veredito em
+   * `data-fit`. Ele reavalia no resize, então girar o aparelho recalcula.
+   *
+   * O padrão continua sendo `contain`: sem JS, ou antes de ele rodar, o pior caso
+   * é faixa de carvão. Errar para o lado da faixa.
    */
-  @media (min-aspect-ratio: 1.9 / 1) {
-    .cenavideo__poster,
-    .cenavideo__video {
-      object-fit: contain;
-    }
+  .cenavideo__palco[data-fit='cover'] .cenavideo__poster,
+  .cenavideo__palco[data-fit='cover'] .cenavideo__video {
+    object-fit: cover;
   }
 
   /**
@@ -404,26 +438,27 @@ const CONSULTA_CELULAR = '(max-width: 500px), (max-height: 500px)';
     text-shadow: 0 1px 10px rgb(20 12 6 / 0.5);
   }
 
-  @media (max-width: 767px) {
-    /**
-     * O que sobrou aqui é só o que é MESMO uma questão de tela estreita: a
-     * altura do véu e a largura do bloco de texto.
-     *
-     * A caixa da mídia saiu deste bloco em 2026-08-26 e não volta. Ela era o
-     * terceiro opinador sobre "isto é um celular?" — e era o que decepava o pão
-     * quando discordava dos outros dois. Hoje a mídia se dimensiona pela
-     * proporção do próprio arquivo, igual em qualquer largura, e por isso não
-     * tem nada a fazer dentro de uma media query.
-     *
-     * O enquadramento do celular continua sendo exatamente o mesmo de antes —
-     * 468x468 em 390px de largura, com o carvão em letterbox e o texto caindo na
-     * faixa abaixo da imagem, onde a leitura é mais limpa. O corte lateral de
-     * 8,33% também é o mesmo, agora produzido pelo `width: 120%` da caixa. Ele
-     * continua calibrado contra o material: medido no take (n=21 quadros), o
-     * ponto mais largo do hambúrguer vive entre 16,3% e 80,2% da largura do
-     * arquivo, e a janela visível vai de 8,33% a 91,67% — sobram 7,9% de folga
-     * de um lado e 11,5% do outro.
-     */
+  /**
+   * A MESMA CONSULTA DE CONSULTA_CELULAR, e ela precisa continuar igual.
+   *
+   * Aqui ficou só o que é MESMO questão de tela pequena: a altura do véu e a
+   * largura do bloco de texto. A caixa da mídia saiu deste bloco e não volta —
+   * ela se dimensiona pela proporção do próprio arquivo, igual em qualquer
+   * largura.
+   *
+   * Mas a condição em si era `(max-width: 767px)`, DIFERENTE da que escolhe o
+   * arquivo, e a divergência custou caro de novo: um celular deitado tem 844px
+   * de largura, então recebia o véu de desktop — 26% de altura em vez de 48% —
+   * enquanto o título continuava sobre o vídeo. Medido no build de produção,
+   * o contraste caía para 2,12:1 no iPhone 14 deitado, 2,23:1 no Pixel 7 e
+   * 2,86:1 no Pro Max, contra os 3,0 que o WCAG pede para texto grande. Os três
+   * reprovavam AA.
+   *
+   * Não dá para interpolar a constante JS dentro de um `@media` — o Astro não
+   * substitui ali. Então a regra é: se `CONSULTA_CELULAR` mudar lá em cima,
+   * MUDA AQUI JUNTO. As duas strings são a mesma pergunta.
+   */
+  @media (max-width: 900px), (max-height: 500px) {
     .cenavideo__veu {
       height: 48%;
     }
