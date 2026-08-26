@@ -184,20 +184,39 @@ const LARGA = { largura: 1920, altura: 960 };    // 2:1 — ver "DESKTOP" acima
 const CELULAR = { largura: 1080, altura: 1920 }; // 9:16 nativo do take
 
 /**
- * Amostra a cor média de um retângulo do take, no meio do vídeo.
+ * A cor do FUNDO na linha de borda do take — não a cor média dela.
  *
- * Serve para pintar as margens de cima e de baixo, que não podem ser estendidas
- * por smear — ver o comentário de `compor`.
+ * A distinção é o que fez a diferença. A primeira versão amostrava um retângulo
+ * no canto superior esquerdo, e o canto tem vinheta: dava 45 enquanto a linha de
+ * borda no centro do quadro estava em 51. Pintar a margem com 45 deixava um
+ * degrau de 6 níveis atravessando a tela na emenda — sutil, mas numa área lisa e
+ * escura o olho encontra.
+ *
+ * Amostrar a linha inteira também não serve: quando o pão encosta na borda, ele
+ * entra na média e puxa a cor para o claro.
+ *
+ * Então: lê a linha de borda inteira, ordena os pixels por brilho e tira a média
+ * dos 40% MAIS ESCUROS. O produto é sempre mais claro que o fundo neste
+ * material, então ele cai fora do corte sozinho, e o que sobra é o fundo tal como
+ * ele é na altura exata onde a emenda vai acontecer.
  */
-function amostrarCor(arquivo, x, y, w, h) {
+function corDoFundoNaBorda(arquivo, largura, y, alturaFaixa) {
   const bruto = execFileSync('ffmpeg', [
     '-v', 'error', '-ss', '4', '-i', arquivo,
     '-frames:v', '1',
-    '-vf', `crop=${w}:${h}:${x}:${y},scale=1:1`,
+    '-vf', `crop=${largura}:${alturaFaixa}:0:${y},scale=${largura}:1`,
     '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-',
-  ], { maxBuffer: 1 << 20 });
-  const hex = (n) => n.toString(16).padStart(2, '0');
-  return `0x${hex(bruto[0])}${hex(bruto[1])}${hex(bruto[2])}`;
+  ], { maxBuffer: 1 << 24 });
+
+  const px = [];
+  for (let i = 0; i < largura; i++) {
+    px.push([bruto[i * 3], bruto[i * 3 + 1], bruto[i * 3 + 2]]);
+  }
+  px.sort((a, b) => a[0] + a[1] + a[2] - (b[0] + b[1] + b[2]));
+  const escuros = px.slice(0, Math.max(1, Math.floor(largura * 0.4)));
+  const soma = escuros.reduce((s, p) => [s[0] + p[0], s[1] + p[1], s[2] + p[2]], [0, 0, 0]);
+  const hex = (n) => Math.round(n / escuros.length).toString(16).padStart(2, '0');
+  return `0x${hex(soma[0])}${hex(soma[1])}${hex(soma[2])}`;
 }
 
 /** Lê as dimensões reais da fonte — as margens dependem delas. */
@@ -308,18 +327,17 @@ const compor = (fonte, l, a, escala = 1) => {
 /**
  * As duas fontes, medidas uma vez: dimensões e a cor do fundo nas duas pontas.
  *
- * As cores saem de uma faixa larga e baixa colada no canto ESQUERDO, em cima e
- * embaixo — região que é fundo em qualquer quadro, porque o produto é centrado e
- * tem folga lateral. Amostrar do centro pegaria o pão.
+ * A faixa é fina (1,5% da altura) e colada na borda de propósito: a cor precisa
+ * ser a do fundo NA ALTURA DA EMENDA, não uma média da região. Quanto mais longe
+ * da borda, mais o gradiente do fundo afasta a amostra do valor que interessa.
  */
 function descrever(arquivo) {
   const { w, h } = medir(arquivo);
-  const faixaW = Math.round(w * 0.12);
-  const faixaH = Math.round(h * 0.03);
+  const faixaH = Math.max(2, Math.round(h * 0.015));
   return {
     w, h,
-    corTopo: amostrarCor(arquivo, 0, 0, faixaW, faixaH),
-    corBase: amostrarCor(arquivo, 0, h - faixaH, faixaW, faixaH),
+    corTopo: corDoFundoNaBorda(arquivo, w, 0, faixaH),
+    corBase: corDoFundoNaBorda(arquivo, w, h - faixaH, faixaH),
   };
 }
 
