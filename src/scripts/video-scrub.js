@@ -273,8 +273,14 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
    * já vêm embutidos — e `invalidateOnRefresh` faz a conta de novo quando o
    * aparelho gira.
    */
-  const comprimentoDoTrilho = () =>
-    Math.round(reservaDoTrilho?.getBoundingClientRect().height ?? 0) || 0;
+  /**
+   * Sem arredondar: 110svh de uma tela de 727px são 799,7px, e `Math.round`
+   * fazia o trilho medir 800. A diferença de 0,04% deslocava o scrub em meio
+   * quadro no meio da cena — invisível para uma pessoa, mas suficiente para o
+   * A/B de pixels acusar 16% de diferença e mandar procurar defeito onde não
+   * havia. O valor fracionário reproduz exatamente o `+=110%` de antes.
+   */
+  const comprimentoDoTrilho = () => reservaDoTrilho?.getBoundingClientRect().height ?? 0;
 
   const trilho = gsap.timeline({
     scrollTrigger: {

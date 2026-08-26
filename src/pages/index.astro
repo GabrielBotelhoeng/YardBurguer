@@ -482,7 +482,32 @@ const combos = menu.combos.map((combo) => ({
   @media (min-width: 60rem) {
     .cards { grid-template-columns: repeat(2, 1fr); }
     .card--destaque { grid-column: 1 / -1; flex-direction: row; }
-    .card--destaque .card__foto { width: 45%; aspect-ratio: auto; margin-bottom: 0; }
+    /* 1/1 e nao `auto`: as fotos do Brendi sao quadradas, e `auto` faz o
+       navegador esperar a imagem chegar para saber a altura. Como ela e lazy,
+       a reserva so aparecia no load e a secao crescia 320px com a pessoa
+       olhando — medido em 26/08, no desktop. Com a razao declarada, o espaco
+       existe desde o primeiro paint. `object-fit: cover` continua garantindo
+       que foto fora do quadrado nao distorca. */
+    /* `flex: 0 0 45%` e nao `width: 45%`.
+       Num flex row, largura em porcentagem ainda passa pelo encolhimento, e o
+       tamanho base vem do conteudo — que, numa <img> lazy, so existe depois do
+       download. Medido em 26/08 no desktop: a foto do carro-chefe nascia com
+       171px e virava 468px ao chegar, empurrando ~300px da pagina para baixo
+       com a pessoa olhando. Com a base travada, os 45% valem desde o primeiro
+       paint.
+
+       aspect-ratio 1/1 (e nao `auto`) pelo mesmo motivo: `auto` manda o
+       navegador esperar a imagem para saber a altura. As fotos do Brendi sao
+       quadradas e `object-fit: cover` cobre quem nao for. */
+    .card--destaque .card__foto {
+      flex: 0 0 45%;
+      /* Item flex tem `min-width: auto` por padrao, e isso deixa o tamanho
+         INTRINSECO da imagem (480px) vencer a base de 45% quando ela chega —
+         sobravam 12px de crescimento mesmo com a base travada. */
+      min-width: 0;
+      aspect-ratio: 1 / 1;
+      margin-bottom: 0;
+    }
     .card--destaque > :not(.card__foto) { padding-top: 1.75rem; }
   }
   .card__selo {
