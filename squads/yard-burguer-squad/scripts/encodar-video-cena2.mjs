@@ -168,9 +168,27 @@ const compor = (l, a, escala = 1) => {
     // primeiro plano não era a mesma coisa que estava atrás dele, e a emenda
     // aparecia como um degrau reto atravessando a tela.
     `[a]scale=${l}:${a}:force_original_aspect_ratio=increase,crop=${l}:${a},setsar=1,` +
-    // -0.06 e não -0.15: escurecer demais era metade do degrau. O bastante para o
-    // fundo recuar e o hambúrguer continuar sendo o assunto, sem virar faixa.
-    `gblur=sigma=30,eq=brightness=-0.06[bg];` +
+    /**
+     * SEM ESCURECER. Havia um `eq=brightness=-0.06` aqui, herdado de quando o
+     * material tinha ambiente e o preenchimento precisava recuar para o
+     * hambúrguer continuar sendo o assunto.
+     *
+     * Com os takes atuais ele passou a ser o defeito. O fundo deles é um cinza
+     * escuro UNIFORME — medido na fonte, 44 a 46 em toda a lateral do quadro. O
+     * brightness derrubava a margem para 26 enquanto o centro ficava em 47, e
+     * essa diferença desenhava uma moldura retangular em volta do produto. O
+     * cliente viu na hora: "por que tá esse borrado em volta? tipo quadrado".
+     *
+     * Sem ele, medido no mesmo ponto: canto 46, a 5% da borda 45, a 10% 47. A
+     * margem passa a ter a luminância do próprio fundo e deixa de ser visível —
+     * que é o ponto de uma margem de segurança. Ela precisa existir; não precisa
+     * aparecer.
+     *
+     * O blur fica porque é ele que garante isso num take futuro cujo fundo não
+     * seja tão liso. Com fundo uniforme, borrar não muda nada — sigma 12 e 30
+     * dão o mesmo resultado aqui.
+     */
+    `gblur=sigma=30[bg];` +
     // O FEATHER — sem ele a composição não engana ninguém. `overlay` cola o
     // primeiro plano com alfa 1 até a última linha, então por mais que fundo e
     // frente combinem de cor, a emenda ainda é uma reta perfeita atravessando a
