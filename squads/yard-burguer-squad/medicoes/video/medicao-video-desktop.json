@@ -1,0 +1,187 @@
+{
+  "perfil": "desktop",
+  "relatorio": [
+    {
+      "ponto": "0%",
+      "vh": 900,
+      "alturaSecao": 900,
+      "secaoCabe": true,
+      "palco": {
+        "largura": 736,
+        "altura": 414
+      },
+      "enquadramento": "ok",
+      "video": {
+        "src": "burger-stack-16x9.mp4",
+        "currentTime": 0,
+        "duration": 10,
+        "readyState": 4,
+        "bufferizadoAte": 10,
+        "visivel": true,
+        "degradado": false
+      }
+    },
+    {
+      "ponto": "25%",
+      "vh": 900,
+      "alturaSecao": 900,
+      "secaoCabe": true,
+      "palco": {
+        "largura": 736,
+        "altura": 414
+      },
+      "enquadramento": "ok",
+      "video": {
+        "src": "burger-stack-16x9.mp4",
+        "currentTime": 2.518,
+        "duration": 10,
+        "readyState": 4,
+        "bufferizadoAte": 10,
+        "visivel": true,
+        "degradado": false
+      }
+    },
+    {
+      "ponto": "50%",
+      "vh": 900,
+      "alturaSecao": 900,
+      "secaoCabe": true,
+      "palco": {
+        "largura": 736,
+        "altura": 414
+      },
+      "enquadramento": "ok",
+      "video": {
+        "src": "burger-stack-16x9.mp4",
+        "currentTime": 5.069,
+        "duration": 10,
+        "readyState": 4,
+        "bufferizadoAte": 10,
+        "visivel": true,
+        "degradado": false
+      }
+    },
+    {
+      "ponto": "75%",
+      "vh": 900,
+      "alturaSecao": 900,
+      "secaoCabe": true,
+      "palco": {
+        "largura": 736,
+        "altura": 414
+      },
+      "enquadramento": "ok",
+      "video": {
+        "src": "burger-stack-16x9.mp4",
+        "currentTime": 7.618,
+        "duration": 10,
+        "readyState": 4,
+        "bufferizadoAte": 10,
+        "visivel": true,
+        "degradado": false
+      }
+    },
+    {
+      "ponto": "100%",
+      "vh": 900,
+      "alturaSecao": 900,
+      "secaoCabe": true,
+      "palco": {
+        "largura": 736,
+        "altura": 414
+      },
+      "enquadramento": "ok",
+      "video": {
+        "src": "burger-stack-16x9.mp4",
+        "currentTime": 9.962,
+        "duration": 10,
+        "readyState": 4,
+        "bufferizadoAte": 10,
+        "visivel": true,
+        "degradado": false
+      }
+    }
+  ],
+  "rede": [
+    {
+      "url": "/_astro/anton-latin-400-normal.Byf51wtH.woff2",
+      "bytes": 18912
+    },
+    {
+      "url": "/_astro/inter-latin-wght-normal.Dx4kXJAl.woff2",
+      "bytes": 48556
+    },
+    {
+      "url": "/_astro/index.DtI0hMQP.css",
+      "bytes": 12604
+    },
+    {
+      "url": "/assets/hero.webp",
+      "bytes": 80670
+    },
+    {
+      "url": "/_astro/index.astro_astro_type_script_index_0_lang.jRWbnlYa.js",
+      "bytes": 1771
+    },
+    {
+      "url": "/_astro/lenis.BBml_0t9.js",
+      "bytes": 5746
+    },
+    {
+      "url": "/assets/video/burger-stack-poster-16x9.webp",
+      "bytes": 34254
+    },
+    {
+      "url": "/assets/produtos/tapera-do-sertao.webp",
+      "bytes": 16726
+    },
+    {
+      "url": "/assets/produtos/supremo.webp",
+      "bytes": 17788
+    },
+    {
+      "url": "/assets/produtos/yard-king.webp",
+      "bytes": 15502
+    },
+    {
+      "url": "/_astro/video-scrub.CSHZkupD.js",
+      "bytes": 1321
+    },
+    {
+      "url": "/_astro/ponte-lenis.CvI5JIK_.js",
+      "bytes": 45892
+    },
+    {
+      "url": "/assets/video/burger-stack-16x9.mp4",
+      "bytes": 605454
+    },
+    {
+      "url": "/assets/produtos/combo-mega.webp",
+      "bytes": 28596
+    },
+    {
+      "url": "/assets/produtos/combo-casal.webp",
+      "bytes": 29674
+    },
+    {
+      "url": "/assets/produtos/combo-familia.webp",
+      "bytes": 35792
+    },
+    {
+      "url": "/assets/produtos/combo-solteiro.webp",
+      "bytes": 24736
+    },
+    {
+      "url": "/ (documento)",
+      "bytes": 6285
+    }
+  ],
+  "total": 1030279,
+  "porTipo": {
+    "css+fonte": 80072,
+    "imagem": 283738,
+    "js": 54730,
+    "video": 605454,
+    "html/outros": 6285
+  }
+}

@@ -1,0 +1,235 @@
+---
+import copy from '../content/copy.json';
+
+/**
+ * Cena 2 — variante em VÍDEO, ao lado da variante em camadas.
+ *
+ * ExplodeScene.astro continua existindo e funcionando. As duas trocam pela flag
+ * de src/config/cena2.js, porque o cliente vai querer comparar e comparação com
+ * uma das versões apagada não é comparação.
+ *
+ * O que é COMPARTILHADO de propósito: o id `#explode` (a navbar aponta para
+ * ele), a copy, o texto de fundo em parallax e o comprimento do trilho de pin.
+ * Só o material muda. Se o trilho mudasse junto, ninguém saberia se o que
+ * melhorou foi o vídeo ou o ritmo.
+ *
+ * O ARQUIVO É REVERTIDO. O take do cliente vai de montado para explodido; o
+ * storyboard pede o contrário desde 2026-08-25. A reversão acontece no ffmpeg
+ * (ver o cabeçalho de video-scrub.js), não aqui e não no runtime.
+ */
+
+const { explode } = copy;
+
+/** Dimensões reais dos encodes. Reservam a caixa e evitam CLS. */
+const LARGA = { largura: 960, altura: 540 };
+const QUADRADA = { largura: 640, altura: 640 };
+---
+
+<section class="cenavideo textura-brasa" id="explode" data-cena="video" aria-labelledby="explode-titulo">
+  <!-- Texto de fundo: parallax mais lento que o vídeo. Mesmo papel da outra variante. -->
+  <div class="cenavideo__fundo" aria-hidden="true" data-parallax="0.15">
+    {explode.textoFundo}
+  </div>
+
+  <div class="cenavideo__conteudo" data-conteudo>
+    <h2 id="explode-titulo" class="cenavideo__titulo">{explode.titulo}</h2>
+    <p class="cenavideo__texto">{explode.texto}</p>
+  </div>
+
+  <div class="cenavideo__palco" data-palco>
+    {/*
+      O <picture> é o ESTADO DE REPOUSO, não um poster de carregamento.
+
+      É o último quadro do vídeo revertido: o hambúrguer montado. Sob
+      prefers-reduced-motion e sem JS ele é tudo o que existe nesta cena — e o
+      contrato do storyboard diz que toda cena precisa mostrar o produto
+      inteiro, nunca peças soltas. Por isso ele é uma <img> de verdade, com alt,
+      e não o atributo `poster` do <video>: o atributo desapareceria junto com o
+      vídeo, e é justamente quando o vídeo não existe que ele precisa aparecer.
+    */}
+    <picture>
+      <source
+        media="(max-width: 767px)"
+        srcset="/assets/video/burger-stack-poster-1x1.webp"
+        width={QUADRADA.largura}
+        height={QUADRADA.altura}
+      />
+      <img
+        class="cenavideo__poster"
+        src="/assets/video/burger-stack-poster-16x9.webp"
+        width={LARGA.largura}
+        height={LARGA.altura}
+        alt="O hambúrguer do YARD montado sobre a tábua de madeira: pão brioche, dois blends e cheddar derretido."
+        loading="lazy"
+        decoding="async"
+      />
+    </picture>
+
+    {/*
+      O <video> nasce SEM src e com preload="none".
+
+      Quem atribui a fonte é video-scrub.js, e ele só roda quando há movimento
+      permitido e a cena está a uma tela de distância. Consequência que vale
+      escrever: sob reduced-motion nenhum byte de vídeo é baixado — não é o
+      vídeo escondido, é o vídeo inexistente.
+
+      muted + playsinline não são opcionais: sem os dois o iOS abre o vídeo em
+      tela cheia e recusa o play que destrava a busca por currentTime.
+    */}
+    <video
+      class="cenavideo__video"
+      data-video
+      data-src-larga="/assets/video/burger-stack-16x9.mp4"
+      data-src-quadrada="/assets/video/burger-stack-1x1.mp4"
+      width={LARGA.largura}
+      height={LARGA.altura}
+      muted
+      playsinline
+      preload="none"
+      disablepictureinpicture
+      aria-hidden="true"
+      tabindex="-1"></video>
+  </div>
+</section>
+
+<style>
+  /* Mesma moldura da variante em camadas: coluna, texto em faixa própria acima
+     do material. A cena é pinada, então tudo precisa caber em uma tela. */
+  .cenavideo {
+    position: relative;
+    min-height: var(--cena-altura);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2.5rem;
+    padding: 6rem 1.5rem;
+    background-color: var(--color-carvao);
+    overflow: hidden;
+  }
+
+  .cenavideo__fundo {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+    font-size: var(--text-display);
+    line-height: 0.85;
+    text-align: center;
+    color: var(--color-terracota);
+    text-transform: uppercase;
+    user-select: none;
+    will-change: transform;
+  }
+
+  .cenavideo__conteudo {
+    position: relative;
+    z-index: 20;
+    max-width: 34rem;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .cenavideo__titulo {
+    font-family: var(--font-display);
+    font-size: var(--text-titulo);
+    color: var(--color-creme);
+    text-transform: uppercase;
+  }
+
+  .cenavideo__texto {
+    margin-top: 1rem;
+    color: var(--color-areia);
+    line-height: 1.6;
+  }
+
+  /**
+   * O PALCO — a caixa é limitada pela ALTURA, nunca por uma largura fixa.
+   *
+   * Mesma restrição que governa a pilha de camadas e pelo mesmo motivo: a cena
+   * é pinada. Se o palco passar do viewport, o pin reserva altura que não
+   * existe e o fim do trilho cai fora do quadro — não há para onde rolar dentro
+   * de uma seção travada.
+   *
+   * --desconto-altura é o que o palco NÃO pode ocupar: padding da seção (12rem),
+   * o bloco de texto, o gap entre os dois e uma folga. Muda por breakpoint
+   * porque o mobile tem padding menor e um parágrafo que quebra em mais linhas.
+   *
+   * A largura sai da altura útil multiplicada pela proporção do arquivo, então
+   * a caixa encolhe sozinha em tela baixa em vez de estourar.
+   */
+  .cenavideo__palco {
+    position: relative;
+    z-index: 15;
+    --desconto-altura: 26.5rem;
+    --altura-util: calc(100svh - var(--desconto-altura));
+    aspect-ratio: 16 / 9;
+    width: min(100%, 46rem, calc(var(--altura-util) * 16 / 9));
+    margin-inline: auto;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background-color: #000;
+    isolation: isolate;
+  }
+
+  /**
+   * Poster e vídeo ocupam exatamente a mesma caixa, empilhados.
+   *
+   * object-fit: cover é rede de segurança, não enquadramento: os arquivos já
+   * são cortados na proporção de cada breakpoint (16:9 no desktop, 1:1 no
+   * celular), então na prática não há corte nenhum. O cover só garante que uma
+   * troca futura de material não distorça o hambúrguer.
+   */
+  .cenavideo__poster,
+  .cenavideo__video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /**
+   * A troca poster → vídeo é só opacity — a única propriedade, junto com
+   * transform, que o orçamento de movimento permite animar.
+   *
+   * O vídeo nasce invisível e só aparece quando video-scrub.js já o posicionou
+   * no primeiro quadro. Sem isso, existiria uma janela em que o poster montado
+   * some e o vídeo ainda não buscou, e o que se veria era o hambúrguer piscando
+   * entre dois estados.
+   */
+  .cenavideo__video {
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  .cenavideo__palco[data-pronto] .cenavideo__video {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cenavideo__video {
+      transition: none;
+    }
+  }
+
+  @media (max-width: 767px) {
+    /* Mesma cessão de respiro vertical da outra variante: a cena é pinada e
+       precisa caber EXATAMENTE na tela, então o padding cede para o material,
+       que é o que a pessoa veio ver. */
+    .cenavideo {
+      padding-block: 3rem;
+      gap: 1.5rem;
+    }
+
+    .cenavideo__palco {
+      --desconto-altura: 22rem;
+      /* O arquivo do celular é quadrado: o material 16:9 desperdiçaria os
+         pixels das laterais, que no take são só bokeh do balcão. Cortado no
+         ffmpeg, o mesmo peso entrega o hambúrguer maior. */
+      aspect-ratio: 1 / 1;
+      width: min(100%, 30rem, var(--altura-util));
+    }
+  }
+</style>

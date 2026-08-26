@@ -430,3 +430,46 @@ com o enquadramento.
 
 Resultado: alface 900×320, tomate-cebola 900×234, ambas em perfil e coerentes
 com as outras cinco. Nota pendente de aprovação do cliente.
+
+---
+
+## 2026-08-25 · Cena 2 em vídeo — encode do take do cliente (não é geração)
+
+Não houve geração: o take veio pronto do cliente (`burger-stack.mp4`, 10,10 MB,
+1920x1080, H.264, 10s a 24fps). O trabalho foi de **encode para scroll-scrubbing**,
+e fica registrado aqui porque produziu asset novo em `public/assets/video/`.
+
+Original preservado (fora do build) em `assets/raw/burger-stack-original.mp4`.
+Reproduzir: `node squads/yard-burguer-squad/scripts/encodar-video-cena2.mjs`.
+
+**O take chega invertido em relação ao storyboard.** Ele vai de montado para
+explodido; a Cena 2 foi invertida em 25/08 a pedido do próprio cliente ("o ato de
+construir é o que dá fome"). O vídeo é revertido no ffmpeg, não no runtime —
+rolar `currentTime` para trás obriga o decodificador a partir do keyframe
+anterior a cada quadro.
+
+| Saída | Geometria | Peso | Onde entra |
+|---|---|---|---|
+| `burger-stack-16x9.mp4` | 960x540, crf 32, g=12 | 591 kB | desktop |
+| `burger-stack-1x1.mp4` | corte 1:1 → 640x640, crf 32, g=12 | 582 kB | mobile |
+| `burger-stack-poster-16x9.webp` | 960x540 | 33 kB | estado de repouso |
+| `burger-stack-poster-1x1.webp` | 640x640 | 31 kB | estado de repouso |
+
+Só um `.mp4` é baixado por viewport. Os dois juntos ainda pesam menos que os
+663 kB dos 7 PNGs de camada que a cena substitui.
+
+**Três medições que contrariaram o palpite** — ficam aqui para ninguém refazer:
+
+1. **Baixar o fps não diminui o arquivo.** Testado 24, 15 e 12 fps: 12fps chegou
+   a ficar *maior*. Com GOP fixo em segundos os keyframes dominam o bitrate, e
+   cortar fps só remove os quadros P, que são os baratos. 24fps é de graça.
+2. **VP9/WebM perdeu do H.264.** A 960x540 com o mesmo GOP: VP9 crf42 = 875 kB
+   contra x264 crf30 = 786 kB, com qualidade pior. Keyframe forçado a cada 0,5s
+   tira do VP9 exatamente a vantagem dele. Não vale um `<source>` a mais.
+3. **Cortar para 1:1 ENCARECE o arquivo.** O corte joga fora o bokeh do balcão,
+   que é o pixel barato, e mantém só o hambúrguer, que é o caro. Por isso o
+   mobile precisou descer para 640px enquanto o desktop segurou 960.
+
+**Preço da seekability, medido a 960x540 crf30:** g=48 (kf a cada 2s) = 500 kB ·
+g=24 = 594 kB · g=12 = 786 kB · g=6 = 1160 kB. Ficamos em g=12: 57% mais pesado
+que g=48, e é o que faz o scrub não travar ao buscar.

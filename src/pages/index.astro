@@ -1,7 +1,9 @@
 ---
 import Base from '../layouts/Base.astro';
 import ExplodeScene from '../components/ExplodeScene.astro';
+import VideoScene from '../components/VideoScene.astro';
 import Icone from '../components/Icone.astro';
+import { CENA2 } from '../config/cena2.js';
 import { existsSync } from 'node:fs';
 import copy from '../content/copy.json';
 import menu from '../content/menu.json';
@@ -79,8 +81,13 @@ const combos = menu.combos.map((combo) => ({
       </div>
     </section>
 
-    <!-- Cena 2 — Burger explodido -->
-    <ExplodeScene />
+    {/*
+      Cena 2 — a montagem do burger, em uma das duas variantes.
+
+      Uma OU outra, nunca as duas: o orçamento de movimento permite no máximo um
+      pin por página. Ver src/config/cena2.js para trocar (CENA2=camadas).
+    */}
+    {CENA2 === 'video' ? <VideoScene /> : <ExplodeScene />}
 
     <!-- Cena 3 — Diferenciais -->
     <!--

@@ -70,14 +70,24 @@ function initScrollReveal() {
 }
 
 /**
- * Cena 2 — o burger explodido. Único ponto que justifica o peso do GSAP,
+ * Cena 2 — a montagem do burger. Único ponto que justifica o peso do GSAP,
  * então ele só é buscado quando a cena está a uma tela de distância.
+ *
+ * A cena tem duas variantes (ver src/config/cena2.js) e só uma renderiza por
+ * build. Qual delas está no DOM se lê pelo data-cena da própria seção, não por
+ * uma segunda flag no cliente: assim o HTML é a única fonte da verdade e não há
+ * como o script achar que carrega uma coisa enquanto a página traz outra.
+ *
+ * Os dois chunks são dinâmicos e mutuamente exclusivos — o browser baixa
+ * exatamente um.
  */
 function initExplodeQuandoPerto() {
   const secao = document.querySelector('#explode');
   if (!secao) return;
 
-  // Estado final estático: as camadas já estão empilhadas e visíveis no HTML.
+  // Estado final estático. Vale para as duas variantes: em camadas o
+  // hambúrguer já nasce empilhado no HTML; em vídeo o que fica é o <picture>
+  // do último quadro, e nenhum byte de vídeo chega a ser pedido.
   if (prefereMenosMovimento) return;
 
   const observador = new IntersectionObserver(
@@ -85,8 +95,13 @@ function initExplodeQuandoPerto() {
       if (!entradas.some((e) => e.isIntersecting)) return;
       observador.disconnect();
 
-      const { initExplodeScene } = await import('./explode.js');
-      initExplodeScene({ secao, ehMobile });
+      if (secao.dataset.cena === 'video') {
+        const { initVideoScrubScene } = await import('./video-scrub.js');
+        initVideoScrubScene({ secao, ehMobile });
+      } else {
+        const { initExplodeScene } = await import('./explode.js');
+        initExplodeScene({ secao, ehMobile });
+      }
     },
     { rootMargin: '100% 0px' }
   );

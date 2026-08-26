@@ -1,0 +1,257 @@
+[
+  {
+    "ponto": "0%",
+    "vh": 727,
+    "alturaSecao": 727,
+    "secaoCabe": true,
+    "problemas": [],
+    "camadas": [
+      {
+        "id": "pao-superior",
+        "topo": 115,
+        "base": 197,
+        "estado": "ok"
+      },
+      {
+        "id": "alface",
+        "topo": 195,
+        "base": 277,
+        "estado": "ok"
+      },
+      {
+        "id": "tomate-cebola",
+        "topo": 284,
+        "base": 336,
+        "estado": "ok"
+      },
+      {
+        "id": "queijo",
+        "topo": 323,
+        "base": 404,
+        "estado": "ok"
+      },
+      {
+        "id": "blend",
+        "topo": 395,
+        "base": 451,
+        "estado": "ok"
+      },
+      {
+        "id": "bacon",
+        "topo": 454,
+        "base": 499,
+        "estado": "ok"
+      },
+      {
+        "id": "pao-inferior",
+        "topo": 516,
+        "base": 585,
+        "estado": "ok"
+      }
+    ]
+  },
+  {
+    "ponto": "25%",
+    "vh": 727,
+    "alturaSecao": 727,
+    "secaoCabe": true,
+    "problemas": [],
+    "camadas": [
+      {
+        "id": "pao-superior",
+        "topo": 93,
+        "base": 186,
+        "estado": "ok"
+      },
+      {
+        "id": "alface",
+        "topo": 185,
+        "base": 279,
+        "estado": "ok"
+      },
+      {
+        "id": "tomate-cebola",
+        "topo": 291,
+        "base": 350,
+        "estado": "ok"
+      },
+      {
+        "id": "queijo",
+        "topo": 335,
+        "base": 427,
+        "estado": "ok"
+      },
+      {
+        "id": "blend",
+        "topo": 414,
+        "base": 476,
+        "estado": "ok"
+      },
+      {
+        "id": "bacon",
+        "topo": 463,
+        "base": 510,
+        "estado": "ok"
+      },
+      {
+        "id": "pao-inferior",
+        "topo": 499,
+        "base": 570,
+        "estado": "ok"
+      }
+    ]
+  },
+  {
+    "ponto": "50%",
+    "vh": 727,
+    "alturaSecao": 727,
+    "secaoCabe": true,
+    "problemas": [],
+    "camadas": [
+      {
+        "id": "pao-superior",
+        "topo": 156,
+        "base": 254,
+        "estado": "ok"
+      },
+      {
+        "id": "alface",
+        "topo": 247,
+        "base": 346,
+        "estado": "ok"
+      },
+      {
+        "id": "tomate-cebola",
+        "topo": 337,
+        "base": 400,
+        "estado": "ok"
+      },
+      {
+        "id": "queijo",
+        "topo": 357,
+        "base": 461,
+        "estado": "ok"
+      },
+      {
+        "id": "blend",
+        "topo": 433,
+        "base": 500,
+        "estado": "ok"
+      },
+      {
+        "id": "bacon",
+        "topo": 466,
+        "base": 512,
+        "estado": "ok"
+      },
+      {
+        "id": "pao-inferior",
+        "topo": 487,
+        "base": 561,
+        "estado": "ok"
+      }
+    ]
+  },
+  {
+    "ponto": "75%",
+    "vh": 727,
+    "alturaSecao": 727,
+    "secaoCabe": true,
+    "problemas": [],
+    "camadas": [
+      {
+        "id": "pao-superior",
+        "topo": 281,
+        "base": 380,
+        "estado": "ok"
+      },
+      {
+        "id": "alface",
+        "topo": 315,
+        "base": 419,
+        "estado": "ok"
+      },
+      {
+        "id": "tomate-cebola",
+        "topo": 371,
+        "base": 440,
+        "estado": "ok"
+      },
+      {
+        "id": "queijo",
+        "topo": 372,
+        "base": 488,
+        "estado": "ok"
+      },
+      {
+        "id": "blend",
+        "topo": 452,
+        "base": 526,
+        "estado": "ok"
+      },
+      {
+        "id": "bacon",
+        "topo": 487,
+        "base": 539,
+        "estado": "ok"
+      },
+      {
+        "id": "pao-inferior",
+        "topo": 512,
+        "base": 594,
+        "estado": "ok"
+      }
+    ]
+  },
+  {
+    "ponto": "100%",
+    "vh": 727,
+    "alturaSecao": 727,
+    "secaoCabe": true,
+    "problemas": [],
+    "camadas": [
+      {
+        "id": "pao-superior",
+        "topo": 281,
+        "base": 380,
+        "estado": "ok"
+      },
+      {
+        "id": "alface",
+        "topo": 315,
+        "base": 419,
+        "estado": "ok"
+      },
+      {
+        "id": "tomate-cebola",
+        "topo": 371,
+        "base": 440,
+        "estado": "ok"
+      },
+      {
+        "id": "queijo",
+        "topo": 372,
+        "base": 488,
+        "estado": "ok"
+      },
+      {
+        "id": "blend",
+        "topo": 452,
+        "base": 526,
+        "estado": "ok"
+      },
+      {
+        "id": "bacon",
+        "topo": 487,
+        "base": 539,
+        "estado": "ok"
+      },
+      {
+        "id": "pao-inferior",
+        "topo": 512,
+        "base": 594,
+        "estado": "ok"
+      }
+    ]
+  }
+]

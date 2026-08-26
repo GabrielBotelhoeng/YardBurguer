@@ -23,31 +23,15 @@
 import { gsap } from 'gsap/gsap-core';
 import { CSSPlugin } from 'gsap/CSSPlugin';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { ligarPonteLenis } from './ponte-lenis.js';
 
 gsap.registerPlugin(CSSPlugin, ScrollTrigger);
 
 export async function initExplodeScene({ secao, ehMobile }) {
-  /**
-   * Handoff do Lenis para o ticker do GSAP.
-   *
-   * Antes daqui o Lenis roda no próprio requestAnimationFrame. A partir do
-   * momento em que o GSAP existe, ele passa a ser o único relógio: o loop
-   * provisório é cancelado e o Lenis é avançado pelo ticker. Manter os dois
-   * significaria dois rAF independentes empurrando o mesmo scroll, saindo de
-   * fase a cada quadro — é assim que scrub vira tremida.
-   *
-   * lagSmoothing(0) desliga a compensação de travada do GSAP. Ela existe para
-   * animação baseada em tempo; em animação dirigida por scroll ela inventa um
-   * salto de posição depois de qualquer engasgo da thread.
-   */
-  const lenis = await (window.__yardLenisPronto ?? Promise.resolve(window.__yardLenis ?? null));
-
-  if (lenis) {
-    window.__yardPararLoopLenis?.();
-    lenis.on('scroll', ScrollTrigger.update);
-    gsap.ticker.add((tempo) => lenis.raf(tempo * 1000));
-    gsap.ticker.lagSmoothing(0);
-  }
+  // Handoff do Lenis para o ticker do GSAP. A ponte saiu daqui para
+  // ponte-lenis.js quando a Cena 2 ganhou a variante em vídeo — o "único
+  // relógio" não pode ter duas implementações.
+  await ligarPonteLenis(ScrollTrigger, gsap);
 
   /**
    * Todas as sete camadas rodam em qualquer viewport desde que o manifest passou
