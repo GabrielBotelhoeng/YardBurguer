@@ -82,7 +82,7 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
   await ligarPonteLenis(ScrollTrigger, gsap);
 
   /**
-   * Um arquivo por viewport, escolhido aqui e não por `<source media>`.
+   * Um arquivo por aparelho, escolhido aqui e não por `<source media>`.
    *
    * A seleção por media dentro de `<video>` é mal suportada — ao contrário de
    * `<picture>`, vários browsers ignoram o atributo e pegam o primeiro source.
@@ -93,8 +93,31 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
    * celular. Enquadrar com object-fit desperdiçaria os pixels das laterais —
    * que no material são só bokeh do balcão. Cortado no ffmpeg, o mesmo peso
    * entrega o hambúrguer maior.
+   *
+   * A CONSULTA VEM DO HTML, não daqui — é a mesma string que o `<picture>` usa
+   * no `media` do poster (ver o cabeçalho de VideoScene.astro). Escrever a
+   * pergunta duas vezes é como poster e vídeo passaram a discordar de
+   * proporção; lendo do DOM, existe uma resposta só.
+   *
+   * `ehMobile` (a media query de largura vinda do motion.js) NÃO serve para esta
+   * escolha: ela responde pela largura, que muda quando o aparelho gira. Um
+   * iPhone 14 deitado tem 844px de largura e era classificado como desktop —
+   * baixava 1102 kB em vez de 582 kB. A consulta do HTML pergunta pelo lado
+   * curto e por isso dá a mesma resposta nas duas orientações.
+   *
+   * O que isso compra, e é o motivo de não haver troca de fonte na rotação: se
+   * a resposta não muda ao girar, não há arquivo novo para buscar, não há
+   * `currentTime` para reposicionar no meio da troca e não há salto para o
+   * usuário ver. A alternativa — trocar o src no `resize` — custaria um segundo
+   * download de 582 kB e uma janela em que o vídeo não tem quadro para mostrar,
+   * para resolver um problema que simplesmente deixa de acontecer.
    */
-  const fonte = ehMobile ? video.dataset.srcQuadrada : video.dataset.srcLarga;
+  const consultaCelular = video.dataset.consultaCelular;
+  const ehTelaDeCelular = consultaCelular
+    ? window.matchMedia(consultaCelular).matches
+    : ehMobile; // sem o atributo, o comportamento antigo em vez de nenhum vídeo
+
+  const fonte = ehTelaDeCelular ? video.dataset.srcQuadrada : video.dataset.srcLarga;
   if (!fonte) return;
 
   video.src = fonte;

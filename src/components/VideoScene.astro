@@ -38,6 +38,40 @@ const { explode } = copy;
  */
 const LARGA = { largura: 1600, altura: 900 };
 const QUADRADA = { largura: 640, altura: 640 };
+
+/**
+ * QUEM É CELULAR — uma única string, e ela mora aqui.
+ *
+ * Este é o fato que mais custou caro nesta cena. Até 2026-08-26 ele era decidido
+ * em TRÊS lugares independentes: `matchMedia('(max-width: 767px)')` em JS (uma
+ * vez, no load), `@media (max-width: 767px)` no CSS (vivo) e `<source media>` no
+ * `<picture>` (vivo). Enquanto forem três, divergem — e divergiram: girar o
+ * aparelho movia dois deles e não movia o terceiro.
+ *
+ * Agora a consulta é escrita uma vez e distribuída: o `<picture>` a usa no
+ * `media`, e o video-scrub.js a lê de volta pelo `data-consulta-celular`. O HTML
+ * é a fonte da verdade; o cliente não tem uma segunda opinião para dar.
+ *
+ * POR QUE PELO LADO CURTO, e não por `max-width` sozinho:
+ *
+ * `(max-width: 767px)` respondia "é celular?" olhando a largura, que MUDA quando
+ * o aparelho gira. Um iPhone 14 deitado tem 844px de largura, então ele era
+ * classificado como desktop e baixava o arquivo 16:9 de 1102 kB — no celular,
+ * onde o contrato é 582 kB. Medido.
+ *
+ * Perguntar pelo LADO CURTO (`max-width` OU `max-height`) dá a MESMA resposta em
+ * pé e deitado, porque o lado curto de um aparelho não muda quando ele gira. A
+ * consequência é a que interessa: não existe mais troca de arquivo na rotação —
+ * nada para retrocarregar, nenhum scrub para reposicionar, nenhum salto para o
+ * usuário ver. O problema não foi remediado, ele deixou de existir.
+ *
+ * 500px e não 767px porque é o vão honesto entre as duas famílias: o maior lado
+ * curto de celular é 430 (iPhone 14 Pro Max) e o menor lado curto de tablet é
+ * 744 (iPad mini). 500 separa os dois sem encostar em nenhum, e mantém os
+ * laptops de 1280x720 — lado curto 720 — do lado do arquivo grande, que é onde
+ * eles devem estar.
+ */
+const CONSULTA_CELULAR = '(max-width: 500px), (max-height: 500px)';
 ---
 
 <section class="cenavideo textura-brasa" id="explode" data-cena="video" aria-labelledby="explode-titulo">
@@ -76,7 +110,7 @@ const QUADRADA = { largura: 640, altura: 640 };
     */}
     <picture>
       <source
-        media="(max-width: 767px)"
+        media={CONSULTA_CELULAR}
         srcset="/assets/video/burger-stack-poster-1x1.webp"
         width={QUADRADA.largura}
         height={QUADRADA.altura}
@@ -108,6 +142,7 @@ const QUADRADA = { largura: 640, altura: 640 };
       data-video
       data-src-larga="/assets/video/burger-stack-16x9.mp4"
       data-src-quadrada="/assets/video/burger-stack-1x1.mp4"
+      data-consulta-celular={CONSULTA_CELULAR}
       width={LARGA.largura}
       height={LARGA.altura}
       muted
@@ -181,10 +216,6 @@ const QUADRADA = { largura: 640, altura: 640 };
      * fica escondido.
      */
     --faixa-nav: 4.75rem;
-
-    /* Altura de referência do palco. Existe como variável porque a caixa da
-       mídia é derivada dela por multiplicação — ver .cenavideo__poster. */
-    --palco-altura: calc(var(--cena-altura) - var(--faixa-nav));
   }
 
   .cenavideo__palco {
@@ -202,43 +233,55 @@ const QUADRADA = { largura: 640, altura: 640 };
   /**
    * A CAIXA DA MÍDIA — a regra inteira do enquadramento cabe em uma frase:
    *
-   *   a caixa tem exatamente a proporção do arquivo, é dimensionada pela
-   *   ALTURA, e o que sobrar de largura o palco corta.
+   *   a caixa NÃO declara proporção nenhuma; ela é uma janela de 120% x 100% do
+   *   palco, e a mídia se encaixa dentro dela com a proporção REAL do arquivo.
    *
-   * Consequências, todas desejadas:
+   * O CSS não sabe — e não precisa saber — se o arquivo é 16:9, 1:1 ou o que
+   * vier no próximo encode. Quem informa a proporção é o próprio arquivo, via
+   * `object-fit: contain`. Não existe um número de proporção escrito em lugar
+   * nenhum daqui para divergir do material.
    *
-   * 1. Como a proporção da caixa é igual à do arquivo, `object-fit: cover`
-   *    nunca corta nada — ele volta a ser só a rede de segurança que sempre
-   *    dizia ser, para o caso de uma troca futura de material.
-   * 2. Corte só existe na horizontal, por overflow do palco. Nunca na vertical.
-   *    Isso não é preferência estética: no quadro 0 (peças espalhadas) o pão de
-   *    cima ENCOSTA na borda superior do arquivo. Qualquer corte vertical
-   *    decepa o pão logo no primeiro quadro da cena.
-   * 3. MEDIDO (2026-08-26, três viewports, palco = tela menos a faixa da
-   *    navbar): 1440x900 dá mídia de 1465x824 e o palco corta ~1% de cada lado;
-   *    1920x1080 dá 1785x1004; 2560x1080 (21:9) dá os mesmos 1785x1004 com
-   *    faixas de carvão nas laterais. Essa faixa é o limite honesto de material
-   *    16:9 numa tela ultrawide — encher a largura exigiria cortar 33% da
-   *    altura, ou seja, decepar o pão. Contra os 736x414 de antes, é de 3,9x a
-   *    5,9x mais área em todos os casos.
+   * POR QUE ISSO MUDOU, e não é elegância: até 2026-08-26 a proporção da caixa
+   * era escolhida por BREAKPOINT (16:9 acima de 767px, 1:1 abaixo) enquanto a
+   * escolha do ARQUIVO era feita uma única vez em JS, no load. Girar o celular
+   * movia a media query e não movia o arquivo — a caixa virava 16:9 com o
+   * arquivo 1:1 dentro, e o `object-fit: cover` de então cortava 43,7% da
+   * ALTURA. Medido em 844x390 (iPhone 14 deitado): pão decepado em cima e
+   * embaixo, exatamente o que toda esta matemática existe para impedir.
    *
-   * Centralizada por left/top + margin negativo em vez de transform: o GSAP
-   * escreve `transform` no bloco de texto, e misturar centralização com
-   * animação no mesmo canal é como se perde um layout meses depois.
+   * `contain` em vez de `cover` é o coração da correção. `cover` corta para
+   * preencher; `contain` NUNCA corta. Com contain, decepar o pão deixa de ser
+   * um bug que se conserta e passa a ser um estado impossível de representar —
+   * mesmo que um dia a caixa e o arquivo voltem a discordar.
+   *
+   * De onde vem o corte lateral, então: da caixa ser mais larga que o palco.
+   * `width: 120%` transborda 20%, o palco tem `overflow: hidden` e corta 8,33%
+   * de cada lado. Corte só na horizontal, nunca na vertical — que é a regra de
+   * sempre, agora garantida pela estrutura em vez de pela aritmética. Em % do
+   * palco e não em `100vw` de propósito: `vw` ignora a barra de rolagem.
+   *
+   * MEDIDO (2026-08-26, depois da mudança — os números de desktop são idênticos
+   * aos que a regra por breakpoint produzia): 1440x900 dá mídia de 1465x824 e o
+   * palco corta ~1% de cada lado; 1920x1080 dá 1785x1004; 2560x1080 (21:9) dá os
+   * mesmos 1785x1004 com faixas de carvão nas laterais — o limite honesto de
+   * material 16:9 numa ultrawide, já que encher a largura exigiria cortar 33% da
+   * altura. 390x844 dá 468x468 e 375x667 dá 450x450, também idênticos. E o caso
+   * que decepava, 844x390 com o arquivo 1:1, agora dá 314x314 inteiro.
+   *
+   * Centralizada por transform, e não mais por margin negativo: sem largura
+   * declarada não há metade para negativar. O canal está livre — o GSAP anima
+   * `opacity` no véu e `opacity`/`y` no bloco de texto, nunca a mídia.
    */
   .cenavideo__poster,
   .cenavideo__video {
-    --midia-altura: var(--palco-altura);
     position: absolute;
     top: 50%;
     left: 50%;
-    height: var(--midia-altura);
-    /* material 16:9 */
-    width: calc(var(--midia-altura) * 16 / 9);
+    width: 120%;
+    height: 100%;
     max-width: none;
-    margin-top: calc(var(--midia-altura) / -2);
-    margin-left: calc(var(--midia-altura) * -8 / 9);
-    object-fit: cover;
+    transform: translate(-50%, -50%);
+    object-fit: contain;
     display: block;
   }
 
@@ -330,31 +373,24 @@ const QUADRADA = { largura: 640, altura: 640 };
 
   @media (max-width: 767px) {
     /**
-     * O celular não aceita full-bleed literal, e fingir que aceita é decepar o
-     * produto.
+     * O que sobrou aqui é só o que é MESMO uma questão de tela estreita: a
+     * altura do véu e a largura do bloco de texto.
      *
-     * O arquivo do celular é 1:1 (640x640) e a tela é 390x844. Preencher a
-     * altura exigiria 844x844 dentro de 390 de largura — 54% da largura
-     * cortada, comendo as bordas do pão e as pontas do queijo.
+     * A caixa da mídia saiu deste bloco em 2026-08-26 e não volta. Ela era o
+     * terceiro opinador sobre "isto é um celular?" — e era o que decepava o pão
+     * quando discordava dos outros dois. Hoje a mídia se dimensiona pela
+     * proporção do próprio arquivo, igual em qualquer largura, e por isso não
+     * tem nada a fazer dentro de uma media query.
      *
-     * Então aqui a caixa é limitada pela LARGURA e o carvão da seção faz
-     * letterbox de propósito. O corte lateral é calibrado, não herdado: medido
-     * no quadro mais espalhado do take (n=40), o ponto mais largo do hambúrguer
-     * — a ponta do queijo escorrido — vive entre 14,8% e 86,7% da largura. Uma
-     * caixa 5:6 corta 8,33% de cada lado e para a ~6% de distância dele.
-     *
-     * Resultado: 390x468 contra os 342x342 de antes. 1,37x na linha, 1,87x em
-     * área, e o texto do véu cai na faixa de carvão abaixo da imagem, onde a
-     * leitura é ainda mais limpa.
+     * O enquadramento do celular continua sendo exatamente o mesmo de antes —
+     * 468x468 em 390px de largura, com o carvão em letterbox e o texto caindo na
+     * faixa abaixo da imagem, onde a leitura é mais limpa. O corte lateral de
+     * 8,33% também é o mesmo, agora produzido pelo `width: 120%` da caixa. Ele
+     * continua calibrado contra o material: medido no take (n=21 quadros), o
+     * ponto mais largo do hambúrguer vive entre 16,3% e 80,2% da largura do
+     * arquivo, e a janela visível vai de 8,33% a 91,67% — sobram 7,9% de folga
+     * de um lado e 11,5% do outro.
      */
-    .cenavideo__poster,
-    .cenavideo__video {
-      --midia-altura: min(var(--palco-altura), calc(100vw * 6 / 5));
-      /* material 1:1 */
-      width: var(--midia-altura);
-      margin-left: calc(var(--midia-altura) / -2);
-    }
-
     .cenavideo__veu {
       height: 48%;
     }
