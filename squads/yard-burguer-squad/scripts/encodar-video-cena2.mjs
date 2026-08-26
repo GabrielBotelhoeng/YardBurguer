@@ -86,13 +86,41 @@ const SEEKAVEL = [
  * só bokeh do balcão. Enquadrar por object-fit desperdiçaria esses pixels DEPOIS
  * de baixá-los.
  */
+/**
+ * A RESOLUÇÃO SAI DO TAMANHO DE EXIBIÇÃO, NÃO DE UM NÚMERO REDONDO.
+ *
+ * O 16:9 era 960x540 e estava certo enquanto o palco tinha 736px de largura: o
+ * arquivo era REDUZIDO 0,77x na tela, que é o regime em que vídeo parece nítido.
+ * A cena virou full-bleed em 2026-08-26 e o palco passou a exibir 1465px em
+ * 1440x900 e 1785px em 1920x1080 — o mesmo arquivo passou a ser ESTICADO 1,86x,
+ * e junto com ele os artefatos de um bitrate de 482 kbps.
+ *
+ * Medido aqui (240 quadros, mesmo GOP, mesmo preset — só a geometria mudou):
+ *
+ *   960x540  crf32 →  591 kB   estica 1,86x em 1920   (o que havia)
+ *   1280x720 crf34 →  707 kB   estica 1,39x
+ *   1600x900 crf33 → 1102 kB   estica 1,12x           ← escolhido
+ *   1920x1080 crf34 → 1356 kB  reduz 0,93x (nativo)
+ *
+ * 1600x900 é onde a curva vira: leva o upscale para 1,12x — abaixo do limiar em
+ * que se enxerga — e em 1440x900 já volta a ser redução. O 1080p nativo custaria
+ * 254 kB a mais para comprar 0,19x de escala que ninguém vê. O crf sobe de 32
+ * para 33 porque quadro maior perdoa mais compressão: o mesmo artefato ocupa
+ * proporcionalmente menos da tela.
+ *
+ * O 1:1 do mobile NÃO muda, e a razão importa: o palco do celular exibe 468px e
+ * o arquivo tem 640 — ele já é reduzido 0,73x, que é o regime saudável. Subir a
+ * resolução ali seria pagar banda de celular por pixel que não chega ao olho.
+ * É também por isso que o desktop pode ser generoso: são arquivos separados,
+ * escolhidos em video-scrub.js, e o celular nunca baixa o 16:9.
+ */
 const VARIANTES = [
   {
     nome: 'burger-stack-16x9.mp4',
-    vf: 'scale=960:540:flags=lanczos',
-    crf: '32',
-    nivel: '4.0',
-    para: 'desktop — quadro cheio, 16:9',
+    vf: 'scale=1600:900:flags=lanczos',
+    crf: '33',
+    nivel: '4.2', // 1600x900 passa do teto de macroblocos do 4.0
+    para: 'desktop — quadro cheio, 16:9, dimensionado para o palco full-bleed',
   },
   {
     nome: 'burger-stack-1x1.mp4',
@@ -103,8 +131,15 @@ const VARIANTES = [
   },
 ];
 
+/**
+ * Os posters acompanham a resolução do vídeo que substituem.
+ *
+ * Sob prefers-reduced-motion o poster é a cena inteira — e agora ocupa a tela
+ * inteira. Um poster de 960px esticado 1,86x entregaria justamente a quem pediu
+ * menos movimento a pior imagem da página.
+ */
 const POSTERS = [
-  { nome: 'burger-stack-poster-16x9.webp', vf: 'scale=960:540:flags=lanczos' },
+  { nome: 'burger-stack-poster-16x9.webp', vf: 'scale=1600:900:flags=lanczos' },
   { nome: 'burger-stack-poster-1x1.webp', vf: 'crop=1080:1080:420:0,scale=640:640:flags=lanczos' },
 ];
 

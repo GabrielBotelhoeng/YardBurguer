@@ -28,8 +28,15 @@ import copy from '../content/copy.json';
 
 const { explode } = copy;
 
-/** Dimensões reais dos encodes. Reservam a caixa e evitam CLS. */
-const LARGA = { largura: 960, altura: 540 };
+/**
+ * Dimensões reais dos encodes. Reservam a caixa e evitam CLS.
+ *
+ * Precisam bater com `encodar-video-cena2.mjs` — é ele quem produz os arquivos,
+ * e é lá que está escrito por que o 16:9 subiu para 1600x900 quando a cena virou
+ * full-bleed (o palco passou a exibir 1785px e o arquivo de 960 era esticado
+ * 1,86x) e por que o 1:1 continua em 640, exibido a 468px, já reduzido.
+ */
+const LARGA = { largura: 1600, altura: 900 };
 const QUADRADA = { largura: 640, altura: 640 };
 ---
 
