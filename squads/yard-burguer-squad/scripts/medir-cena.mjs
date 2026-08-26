@@ -1,6 +1,6 @@
 /**
  * Mede a Cena 2 em pontos do trilho de pin e reporta transbordo por camada.
- * Uso: node medir-cena.mjs <url> [pixel5|desktop]
+ * Uso: node medir-cena.mjs <url> [pixel5|desktop] [dir-saida]
  */
 import { chromium, devices } from 'playwright';
 import { writeFileSync } from 'node:fs';
