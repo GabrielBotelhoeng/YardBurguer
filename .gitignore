@@ -21,3 +21,11 @@ desktop.ini
 .DS_Store
 assets/raw/
 assets/hero/
+
+# Bancada de medicao — tudo que comeca com .tmp- e descartavel.
+# Sao os builds paralelos servidos lado a lado no A/B dos gates, os servidores
+# estaticos de medicao e os prints/GIFs de comparacao. Reproduzem-se com
+# `npm run build` e os scripts de squads/yard-burguer-squad/scripts/, entao
+# versionar so pesaria o repo com PNG que envelhece no dia seguinte.
+.tmp-*
+audit.json
