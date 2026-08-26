@@ -23,9 +23,9 @@
  * Não há mais corte inventando enquadramento vertical a partir de horizontal.
  *
  * Os dois vieram com FUNDO ESCURO LISO, não com o xadrez de transparência da
- * primeira tentativa (mp4 não carrega canal alpha; o xadrez virava pixel). Isso
- * é o que torna a composição abaixo praticamente invisível: borrar um fundo liso
- * devolve o mesmo fundo liso.
+ * primeira tentativa (mp4 não carrega canal alpha; o xadrez virava pixel). É
+ * isso que torna a composição abaixo invisível: estender a borda de um fundo
+ * liso devolve o mesmo fundo liso.
  *
  * ---------------------------------------------------------------------------
  * AS QUATRO DECISÕES DO ENCODE, E O QUE CADA UMA CUSTA
@@ -100,9 +100,9 @@ const SEEKAVEL = [
  * Ou seja: o produto ENCOSTA nas bordas. `object-fit: cover` na tela corta o que
  * sobra da proporção, e sem margem esse corte sai do pão.
  *
- * A saída de cada formato é então composta: o take inteiro (nunca cortado) sobre
- * uma cópia dele mesmo ampliada e desfocada, que preenche o que falta. O corte
- * do `cover` passa a cair no preenchimento antes de chegar ao produto.
+ * A saída de cada formato é então composta: o take entra INTEIRO, encolhido pelo
+ * RECUO, e as bordas dele são estendidas para preencher o que falta. O corte do
+ * `cover` passa a cair nesse preenchimento antes de chegar ao produto.
  *
  * POR QUE O DESKTOP SAI EM 2:1 e não em 16:9. O palco é a tela MENOS a navbar,
  * então sua proporção vai de ~1,75 (1440x824) a ~1,99 (1366x692) — sempre mais
@@ -146,71 +146,77 @@ const RECUO = 0.85;
 const LARGA = { largura: 1600, altura: 800 };   // 2:1 — ver "DESKTOP" acima
 const CELULAR = { largura: 640, altura: 1138 }; // 9:16 nativo do take
 
+/** Lê as dimensões reais da fonte — as margens dependem delas. */
+function medir(arquivo) {
+  const saida = execFileSync('ffprobe', [
+    '-v', 'error', '-select_streams', 'v:0',
+    '-show_entries', 'stream=width,height', '-of', 'csv=p=0', arquivo,
+  ]).toString().trim();
+  const [w, h] = saida.split(',').map(Number);
+  return { w, h };
+}
+
 /**
- * Compõe [fundo desfocado] + [take inteiro centrado] no tamanho pedido.
+ * Põe o take inteiro no quadro pedido e ESTENDE AS BORDAS DELE para preencher o
+ * resto. Uma camada só.
  *
- * `escala` diz quanto do quadro o take ocupa. `contain` no primeiro plano
- * garante que ele entra INTEIRO — é a linha que torna decepar o pão um estado
- * impossível de representar, e não um bug que se conserta.
+ * A versão anterior era duas camadas: o take por cima, e por baixo uma cópia
+ * AMPLIADA e desfocada dele mesmo servindo de fundo. Isso tinha um defeito que
+ * nenhum ajuste de brilho resolvia — a cópia ampliada contém o hambúrguer, e o
+ * hambúrguer dela é MAIOR que o da frente. A silhueta transbordava em volta do
+ * produto e desenhava um halo claro contornando a peça inteira. O cliente viu
+ * duas vezes: "por que tá esse borrado em volta? tipo quadrado" e, depois de eu
+ * corrigir só o brilho, "e esses borrados em volta deles vai arrumar isso
+ * ainda?". Ele estava certo nas duas.
  *
- * `setsar=1` em cada etapa NÃO é decoração. `scale` reconcilia DAR mexendo no
- * sample aspect ratio em vez das dimensões, e um encode anterior saiu 640x1388
- * com SAR 4511:2880 — o browser exibia como 1002x1388, proporção 0,72 em vez de
- * 0,46. O ffprobe de width/height mostra o número certo; é o SAR que mente.
+ * `fillborders=mode=smear` replica os pixels da BORDA do take para fora. Como
+ * essa borda é fundo — o produto nunca a alcança, é para isso que serve o
+ * RECUO — o preenchimento é fundo puro, sem nenhuma parte do hambúrguer nele.
+ * E como cada lado replica a sua própria borda, o gradiente horizontal do take
+ * (medido: 50 na esquerda contra 65 na direita no 16:9) é preservado, coisa que
+ * esticar uma borda só não faria.
+ *
+ * Some junto o que existia para remendar a abordagem antiga: não há mais blur,
+ * porque não há cópia para disfarçar; não há mais feather, porque não há duas
+ * camadas para emendar. A transição é contínua por construção — o pixel da
+ * margem É o pixel da borda.
+ *
+ * `setsar=1` no fim NÃO é decoração. `scale` reconcilia DAR mexendo no sample
+ * aspect ratio em vez das dimensões, e um encode anterior saiu 640x1388 com SAR
+ * 4511:2880 — o browser exibia como 1002x1388, proporção 0,72 em vez de 0,46. O
+ * ffprobe de width/height mostra o número certo; é o SAR que mente.
  */
-const compor = (l, a, escala = 1) => {
-  const fl = Math.round((l * escala) / 2) * 2;
-  const fa = Math.round((a * escala) / 2) * 2;
+const compor = (fonte, l, a, escala = 1) => {
+  // Quanto o take cabe dentro de `escala` do quadro, preservando a proporção.
+  const fator = Math.min((l * escala) / fonte.w, (a * escala) / fonte.h);
+  const fw = Math.round((fonte.w * fator) / 2) * 2;
+  const fh = Math.round((fonte.h * fator) / 2) * 2;
+  const esq = Math.floor((l - fw) / 2);
+  const topo = Math.floor((a - fh) / 2);
   return (
-    `split[a][b];` +
-    // O fundo COBRE preservando a proporção e depois é cortado — nunca esticado.
-    // `scale=l:a` puro deformava o take, então o que ficava encostado na borda do
-    // primeiro plano não era a mesma coisa que estava atrás dele, e a emenda
-    // aparecia como um degrau reto atravessando a tela.
-    `[a]scale=${l}:${a}:force_original_aspect_ratio=increase,crop=${l}:${a},setsar=1,` +
-    /**
-     * SEM ESCURECER. Havia um `eq=brightness=-0.06` aqui, herdado de quando o
-     * material tinha ambiente e o preenchimento precisava recuar para o
-     * hambúrguer continuar sendo o assunto.
-     *
-     * Com os takes atuais ele passou a ser o defeito. O fundo deles é um cinza
-     * escuro UNIFORME — medido na fonte, 44 a 46 em toda a lateral do quadro. O
-     * brightness derrubava a margem para 26 enquanto o centro ficava em 47, e
-     * essa diferença desenhava uma moldura retangular em volta do produto. O
-     * cliente viu na hora: "por que tá esse borrado em volta? tipo quadrado".
-     *
-     * Sem ele, medido no mesmo ponto: canto 46, a 5% da borda 45, a 10% 47. A
-     * margem passa a ter a luminância do próprio fundo e deixa de ser visível —
-     * que é o ponto de uma margem de segurança. Ela precisa existir; não precisa
-     * aparecer.
-     *
-     * O blur fica porque é ele que garante isso num take futuro cujo fundo não
-     * seja tão liso. Com fundo uniforme, borrar não muda nada — sigma 12 e 30
-     * dão o mesmo resultado aqui.
-     */
-    `gblur=sigma=30[bg];` +
-    // O FEATHER — sem ele a composição não engana ninguém. `overlay` cola o
-    // primeiro plano com alfa 1 até a última linha, então por mais que fundo e
-    // frente combinem de cor, a emenda ainda é uma reta perfeita atravessando a
-    // tela — e olho humano acha reta perfeita em qualquer lugar. A rampa de 60px
-    // nas quatro bordas faz a transição deixar de existir como linha.
-    `[b]scale=${fl}:${fa}:force_original_aspect_ratio=decrease,setsar=1,format=rgba,` +
-    `geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':` +
-    `a='255*min(1,min(min(X,W-X),min(Y,H-Y))/60)'[fg];` +
-    `[bg][fg]overlay=(W-w)/2:(H-h)/2:format=auto,setsar=1`
+    `scale=${fw}:${fh},` +
+    `pad=${l}:${a}:${esq}:${topo},` +
+    `fillborders=left=${esq}:right=${l - fw - esq}:top=${topo}:bottom=${a - fh - topo}:mode=smear,` +
+    `setsar=1`
   );
+};
+
+/** As duas fontes, medidas uma vez. `compor` precisa das dimensões reais. */
+const FONTE = {
+  larga: medir(ORIGEM_LARGA),
+  vertical: medir(ORIGEM_VERTICAL),
 };
 
 /**
  * O crf sobe em relação ao material antigo porque boa parte do quadro agora é
- * fundo liso escuro e borrão — área lisa comprime de graça, e o mesmo artefato
- * ocupa proporcionalmente menos da tela num quadro maior.
+ * fundo liso escuro — área lisa comprime de graça, e o mesmo artefato ocupa
+ * proporcionalmente menos da tela num quadro maior.
  */
 const VARIANTES = [
   {
     origem: 'larga',
     nome: 'burger-stack-16x9.mp4',
-    vf: compor(LARGA.largura, LARGA.altura, RECUO),
+    vf: compor(FONTE.larga, LARGA.largura, LARGA.altura, RECUO),
     crf: '33',
     nivel: '4.2',
     para: 'desktop — 2:1 composto, margem lateral para o cover cortar',
@@ -218,7 +224,7 @@ const VARIANTES = [
   {
     origem: 'vertical',
     nome: 'burger-stack-vertical.mp4',
-    vf: compor(CELULAR.largura, CELULAR.altura, RECUO),
+    vf: compor(FONTE.vertical, CELULAR.largura, CELULAR.altura, RECUO),
     crf: '34',
     nivel: '4.0',
     para: 'celular — 9:16 composto, margem em volta',
@@ -233,8 +239,8 @@ const VARIANTES = [
  * enquadramento, quem pediu menos movimento veria um quadro que ninguém mais vê.
  */
 const POSTERS = [
-  { origem: 'larga', nome: 'burger-stack-poster-16x9.webp', vf: compor(LARGA.largura, LARGA.altura, RECUO) },
-  { origem: 'vertical', nome: 'burger-stack-poster-vertical.webp', vf: compor(CELULAR.largura, CELULAR.altura, RECUO) },
+  { origem: 'larga', nome: 'burger-stack-poster-16x9.webp', vf: compor(FONTE.larga, LARGA.largura, LARGA.altura, RECUO) },
+  { origem: 'vertical', nome: 'burger-stack-poster-vertical.webp', vf: compor(FONTE.vertical, CELULAR.largura, CELULAR.altura, RECUO) },
 ];
 
 function ff(args) {
