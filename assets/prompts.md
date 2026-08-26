@@ -325,3 +325,151 @@ Destaques e combos usam foto real do CDN público do cardápio do Brendi, via
 `fetch-menu-images.mjs`. Foto real sempre ganha de gerada quando existe.
 
 Limite: o CDN só entrega 240×240 e não há rota maior.
+
+---
+
+## [camadas] Sete ingredientes em PERFIL — correção de perspectiva
+
+**2026-08-25** · `produce-layers.mjs` · @scroll-trigger-specialist reportou,
+@brand-art-director corrigiu
+
+**Defeito:** o cliente disse que os ingredientes "não estão se transformando em
+um hambúrguer, está tudo em cima do outro". Não era CSS nem GSAP — era o
+conjunto de camadas.
+
+Cada camada tinha sido gerada com um **ângulo de câmera diferente**:
+
+| Camada | Como veio | Devia vir |
+|---|---|---|
+| `tomate-cebola` | vista de cima, disco inteiro | perfil |
+| `blend` | vista de cima, crosta para a câmera | perfil |
+| `pao-inferior` | 3/4, face cortada para cima | perfil |
+| `pao-superior` | pão rústico oval, quase de frente | tampa de burger em perfil |
+
+Empilhar quatro perspectivas nunca forma um hambúrguer. Forma fotos sobrepostas.
+
+**Causa raiz:** o `PREAMBULO` pedia `at eye level, perfectly horizontal`, mas os
+prompts de camada pediam a face de cima com todas as letras — `seeds and pulp
+visible`, `flat cut side facing up`, `sear crust`. Entre a instrução distante e
+a descrição concreta, o modelo seguiu a concreta. **É o mesmo erro que já tinha
+acontecido com o fundo**, e que o script tinha resolvido repetindo a exigência
+no fim do prompt. A lição não havia sido aplicada à perspectiva.
+
+**Correção, em três frentes:**
+
+1. `BLOCOS.lente` diz o que se vê e o que **não** se vê: espessura e perfil sim,
+   face de cima não. "Eye level" sozinho é ambíguo — a câmera pode estar na
+   altura do objeto e ainda olhar para baixo.
+2. Novo `EXIGENCIA_PERSPECTIVA`, repetido **depois** da descrição, junto do
+   requisito de fundo. Mesma técnica que fez o chroma obedecer.
+3. Cada prompt de camada reescrito para descrever o ingrediente de lado. A
+   polpa do tomate aparece no corte lateral, não na face; a crosta do blend é a
+   borda superior do perfil; o pão superior ganhou `domed`, `BURGER` e `wider
+   than it is tall` porque sem isso voltava pão italiano.
+
+**Validação barata antes do take caro** (`gemini-3.1-flash-image`, 2 gerações):
+
+- `tomate-cebola`: 770×583 → **900×187**
+- `blend`: 855×577 → **900×269**
+
+A proporção virar faixa larga e baixa É a confirmação — camada de hambúrguer
+vista de lado é larga e baixa. Perspectiva resolvida no rascunho.
+
+**O que o rascunho não resolve:** pontos brancos espalhados pelo recorte, com
+`fundo 68%` e `fundo derivou, nova rolagem` no log. É o chroma derivando no
+modelo barato, não defeito de prompt — as camadas em produção estavam limpas
+justamente por terem saído no `pro`. Take final regerado em `gemini-3-pro-image`.
+
+**Nota:** pendente de aprovação do cliente. Se passar, promover o bloco de
+perspectiva para o `LOOK.md`, porque ele vale para qualquer conjunto de camadas
+futuro — não só para este.
+
+---
+
+## [camadas] Alface e tomate-cebola — o que a pesquisa de food styling corrigiu
+
+**2026-08-25** · segunda correção, depois de o cliente apontar que alface e
+cebola continuavam com cara artificial.
+
+**O que a pesquisa mostrou** ([FoodShot AI](https://foodshot.ai/blog/burger-photography),
+[Food Bloggers of Canada](https://www.foodbloggersofcanada.com/food-styling-the-burger/),
+[Hitchcock Farms](https://www.hitchcockfarms.com/blog/best-lettuce-for-burgers)):
+
+1. **Alface é faixa, não folha.** Food stylist usa folha de borda ondulada
+   formando uma faixa contínua que corre pelo perímetro e sobra ~1cm da borda.
+   A nossa era uma folha assimétrica — grossa de um lado, ponta fina do outro.
+   Centralizada, o pão cobria o meio e sobravam duas pontas soltas nas
+   laterais: exatamente o "recorte colado" que o cliente viu.
+2. **Cada ingrediente aparece pela FRENTE**, não pelas beiradas — *"every
+   ingredient peeking out the front"*. Eu vinha resolvendo tudo por transbordo
+   lateral, que é justamente o que denuncia a montagem.
+
+**O defeito real do tomate-cebola:** a camada não estava em perfil. Mostrava a
+face cortada inteira (polpa e sementes de frente) e a cebola como elipse
+completa deslocada para a direita — vista de cima com outro nome. Empilhada, a
+cebola aparecia só de um lado.
+
+**Correções de prompt:**
+
+| Camada | Antes | Depois |
+|---|---|---|
+| alface | "a single ruffled leaf… thin wavy band" | "a wide continuous band… ONE unbroken layer", negando fragmento isolado e ponta fina |
+| tomate-cebola | "cut edge facing the camera" | "reading as a horizontal red band… NOT the flat cut face"; cebola CENTRADA e "never a full ellipse" |
+
+**Armadilha nova, e cara:** pedir `spanning the full width edge to edge` briga
+com o bloco de enquadramento, que exige o ingrediente inteiro dentro do quadro.
+O modelo obedeceu ao mais concreto e encostou a folha nas quatro bordas — o
+resultado empilhado mostrava um **retângulo reto** atrás do pão, com o topo
+cortado em linha. A formulação que funciona é "much wider than it is tall" +
+"floats fully inside the frame with clear empty margin on all four sides" +
+"top contour must be irregular, never a straight horizontal line".
+
+É a terceira vez que o mesmo mecanismo morde este script: **instrução concreta
+vence instrução distante**. Já aconteceu com o fundo, com a perspectiva e agora
+com o enquadramento.
+
+Resultado: alface 900×320, tomate-cebola 900×234, ambas em perfil e coerentes
+com as outras cinco. Nota pendente de aprovação do cliente.
+
+---
+
+## 2026-08-25 · Cena 2 em vídeo — encode do take do cliente (não é geração)
+
+Não houve geração: o take veio pronto do cliente (`burger-stack.mp4`, 10,10 MB,
+1920x1080, H.264, 10s a 24fps). O trabalho foi de **encode para scroll-scrubbing**,
+e fica registrado aqui porque produziu asset novo em `public/assets/video/`.
+
+Original preservado (fora do build) em `assets/raw/burger-stack-original.mp4`.
+Reproduzir: `node squads/yard-burguer-squad/scripts/encodar-video-cena2.mjs`.
+
+**O take chega invertido em relação ao storyboard.** Ele vai de montado para
+explodido; a Cena 2 foi invertida em 25/08 a pedido do próprio cliente ("o ato de
+construir é o que dá fome"). O vídeo é revertido no ffmpeg, não no runtime —
+rolar `currentTime` para trás obriga o decodificador a partir do keyframe
+anterior a cada quadro.
+
+| Saída | Geometria | Peso | Onde entra |
+|---|---|---|---|
+| `burger-stack-16x9.mp4` | 960x540, crf 32, g=12 | 591 kB | desktop |
+| `burger-stack-1x1.mp4` | corte 1:1 → 640x640, crf 32, g=12 | 582 kB | mobile |
+| `burger-stack-poster-16x9.webp` | 960x540 | 33 kB | estado de repouso |
+| `burger-stack-poster-1x1.webp` | 640x640 | 31 kB | estado de repouso |
+
+Só um `.mp4` é baixado por viewport. Os dois juntos ainda pesam menos que os
+663 kB dos 7 PNGs de camada que a cena substitui.
+
+**Três medições que contrariaram o palpite** — ficam aqui para ninguém refazer:
+
+1. **Baixar o fps não diminui o arquivo.** Testado 24, 15 e 12 fps: 12fps chegou
+   a ficar *maior*. Com GOP fixo em segundos os keyframes dominam o bitrate, e
+   cortar fps só remove os quadros P, que são os baratos. 24fps é de graça.
+2. **VP9/WebM perdeu do H.264.** A 960x540 com o mesmo GOP: VP9 crf42 = 875 kB
+   contra x264 crf30 = 786 kB, com qualidade pior. Keyframe forçado a cada 0,5s
+   tira do VP9 exatamente a vantagem dele. Não vale um `<source>` a mais.
+3. **Cortar para 1:1 ENCARECE o arquivo.** O corte joga fora o bokeh do balcão,
+   que é o pixel barato, e mantém só o hambúrguer, que é o caro. Por isso o
+   mobile precisou descer para 640px enquanto o desktop segurou 960.
+
+**Preço da seekability, medido a 960x540 crf30:** g=48 (kf a cada 2s) = 500 kB ·
+g=24 = 594 kB · g=12 = 786 kB · g=6 = 1160 kB. Ficamos em g=12: 57% mais pesado
+que g=48, e é o que faz o scrub não travar ao buscar.

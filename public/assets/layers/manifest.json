@@ -1,5 +1,5 @@
 {
-  "_gerado": "2026-08-25T17:18:46.888Z",
+  "_gerado": "2026-08-25T22:15:55.198Z",
   "_modelo": "gemini-3-pro-image",
   "_nota": "Conjunto fechado em uma unica sessao e um unico modelo. Regerar significa regerar TODAS as camadas — misturar modelos vira colagem.",
   "mobileLayers": [
@@ -19,8 +19,10 @@
       "explodeY": -300,
       "speed": 1,
       "mobile": true,
-      "largura": 850,
-      "altura": 452
+      "largura": 900,
+      "altura": 360,
+      "larguraRelativa": 1,
+      "assentamento": 1
     },
     {
       "id": "alface",
@@ -30,7 +32,9 @@
       "speed": 1,
       "mobile": true,
       "largura": 900,
-      "altura": 487
+      "altura": 320,
+      "larguraRelativa": 1.18,
+      "assentamento": 0.28
     },
     {
       "id": "tomate-cebola",
@@ -39,8 +43,10 @@
       "explodeY": -105,
       "speed": 1,
       "mobile": true,
-      "largura": 770,
-      "altura": 583
+      "largura": 900,
+      "altura": 234,
+      "larguraRelativa": 1.06,
+      "assentamento": 0.38
     },
     {
       "id": "queijo",
@@ -49,8 +55,10 @@
       "explodeY": -35,
       "speed": 1,
       "mobile": true,
-      "largura": 738,
-      "altura": 581
+      "largura": 900,
+      "altura": 361,
+      "larguraRelativa": 1.16,
+      "assentamento": 0.21
     },
     {
       "id": "blend",
@@ -59,8 +67,10 @@
       "explodeY": 0,
       "speed": 1,
       "mobile": true,
-      "largura": 855,
-      "altura": 577
+      "largura": 900,
+      "altura": 258,
+      "larguraRelativa": 1.04,
+      "assentamento": 0.56
     },
     {
       "id": "bacon",
@@ -70,7 +80,9 @@
       "speed": 1,
       "mobile": true,
       "largura": 900,
-      "altura": 377
+      "altura": 163,
+      "larguraRelativa": 1.14,
+      "assentamento": 0.32
     },
     {
       "id": "pao-inferior",
@@ -79,8 +91,10 @@
       "explodeY": 160,
       "speed": 1,
       "mobile": true,
-      "largura": 890,
-      "altura": 455
+      "largura": 900,
+      "altura": 298,
+      "larguraRelativa": 1,
+      "assentamento": 0.42
     }
   ]
 }

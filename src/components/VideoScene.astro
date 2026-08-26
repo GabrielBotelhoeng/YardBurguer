@@ -1,0 +1,471 @@
+---
+import copy from '../content/copy.json';
+
+/**
+ * Cena 2 — variante em VÍDEO, ao lado da variante em camadas.
+ *
+ * ExplodeScene.astro continua existindo e funcionando. As duas trocam pela flag
+ * de src/config/cena2.js, porque o cliente vai querer comparar e comparação com
+ * uma das versões apagada não é comparação.
+ *
+ * O que é COMPARTILHADO de propósito: o id `#explode` (a navbar aponta para
+ * ele), a copy e o comprimento do trilho de pin. Só o material e o
+ * enquadramento mudam. Se o trilho mudasse junto, ninguém saberia se o que
+ * melhorou foi o vídeo ou o ritmo.
+ *
+ * O ARQUIVO É REVERTIDO. O take do cliente vai de montado para explodido; o
+ * storyboard pede o contrário desde 2026-08-25. A reversão acontece no ffmpeg
+ * (ver o cabeçalho de video-scrub.js), não aqui e não no runtime.
+ *
+ * ENQUADRAMENTO FULL-BLEED (2026-08-26). A cena era uma moldura de 736x414 no
+ * meio de uma tela de 1920 — 38% da largura, com o resto sendo padding. O vídeo
+ * agora ocupa a tela, e o título virou legenda sobre um véu na base. O que
+ * decidiu a regra de corte está medido no frame: em 16:9 o hambúrguer tem ~30%
+ * de margem lateral, mas o pão de cima ENCOSTA na borda superior no quadro 0
+ * (peças espalhadas). Cortar na horizontal é de graça; cortar na vertical
+ * decepa o pão. Toda a matemática abaixo existe para honrar isso.
+ */
+
+const { explode } = copy;
+
+/**
+ * Dimensões reais dos encodes. Reservam a caixa e evitam CLS.
+ *
+ * Precisam bater com `encodar-video-cena2.mjs` — é ele quem produz os arquivos,
+ * e é lá que está a conta que decidiu cada número. O resumo: desde 2026-08-26 há
+ * DOIS takes nativos do cliente (1920x1080 e 1080x1920), e cada saída é composta
+ * com uma margem de preenchimento para que o corte do `cover` caia no fundo e
+ * nunca no pão — medido, o produto encosta nas bordas dos dois takes.
+ *
+ * O 16:9 sai em 2:1 porque o palco do desktop é a tela MENOS a navbar, e isso o
+ * deixa sempre mais largo que 16:9; compondo em 2:1, o corte acontece na lateral,
+ * onde o take tem 17,6% de folga, em vez da vertical, onde tem 4,1%.
+ */
+const LARGA = { largura: 1920, altura: 960 };
+const VERTICAL = { largura: 1080, altura: 1920 };
+
+/**
+ * QUEM É CELULAR — uma única string, e ela mora aqui.
+ *
+ * Este é o fato que mais custou caro nesta cena. Até 2026-08-26 ele era decidido
+ * em TRÊS lugares independentes: `matchMedia('(max-width: 767px)')` em JS (uma
+ * vez, no load), `@media (max-width: 767px)` no CSS (vivo) e `<source media>` no
+ * `<picture>` (vivo). Enquanto forem três, divergem — e divergiram: girar o
+ * aparelho movia dois deles e não movia o terceiro.
+ *
+ * Agora a consulta é escrita uma vez e distribuída: o `<picture>` a usa no
+ * `media`, e o video-scrub.js a lê de volta pelo `data-consulta-celular`. O HTML
+ * é a fonte da verdade; o cliente não tem uma segunda opinião para dar.
+ *
+ * POR QUE PELO LADO CURTO, e não por `max-width` sozinho:
+ *
+ * `(max-width: 767px)` respondia "é celular?" olhando a largura, que MUDA quando
+ * o aparelho gira. Um iPhone 14 deitado tem 844px de largura, então ele era
+ * classificado como desktop e baixava o arquivo 16:9 de 1102 kB — no celular,
+ * onde o contrato é 582 kB. Medido.
+ *
+ * Perguntar pelo LADO CURTO (`max-width` OU `max-height`) dá a MESMA resposta em
+ * pé e deitado, porque o lado curto de um aparelho não muda quando ele gira. A
+ * consequência é a que interessa: não existe mais troca de arquivo na rotação —
+ * nada para retrocarregar, nenhum scrub para reposicionar, nenhum salto para o
+ * usuário ver. O problema não foi remediado, ele deixou de existir.
+ *
+ * POR QUE 900 E NÃO 500 (corrigido em 2026-08-26, segunda passada):
+ *
+ * O corte em 500 separava celular de tablet, e era exatamente esse o erro: o
+ * tablet ficava do lado errado. Um iPad em pé tem lado curto 768, então recebia
+ * o arquivo 2:1 do desktop num palco de 768x948 — proporção 0,81 contra 2,0 do
+ * arquivo. O `cover` cortava 59,5% da LARGURA e a tira de bacon atravessava a
+ * borda direita. Medido em três tablets: 59,5%, 62,7% e 64,8%.
+ *
+ * A pergunta nunca foi "isto é um telefone?". É "esta tela é alta ou larga?" —
+ * e tablet em pé é uma tela alta, que quer o arquivo vertical, exatamente como
+ * um celular em pé. 900 põe iPad (768), iPad mini (744) e iPad Pro (834) do lado
+ * certo, e continua deixando laptop de 1280x720 no arquivo largo.
+ *
+ * O `max-height: 500` continua ali pelo motivo original: manter a resposta
+ * invariante à rotação de um celular. iPhone 14 deitado é 844x390 — a altura o
+ * pega, e nada é retrocarregado ao girar.
+ */
+const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
+---
+
+<section class="cenavideo textura-brasa" id="explode" data-cena="video" aria-labelledby="explode-titulo">
+  {/*
+    O texto de fundo `YARD BURGUER` em parallax foi REMOVIDO desta variante —
+    markup, CSS e o tween em video-scrub.js. Não ficou escondido: saiu.
+
+    Motivo, e é o mesmo que a própria página já registrou na Cena 3 quando tirou
+    o "DO SERTÃO" gigante: palavra de fundo só funciona onde existe espaço vazio
+    para ela ocupar. Full-bleed acabou com o vazio. Não há mais um "atrás": o
+    quadro inteiro é o hambúrguer, e a palavra passaria a cruzar o produto e a
+    disputar o mesmo espaço do título do véu — três camadas de tipografia no
+    mesmo frame.
+
+    E o parallax perdeu o sentido junto: profundidade por parallax exige dois
+    planos em velocidades diferentes. Com um plano só, os -33px de deriva não
+    são profundidade, são um elemento tremendo sozinho em cima do vídeo.
+
+    A ExplodeScene continua com o dela, onde ainda há carvão vazio de sobra —
+    por isso a chave `explode.textoFundo` do copy.json segue viva e usada.
+  */}
+
+  <div class="cenavideo__palco" data-palco>
+    {/*
+      O <picture> é o ESTADO DE REPOUSO, não um poster de carregamento.
+
+      É o último quadro do vídeo revertido: o hambúrguer montado. Sob
+      prefers-reduced-motion e sem JS ele é tudo o que existe nesta cena — e o
+      contrato do storyboard diz que toda cena precisa mostrar o produto
+      inteiro, nunca peças soltas. Por isso ele é uma <img> de verdade, com alt,
+      e não o atributo `poster` do <video>: o atributo desapareceria junto com o
+      vídeo, e é justamente quando o vídeo não existe que ele precisa aparecer.
+
+      No full-bleed ele recebe exatamente a mesma caixa do vídeo, então o que
+      vale para um vale para o outro: hambúrguer inteiro, nunca decepado.
+    */}
+    <picture>
+      <source
+        media={CONSULTA_CELULAR}
+        srcset="/assets/video/burger-stack-poster-vertical.webp"
+        width={VERTICAL.largura}
+        height={VERTICAL.altura}
+      />
+      <img
+        class="cenavideo__poster"
+        src="/assets/video/burger-stack-poster-16x9.webp"
+        width={LARGA.largura}
+        height={LARGA.altura}
+        alt="O hambúrguer do YARD montado sobre a tábua de madeira: pão brioche, dois blends e cheddar derretido."
+        loading="lazy"
+        decoding="async"
+      />
+    </picture>
+
+    {/*
+      O <video> nasce SEM src e com preload="none".
+
+      Quem atribui a fonte é video-scrub.js, e ele só roda quando há movimento
+      permitido e a cena está a uma tela de distância. Consequência que vale
+      escrever: sob reduced-motion nenhum byte de vídeo é baixado — não é o
+      vídeo escondido, é o vídeo inexistente.
+
+      muted + playsinline não são opcionais: sem os dois o iOS abre o vídeo em
+      tela cheia e recusa o play que destrava a busca por currentTime.
+    */}
+    <video
+      class="cenavideo__video"
+      data-video
+      data-src-larga="/assets/video/burger-stack-16x9.mp4"
+      data-src-vertical="/assets/video/burger-stack-vertical.mp4"
+      data-consulta-celular={CONSULTA_CELULAR}
+      width={LARGA.largura}
+      height={LARGA.altura}
+      muted
+      playsinline
+      preload="none"
+      disablepictureinpicture
+      aria-hidden="true"
+      tabindex="-1"></video>
+  </div>
+
+  {/*
+    O VÉU — é ele que torna o texto legível, não a sorte do quadro.
+
+    O último quadro do vídeo tem pão claro e tábua clara justamente na metade de
+    baixo, que é onde o título entra. Sem véu, o contraste dependeria de qual
+    frame o scroll parou. Com véu, o pior caso está medido (ver o relatório da
+    entrega): creme #F5EFE4 e areia #E8DCC8 passam AA com folga sobre qualquer
+    quadro do take.
+
+    Só carvão, em opacidade crescente. Nada de --color-fogo aqui: fogo é cor de
+    elemento clicável que leva ao cardápio, e um gradiente não clica em nada.
+
+    Ele ENTRA JUNTO COM O TÍTULO, não antes. Durante os 86% em que o hambúrguer
+    está se montando não há texto nenhum para proteger, e um véu permanente só
+    apagaria o terço de baixo do take — justamente onde ficam a tábua e o pão de
+    baixo. Quem o acende é video-scrub.js, no mesmo ponto do trilho que acende o
+    texto; sem JS e sob reduced-motion ele já nasce aceso, porque aí o texto
+    também está.
+  */}
+  <div class="cenavideo__veu" data-veu aria-hidden="true"></div>
+
+  <div class="cenavideo__conteudo" data-conteudo>
+    <h2 id="explode-titulo" class="cenavideo__titulo">{explode.titulo}</h2>
+    <p class="cenavideo__texto">{explode.texto}</p>
+  </div>
+</section>
+
+<style>
+  /**
+   * A seção é EXATAMENTE uma tela. Não "pelo menos", não "mais ou menos".
+   *
+   * A cena é pinada: o ScrollTrigger reserva o espaçamento do pin a partir da
+   * altura medida aqui. Se a seção passar do viewport, o fim do trilho cai fora
+   * do quadro — não há para onde rolar dentro de uma seção travada. Por isso
+   * height e min-height travados no mesmo valor, e todo o conteúdo em posição
+   * absoluta: nada aqui dentro pode empurrar a caixa.
+   *
+   * svh e não vh: no celular a barra de URL colapsa, vh muda com ela e o pin
+   * passa a estar medido para uma altura que não existe mais.
+   */
+  .cenavideo {
+    position: relative;
+    height: var(--cena-altura);
+    min-height: var(--cena-altura);
+    background-color: var(--color-carvao);
+    overflow: hidden;
+
+    /**
+     * A navbar é `position: fixed`, 76px medidos nos dois breakpoints, e ganha
+     * fundo carvão opaco assim que a página rola — ou seja, quando esta cena
+     * está em quadro ela SEMPRE está por cima.
+     *
+     * Isso não importava quando o vídeo era uma moldura de 736x414 no meio da
+     * tela. Em full-bleed importa muito: medido, a navbar cobria 45px do
+     * arquivo, e o pão de cima ocupa os primeiros ~110px do quadro 0. Ela
+     * escondia quase metade do pão exatamente no quadro de abertura da cena.
+     *
+     * Então o palco começa ABAIXO da navbar. A seção continua tendo exatamente
+     * uma tela (o pin não admite outra coisa), e o que se perde de área é o que
+     * já estava perdido atrás de uma barra opaca — a diferença é que agora nada
+     * fica escondido.
+     */
+    /**
+     * Os 76px medidos da navbar MAIS o que o notch come no topo.
+     *
+     * Desde que a página passou a declarar `viewport-fit=cover`, a área útil vai
+     * até a borda física da tela e a navbar precisou de padding de safe-area
+     * para não ficar por baixo do notch — ou seja, ela ficou mais alta em
+     * aparelho com recorte. Se esta faixa não crescesse junto, o palco voltaria
+     * a começar por baixo de uma barra opaca, que é exatamente o problema que
+     * ela existe para resolver. Onde não há notch, `env()` vale 0 e isto
+     * continua sendo os mesmos 4,75rem de sempre.
+     */
+    --faixa-nav: calc(4.75rem + env(safe-area-inset-top));
+  }
+
+  .cenavideo__palco {
+    position: absolute;
+    inset: var(--faixa-nav) 0 0 0;
+    z-index: 10;
+    /* O corte lateral do full-bleed acontece AQUI, e só na horizontal. */
+    overflow: hidden;
+    isolation: isolate;
+    /* Sem cor de fundo de propósito: onde a mídia não alcança (tela mais larga
+       que 16:9, ou a faixa do celular) quem aparece é o carvão da seção com a
+       textura de brasa. Barra preta seria uma moldura; carvão é a própria cena. */
+  }
+
+  /**
+   * A CAIXA DA MÍDIA — preenche o palco inteiro, e a proteção mudou de lugar.
+   *
+   * Até agora era `contain` numa janela de 120%: nunca cortava, mas também nunca
+   * preenchia. No celular isso deixava um quadrado de 468x468 parado no meio de
+   * uma tela de 390x844, com carvão liso em volta. O cliente chamou de "esse
+   * quadrado na tela do mobile acaba ficando muito feio" e pediu a tela toda,
+   * aqui e no desktop.
+   *
+   * `cover` voltou, mas o que o torna seguro NÃO é o CSS — é o material. Cada
+   * formato tem um arquivo na proporção do seu destino, COMPOSTO com margem de
+   * preenchimento desfocado em volta (ver encodar-video-cena2.mjs, que é onde a
+   * conta mora). O take entra inteiro no quadro, a 85% dele, e os 7,5% de sobra
+   * por lado são o que o `cover` come antes de chegar ao pão.
+   *
+   * As duas exceções em que `cover` deixa de ser seguro estão na regra logo
+   * abaixo: tela larga demais (>1,9:1) e tela alta demais (<1,15:1). Fora dessa
+   * faixa a mídia recua para `contain`.
+   *
+   * OS NÚMEROS DESTE BLOCO SÃO DERIVADOS DO ARQUIVO, e o arquivo muda quando o
+   * cliente manda take novo. Não confie neles sem remedir — já houve um caso em
+   * que este comentário descrevia um encode de 640x1388 enquanto o arquivo real
+   * era 640x1138, e num código em que o comentário carrega o argumento de
+   * segurança, número velho é exatamente como a decapitação volta.
+   *
+   * O canal de transform está livre — o GSAP anima `opacity` no véu e
+   * `opacity`/`y` no bloco de texto, nunca a mídia.
+   */
+  .cenavideo__poster,
+  .cenavideo__video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    /**
+     * O PADRÃO É `contain`, e as exceções é que liberam `cover`.
+     *
+     * Estava ao contrário — `cover` por padrão, com dois escapes para `contain`
+     * nos extremos — e a inversão importa: com `cover` no padrão, toda tela de
+     * proporção não prevista decepa o produto por omissão. Com `contain`, o pior
+     * caso de uma tela nova é faixa de carvão. Errar para o lado da faixa.
+     */
+    object-fit: contain;
+    /**
+     * ANCORADO NO TOPO — a única linha que impede o pão de ser decepado.
+     *
+     * `cover` centraliza por padrão, então um corte vertical de 7% sai metade em
+     * cima e metade embaixo. Como o pão de cima ENCOSTA na borda superior do
+     * quadro 0, esses 3,5% de cima saem direto do pão: medido em 1920x1080, onde
+     * o palco fica 1920x1004 (a navbar come 76px e deixa a caixa em 1,912
+     * contra 1,778 do arquivo) e 35px do topo do pão sumiam.
+     *
+     * Ancorando no topo, o mesmo corte de 70px sai INTEIRO de baixo, onde há a
+     * madeira da tábua e o take tem folga de sobra. O produto fica inteiro; o
+     * que se perde é chão.
+     *
+     * Vale para o vertical do celular pela mesma razão, e lá é ainda mais barato:
+     * o que sai de baixo é preenchimento desfocado, não imagem.
+     */
+    object-position: center top;
+    display: block;
+  }
+
+  /**
+   * QUEM LIBERA `cover` É O JS, e a media query não daria conta.
+   *
+   * `cover` é seguro enquanto o corte couber na margem composta — 7,5% por lado,
+   * ou seja até 15% em um eixo. Isso é uma comparação entre a proporção do
+   * ARQUIVO e a do PALCO, e nenhuma das duas cabe numa media query:
+   *
+   * - o palco é o viewport MENOS a navbar, e a diferença entre as duas
+   *   proporções depende da altura. 1440x900 é 1,60 de viewport e 1,748 de
+   *   palco; 1920x1080 é 1,778 e 1,912. Uma faixa escrita em `aspect-ratio`
+   *   acerta uma e erra a outra — foi o que aconteceu: derrubou 1440x900 e o
+   *   iPhone 14 para `contain` e liberou o iPad mini para um `cover` que cortava
+   *   20% da altura.
+   * - a proporção do arquivo o CSS simplesmente não conhece. Uma janela de
+   *   880x489 tem 1,80, que estaria na faixa boa para o arquivo 2:1, mas por ter
+   *   880px de largura ela recebe o VERTICAL. A proporção sozinha mente.
+   *
+   * O video-scrub.js sabe as duas coisas — `videoWidth/videoHeight` do arquivo
+   * que ele mesmo carregou e o retângulo real do palco — e escreve o veredito em
+   * `data-fit`. Ele reavalia no resize, então girar o aparelho recalcula.
+   *
+   * O padrão continua sendo `contain`: sem JS, ou antes de ele rodar, o pior caso
+   * é faixa de carvão. Errar para o lado da faixa.
+   */
+  .cenavideo__palco[data-fit='cover'] .cenavideo__poster,
+  .cenavideo__palco[data-fit='cover'] .cenavideo__video {
+    object-fit: cover;
+  }
+
+  /**
+   * A troca poster → vídeo é só opacity — a única propriedade, junto com
+   * transform, que o orçamento de movimento permite animar.
+   *
+   * O vídeo nasce invisível e só aparece quando video-scrub.js já o posicionou
+   * no primeiro quadro. Sem isso, existiria uma janela em que o poster montado
+   * some e o vídeo ainda não buscou, e o que se veria era o hambúrguer piscando
+   * entre dois estados.
+   */
+  .cenavideo__video {
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  .cenavideo__palco[data-pronto] .cenavideo__video {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cenavideo__video {
+      transition: none;
+    }
+  }
+
+  .cenavideo__veu {
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 62%;
+    z-index: 20;
+    pointer-events: none;
+    /**
+     * A curva não foi escolhida no olho — foi calibrada contra o pior pixel.
+     *
+     * Medido: sob o parágrafo, na tábua, existe um reflexo especular perto de
+     * 255. Com a curva anterior (0.55 na altura do texto) a areia #E8DCC8 dava
+     * 4,44:1 em 1440x900 — reprovado, AA pede 4,5. Subindo a alfa para ~0,86
+     * naquela faixa o mesmo pixel passa a 9,9:1.
+     */
+    background: linear-gradient(
+      to top,
+      rgb(20 12 6 / 0.96) 0%,
+      rgb(20 12 6 / 0.94) 25%,
+      rgb(20 12 6 / 0.82) 45%,
+      rgb(20 12 6 / 0.5) 68%,
+      rgb(20 12 6 / 0.18) 86%,
+      rgb(20 12 6 / 0) 100%
+    );
+  }
+
+  /**
+   * O texto vira legenda de cinema: ancorado na base, sobre o véu.
+   *
+   * Centralizado por left/right + margin auto, NÃO por transform. O GSAP anima
+   * `y` neste elemento; se a centralização morasse no transform, o primeiro
+   * tween a tocar nele resolveria o -50% para pixels e o bloco sairia do lugar
+   * na primeira mudança de largura.
+   *
+   * Opacidade padrão 1 no CSS: sem JS e sob reduced-motion o GSAP nunca roda, e
+   * o texto precisa estar lá. Quem esconde é o tween, no runtime — nunca o CSS.
+   */
+  .cenavideo__conteudo {
+    position: absolute;
+    z-index: 30;
+    left: 0;
+    right: 0;
+    /* O indicador de home do iOS mora nos ~34px de baixo. Sem o env() o
+       parágrafo passa por baixo dele em tela cheia. */
+    bottom: calc(clamp(2rem, 7svh, 5rem) + env(safe-area-inset-bottom));
+    width: min(100% - 3rem, 40rem);
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .cenavideo__titulo {
+    font-family: var(--font-display);
+    font-size: var(--text-titulo);
+    color: var(--color-creme);
+    text-transform: uppercase;
+    /* Reforço, não a garantia: quem faz o AA é o véu, e está medido. */
+    text-shadow: 0 1px 14px rgb(20 12 6 / 0.55);
+  }
+
+  .cenavideo__texto {
+    margin-top: 1rem;
+    color: var(--color-areia);
+    line-height: 1.6;
+    text-shadow: 0 1px 10px rgb(20 12 6 / 0.5);
+  }
+
+  /**
+   * A MESMA CONSULTA DE CONSULTA_CELULAR, e ela precisa continuar igual.
+   *
+   * Aqui ficou só o que é MESMO questão de tela pequena: a altura do véu e a
+   * largura do bloco de texto. A caixa da mídia saiu deste bloco e não volta —
+   * ela se dimensiona pela proporção do próprio arquivo, igual em qualquer
+   * largura.
+   *
+   * Mas a condição em si era `(max-width: 767px)`, DIFERENTE da que escolhe o
+   * arquivo, e a divergência custou caro de novo: um celular deitado tem 844px
+   * de largura, então recebia o véu de desktop — 26% de altura em vez de 48% —
+   * enquanto o título continuava sobre o vídeo. Medido no build de produção,
+   * o contraste caía para 2,12:1 no iPhone 14 deitado, 2,23:1 no Pixel 7 e
+   * 2,86:1 no Pro Max, contra os 3,0 que o WCAG pede para texto grande. Os três
+   * reprovavam AA.
+   *
+   * Não dá para interpolar a constante JS dentro de um `@media` — o Astro não
+   * substitui ali. Então a regra é: se `CONSULTA_CELULAR` mudar lá em cima,
+   * MUDA AQUI JUNTO. As duas strings são a mesma pergunta.
+   */
+  @media (max-width: 900px), (max-height: 500px) {
+    .cenavideo__veu {
+      height: 48%;
+    }
+
+    .cenavideo__conteudo {
+      bottom: calc(clamp(1.5rem, 5svh, 3rem) + env(safe-area-inset-bottom));
+      width: min(100% - 2.5rem, 34rem);
+    }
+  }
+</style>

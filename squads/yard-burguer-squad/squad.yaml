@@ -46,6 +46,7 @@ components:
   tools: []
   scripts:
     - gemini-image.mjs
+    - medir-cena.mjs
 config:
   extends: extend
   coding-standards: config/coding-standards.md

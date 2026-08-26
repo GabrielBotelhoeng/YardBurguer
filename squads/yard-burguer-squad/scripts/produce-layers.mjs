@@ -68,9 +68,26 @@ const CHOKE_PADRAO = 2;
  * superficie lisa e o que denuncia geracao, e a correcao e descrever quebrado.
  */
 const BLOCOS = {
-  // 2. Lente e distancia
-  lente:
-    'Professional food photography of a single ingredient, shot on a 100mm macro lens at eye level, perfectly horizontal, sharp focus edge to edge, no depth-of-field blur.',
+  /**
+   * 2. Lente e distancia — PERSPECTIVA DE PERFIL, nao vista de topo.
+   *
+   * A versao anterior dizia so "at eye level, perfectly horizontal" e o modelo
+   * devolveu tomate e blend fotografados de CIMA: disco inteiro visivel, face
+   * superior virada para a camera. Empilhadas, sete perspectivas diferentes
+   * nunca formam um hamburguer — formam fotos sobrepostas, que foi exatamente a
+   * reclamacao do cliente em 2026-08-25.
+   *
+   * "Eye level" sozinho e ambiguo: a camera pode estar na altura do objeto e
+   * ainda olhar para baixo. O que resolve e dizer o que se ve e o que NAO se ve
+   * — a espessura sim, a face de cima nao.
+   */
+  lente: [
+    'Professional food photography of a single burger ingredient, shot on a 100mm macro lens.',
+    'The camera is at exactly the same height as the ingredient, looking at it straight from the side,',
+    'the way one layer of a stacked burger looks when seen edge-on at table height.',
+    'Show the THICKNESS and the side profile of the ingredient.',
+    'Sharp focus edge to edge, no depth-of-field blur.',
+  ].join(' '),
 
   // 3. Luz
   luz:
@@ -126,6 +143,32 @@ const EXIGENCIA_FUNDO = [
   'The background is a flat digital chroma key, NOT part of the photograph:',
   'no film grain, no halation, no colour bleed, no vignette and no light spill',
   'on the background. Grain, halation and warm tone apply to the food only.',
+  // Fecho curto e literal. O prompt cresceu ~25% ao ganhar o bloco de
+  // perspectiva, e na rodada de 2026-08-25 quatro camadas voltaram com o fundo
+  // entre 87 e 117 de distancia do magenta — todas com descricao rica em tom
+  // quente perto do fim. Uma ultima linha curta, sem adjetivo, recupera o peso
+  // da instrucao contra toda a linguagem de cor que veio antes.
+  'FINAL CHECK before rendering: background = solid #FF00FF magenta, flat, edge to edge.',
+  'Not pink, not red, not warm, not textured. Pure #FF00FF.',
+].join(' ');
+
+/**
+ * A perspectiva tambem precisa ser repetida no fim, pelo mesmo motivo do fundo.
+ *
+ * O bloco `lente` abre o prompt e fica longe; a descricao do ingrediente vem
+ * depois e e mais concreta. Quando as duas se contradizem, vence a mais
+ * proxima e mais concreta — foi assim que "seeds and pulp visible" produziu um
+ * tomate visto de cima apesar de o preambulo pedir camera horizontal.
+ *
+ * As sete camadas so empilham se forem sete fotos da MESMA camera. Perspectiva
+ * inconsistente nao se conserta no CSS.
+ */
+const EXIGENCIA_PERSPECTIVA = [
+  'CRITICAL REQUIREMENT: this is a strict side view, photographed at table height.',
+  'The camera must NOT look down at the ingredient. Do NOT show a top-down view,',
+  'do NOT show the full round top face of the ingredient, and do NOT tilt the camera above it.',
+  'The horizon of the ingredient is a straight horizontal line: the viewer sees its edge',
+  'and its thickness, exactly as a single layer inside a stacked burger photographed from the side.',
 ].join(' ');
 
 /**
@@ -155,6 +198,26 @@ const EXIGENCIA_FUNDO = [
  *
  * Os ingredientes seguem o cardapio real (menu.json): blend de 160g, pao
  * brioche, cheddar. Nada aqui e inventado.
+ *
+ * ---------------------------------------------------------------------------
+ * larguraRelativa e assentamento — vindos do spec CORRECAOBURGERSTACK
+ * ---------------------------------------------------------------------------
+ *
+ * larguraRelativa: largura final em relacao ao pao (1.00 = mesma largura).
+ *
+ *   A regra que resolve o "bacon sumindo": numa vista de lado, uma camada fina
+ *   so existe visualmente se TRANSBORDAR lateralmente a camada que esta na
+ *   frente dela. O bacon tem z-index menor que o blend; com a mesma largura,
+ *   ele fica inteiramente coberto. Precisa ser mais largo para aparecer pelas
+ *   beiradas — e e exatamente assim que fotografo de hamburguer monta na vida
+ *   real, puxando bacon e alface para fora do pao.
+ *
+ * assentamento: quanto da propria altura a camada acrescenta a pilha.
+ *
+ *   1.0 = encosta na de baixo sem afundar; 0 = afunda por completo dentro dela.
+ *   Substitui a sobreposicao unica de 0.5 que valia para todas — uniforme, ela
+ *   fazia o queijo flutuar e escondia as camadas finas, porque queijo derretido
+ *   e alface afundam muito mais que pao e carne.
  */
 const CAMADAS = [
   {
@@ -163,7 +226,13 @@ const CAMADAS = [
     explodeY: -300,
     speed: 1.0,
     mobile: true,
-    prompt: 'The top half of a toasted brioche burger bun, golden brown and unevenly baked, with visible open crumb pores, a few loose sesame seeds and slight flour dusting. Matte crust, never glossy.',
+    // O pao e a referencia de largura: tudo mede em relacao a ele.
+    larguraRelativa: 1.0,
+    assentamento: 1.0,
+    // Sem "burger" e "domed" explicitos o modelo devolveu um pao rustico oval,
+    // tipo pao italiano, em vez de tampa de hamburguer.
+    prompt:
+      'The domed top half of a toasted brioche BURGER bun seen from the side, a rounded cap shape wider than it is tall, golden brown and unevenly baked, open crumb pores and a few sesame seeds on the crust, the flat cut base reading as a straight line along its bottom edge. Matte crust, never glossy.',
   },
   {
     id: 'alface',
@@ -171,7 +240,46 @@ const CAMADAS = [
     explodeY: -195,
     speed: 1.0,
     mobile: true,
-    prompt: 'A single ruffled leaf of crisp green lettuce, spread flat and wide, with irregular torn edges, visible leaf veins and a couple of water droplets. One edge slightly wilted.',
+    // A mais larga de todas: folha sempre escapa pelas beiradas do pao.
+    larguraRelativa: 1.18,
+    assentamento: 0.28,
+    /**
+     * A cor precisa ser afirmada DUAS vezes e contra a paleta.
+     *
+     * O bloco `paleta` do preambulo pede "warm terracotta and ember tones" para
+     * o ingrediente, e numa alface isso produz exatamente o que voltou em
+     * 2026-08-25: uma folha marrom, seca, sem nada de verde. A instrucao de
+     * paleta e global e vale para carne, pao e bacon; para os ingredientes que
+     * tem cor propria ela precisa ser negada aqui, no prompt local.
+     *
+     * DIVIDA: o bloco `paleta` deveria excetuar alface, tomate e cebola na
+     * origem. Nao foi corrigido la porque mexer no preambulo obriga a regerar as
+     * sete — fica para a proxima geracao completa do conjunto.
+     */
+    prompt:
+      /*
+       * FAIXA CONTINUA, nao folha solta.
+       *
+       * A versao anterior gerava uma folha unica assimetrica — grossa de um
+       * lado, ponta fina do outro. Centralizada na pilha, o pao cobria o meio
+       * dela e sobravam duas pontas soltas nas laterais, que leem como recorte
+       * colado. Foi a reclamacao do cliente em 2026-08-25.
+       *
+       * Food styling de verdade usa folha ondulada formando uma faixa que corre
+       * por todo o perimetro e sobra cerca de um centimetro da borda. Entao o
+       * pedido e a FAIXA, com babado embaixo, atravessando o quadro inteiro,
+       * mais a negacao explicita de fragmento isolado e de ponta fina.
+       */
+      /*
+       * "edge to edge" era contraditorio com o bloco de enquadramento, que pede
+       * o ingrediente inteiro dentro do quadro. O modelo obedeceu ao mais
+       * concreto e encostou a folha nas quatro bordas: o resultado empilhado
+       * mostrava um retangulo reto atras do pao, com o topo cortado em linha.
+       *
+       * Agora a faixa e larga mas FLUTUA — margem de fundo em volta, nenhuma
+       * borda tocada. O contorno superior tem que ser irregular, nunca reto.
+       */
+      'A wide continuous band of VIVID FRESH GREEN ruffled leaf lettuce seen from the side, much wider than it is tall, reading as ONE unbroken layer with its frilly wavy edge running along the bottom the way lettuce hangs out of a burger. The whole leaf floats fully inside the frame with clear empty margin on all four sides — it must NOT touch or be cropped by any edge, and its top contour must be irregular and leafy, never a straight horizontal line. Crisp and bright green, visible leaf veins, a couple of water droplets. NOT a single loose leaf, no isolated fragments, no empty gap in the middle, ends must not taper into thin points. Do NOT make it brown, wilted, dried or terracotta; the warm palette instruction does not apply to this ingredient, only the warm lighting does.',
   },
   {
     id: 'tomate-cebola',
@@ -179,11 +287,27 @@ const CAMADAS = [
     explodeY: -105,
     speed: 1.0,
     mobile: true,
+    // Carrega a cebola junto, entao precisa de mais transbordo que o tomate
+    // sozinho pediria — e a cebola que sumia.
+    larguraRelativa: 1.06,
+    assentamento: 0.38,
     // Cebola roxa e legitimamente mais azul que verde — despill por matiz a
     // destruiria, deixando a cebola cinza.
     despillForte: false,
     prompt:
-      'One hand-cut slice of ripe red tomato, thickness slightly uneven, seeds and pulp visible and glistening from its own juice, with a ring of raw purple onion resting off-centre on top of it.',
+      // Era "seeds and pulp visible", que so existe na face de cima e puxava o
+      // modelo para a vista de topo. Agora a polpa aparece no CORTE lateral.
+      /*
+       * Terceira versao. "cut edge facing the camera" ainda produzia a face
+       * cortada inteira — polpa e sementes de frente, ou seja, vista de cima com
+       * outro nome. E a cebola voltava como elipse completa e deslocada para a
+       * direita: ao empilhar aparecia so de um lado e lia como recorte colado.
+       *
+       * O que resolve e dizer o que a fatia VIRA no quadro (uma faixa
+       * horizontal) e negar a elipse na cebola — anel visto de lado e uma barra
+       * curva, nao um circulo.
+       */
+      'One hand-cut slice of ripe red tomato seen STRICTLY from the side, reading as a horizontal red band across the frame: the viewer sees the outer skin along the edge and the full thickness of the slice, NOT the flat cut face. A single ring of raw purple onion sits CENTRED on top of it, also seen strictly from the side, so the ring reads as a narrow curved purple-and-white band — never a full ellipse, never a complete circle, never pushed off to one side.',
   },
   {
     id: 'queijo',
@@ -191,8 +315,25 @@ const CAMADAS = [
     explodeY: -35,
     speed: 1.0,
     mobile: true,
+    // Derretido, escorre por fora da carne e quase nao levanta a pilha.
+    // 1.16 e nao 1.10: pelo ajuste fino do spec (+0.06 quando a camada continua
+    // escondida). O tomate esta na frente por z-index e tem quase a mesma
+    // altura, entao o queijo so aparece transbordando por fora dele.
+    larguraRelativa: 1.16,
+    assentamento: 0.21,
     prompt:
-      'A slice of cheddar cheese caught mid-melt, deep orange, edges drooping unevenly and one corner still holding its shape. Matte surface with slight oil separation, never a smooth plastic sheet.',
+      /*
+       * "corners droop and hang down" virou uma TENDA: o modelo levantou as
+       * pontas e deixou um bico descendo no meio. Empilhado, esse bico aparecia
+       * por baixo do tomate e lia como queijo levitando — reclamacao do cliente
+       * em 2026-08-25.
+       *
+       * Fatia derretida vista de lado e uma faixa FINA e plana no topo, que so
+       * escorre nas extremidades. O centro nunca sobe. E precisa ser muito mais
+       * larga do que alta: 900x361 dava proporcao de 0.40, grossa demais para
+       * queijo.
+       */
+      'A slice of cheddar cheese caught mid-melt seen from the side, reading as a THIN horizontal band, much wider than it is tall, flat and level across the whole top. Only at the far left and right ends does the softened cheese sag and drip downward. The centre stays flat — never peaked, never tent-shaped, never a triangle, no point hanging down in the middle. Deep orange, matte surface with slight oil separation, never a smooth plastic sheet.',
   },
   {
     id: 'blend',
@@ -200,8 +341,13 @@ const CAMADAS = [
     explodeY: 0,
     speed: 1.0,
     mobile: true,
+    // O volume da pilha: quase nao afunda, e e ele que da altura ao lanche.
+    larguraRelativa: 1.04,
+    assentamento: 0.56,
     prompt:
-      'A thick 160g chargrilled beef patty, deep dark uneven sear crust, visible coarse grind and meat fibre, ragged hand-formed edges, rendered fat glistening in the crevices.',
+      // A crosta e a face de cima: descrita sozinha, ela pedia vista de topo.
+      // Aqui ela aparece so como borda superior do perfil.
+      'A thick 160g chargrilled beef patty seen from the side, showing its full height as a dark seared band, coarse grind and meat fibre visible along the ragged hand-formed rim, rendered fat glistening where it runs down the side, the charred crust reading only as the top edge of the profile.',
   },
   {
     id: 'bacon',
@@ -209,7 +355,12 @@ const CAMADAS = [
     explodeY: 70,
     speed: 1.0,
     mobile: true,
-    prompt: 'Two strips of fried bacon laid side by side, rippled and buckled unevenly, deep reddish brown with darker charred spots and irregular streaks of rendered fat.',
+    // O caso que motivou o spec. Fica ATRAS do blend por z-index; so aparece
+    // porque transborda 14% para os lados. Com largura igual, some inteiro.
+    larguraRelativa: 1.14,
+    assentamento: 0.32,
+    prompt:
+      'Two strips of fried bacon seen from the side, reading as a rippled horizontal band with the buckled waves rising and dipping across it, deep reddish brown with darker charred spots and irregular streaks of rendered fat.',
   },
   {
     id: 'pao-inferior',
@@ -217,7 +368,13 @@ const CAMADAS = [
     explodeY: 160,
     speed: 1.0,
     mobile: true,
-    prompt: 'The bottom half of a brioche burger bun, flat cut side facing up, toasted unevenly on the griddle with darker patches, visible open crumb texture. Matte, never glossy.',
+    // Base da pilha, mesma largura de referencia do pao de cima.
+    larguraRelativa: 1.0,
+    assentamento: 0.42,
+    // "flat cut side facing up" pedia literalmente a face de cima para a
+    // camera. Agora a face torrada e uma linha no topo do perfil.
+    prompt:
+      'The bottom half of a brioche burger bun seen from the side, a low dome with the flat toasted cut face reading as a straight line along its top edge, griddle-darkened in patches, open crumb texture visible on the side wall. Matte, never glossy.',
   },
 ];
 
@@ -266,7 +423,15 @@ async function gerar({ camada, modelo, chave }) {
     method: 'POST',
     headers: { 'x-goog-api-key': chave, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: `${PREAMBULO} ${camada.prompt} ${EXIGENCIA_FUNDO}` }] }],
+      contents: [
+        {
+          parts: [
+            {
+              text: `${PREAMBULO} ${camada.prompt} ${EXIGENCIA_PERSPECTIVA} ${EXIGENCIA_FUNDO}`,
+            },
+          ],
+        },
+      ],
       generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
     }),
   });
@@ -573,9 +738,14 @@ async function main() {
           break;
         } catch (erro) {
           const chromaRuim = erro.message.includes('distancia do magenta');
-          const podeRepetir = chromaRuim && args.reuse === undefined && tentativa < 3;
+          // Era 3 (2 re-rolagens) e o conjunto fechou 3 de 7 em 2026-08-25: as
+          // quatro perdidas custaram uma execucao inteira. Como a deriva e
+          // estocastica e a regra de composicao unica exige as sete na MESMA
+          // execucao, mais re-rolagens por camada saem mais barato que outra
+          // rodada completa.
+          const podeRepetir = chromaRuim && args.reuse === undefined && tentativa < 6;
           if (!podeRepetir) throw erro;
-          console.log(`       ${camada.id}: fundo derivou, nova rolagem (${tentativa}/2)`);
+          console.log(`       ${camada.id}: fundo derivou, nova rolagem (${tentativa}/5)`);
         }
       }
 
@@ -617,6 +787,8 @@ async function main() {
         mobile: camada.mobile,
         largura,
         altura,
+        larguraRelativa: camada.larguraRelativa,
+        assentamento: camada.assentamento,
       });
     } catch (erro) {
       console.error(`  FALHA ${camada.id}: ${erro.message}`);
