@@ -1,104 +1,108 @@
 # Auditoria de acessibilidade — YARD Burguer
 
 Task `audit-accessibility` · @mobile-performance-guardian
-**Gate com poder de veto** · 2026-08-25
+**Gate com poder de veto** · rodada de 2026-08-26
 
-## Veredito: PASSA
+> A rodada anterior (2026-08-25) media a variante **camadas**, só em retrato, e
+> deu PASSA com "75 elementos de texto medidos, 0 reprovados". A Cena 2 em vídeo
+> entrou em 26/08 12:27 — depois. Esta rodada mede a variante que está no ar, em
+> retrato **e em paisagem**.
 
-## Contraste de texto
+## Veredito: PASSA COM RESSALVA
 
-**75 elementos de texto medidos, 0 reprovados.**
+Um critério objetivo reprova, e ele já era conhecido e aceito. Mais importante:
+esta rodada descobriu que o método de contraste é **cego para o caso principal
+da Cena 2** — ver a seção seguinte, que vale mais que o veredito.
 
-O cálculo usa a fórmula de luminância relativa da WCAG, com o limite variando
-por tamanho: 4,5:1 para texto normal e 3:1 para texto grande (≥ 24 px, ou
-≥ 18,66 px em negrito).
+| Critério | Retrato | Paisagem |
+|---|---|---|
+| Contraste de texto | 0 reprovados de 79 | 0 reprovados de 82 |
+| Alvos de toque ≥ 44 px | 0 problemas de 10 | **3 problemas de 13** ❌ |
+| Foco visível no teclado | 13 paradas, 0 sem outline | — |
+| `lang`, `h1` único, landmarks | ok | — |
+| Imagens sem `alt` | 0 | — |
+| Imagens sem dimensão declarada | 0 | — |
 
-### Defeito encontrado e corrigido: os CTAs
+## A ressalva que importa: contraste sobre vídeo não é medido
 
-Todos os botões principais mediam exatamente **4,00** — abaixo do mínimo de 4,5.
+O cálculo de contraste sobe a árvore do DOM procurando um `background-color`
+opaco e compõe o alfa. Isso funciona para texto sobre cor — e **não funciona
+para texto sobre vídeo ou imagem**, porque o fundo real são os pixels do quadro,
+que não estão em nenhum `background-color`.
 
-A causa: creme `#F5EFE4` sobre o vermelho fogo `#D93A2B`. O texto do CTA é
-negrito de 16 px, e 16 px não alcança o limite de "texto grande", que começa em
-18,66 px. Passava perto o suficiente para ninguém desconfiar a olho nu.
+O título da Cena 2 fica exatamente aí: por cima do take. Este relatório mede
+"0 reprovados" nas duas orientações porque enxerga o carvão do palco, não o
+vídeo. A medição por amostragem de pixel feita no PR #4 encontrou **2,12–2,86:1
+em paisagem**, abaixo do mínimo AA de 3,0.
 
-**Correção:** o texto do CTA vai para branco puro, o que leva a razão para
-**4,57**.
+Ou seja: os dois números não se contradizem, medem coisas diferentes. O "0
+reprovados" desta tabela **não cobre o título da Cena 2**, e nenhuma rodada
+anterior deste gate cobriu.
 
-Escurecer o fogo também resolveria, mas o fogo é token de marca e mudá-lo
-alteraria a cor de todo CTA da página por causa de um problema que é de texto.
+Para a próxima rodada, medir texto sobre mídia exige amostrar o quadro por baixo
+do texto — que é o que `medir-cena-video.mjs` já faz. Enquanto os dois métodos
+não se juntarem, este gate não pode afirmar contraste da Cena 2.
 
-### Um falso positivo que quase virou retrabalho
+## Alvos de toque: três links de navbar em paisagem
 
-A primeira rodada acusou contraste **1,0** nos cards de combo — o que
-significaria texto invisível.
+| Elemento | Medido |
+|---|---|
+| `.nav__link` "Destaques" | 77 × **19** px |
+| `.nav__link` "Nosso hambúrguer" | 138 × **19** px |
+| `.nav__link` "Onde estamos" | 104 × **19** px |
 
-Era erro do meu script de auditoria: ele lia os três primeiros números de
-`rgba(20, 12, 6, 0.07)` e tratava a cor como opaca, ignorando o alfa. O fundo
-real é a mistura de 7% de carvão sobre brasa, e o contraste verdadeiro é
-**5,14** — passa com folga.
+Altura de 19 px contra mínimo de 44. Os `.nav__link` não têm `min-height`, ao
+contrário de `.rodape__link` e `.onde__link`, que já foram corrigidos.
 
-O script foi corrigido para compor as camadas de alfa até encontrar um fundo
-opaco. Falso positivo em auditoria é pior que auditoria nenhuma: manda corrigir
-o que não está quebrado, e queima a confiança no resto do relatório.
+É a **pendência aceita nº 3** do PR #4 — decidida pelo cliente, não regressão.
+Fica registrada aqui em vez de ficar só na descrição do PR, que era o buraco
+que esta rodada veio fechar.
 
-## Navegação por teclado
+### Um falso positivo do método, corrigido nesta rodada
 
-Percorridos os 13 primeiros elementos focáveis:
+A primeira passada acusou "3 alvos de 0 × 0 px" em **retrato**. São esses mesmos
+links, que em retrato estão ocultos por `display: none` — `getBoundingClientRect`
+devolve zero e o script antigo os contava como reprovados.
 
-- **Ordem de tabulação segue a ordem visual.** Nenhum salto.
-- **Todos com anel de foco visível** — o `:focus-visible` com contorno em brasa
-  está nos tokens desde o início e funciona em todos.
-- Nenhuma armadilha de foco.
-
-## Texto alternativo
-
-**15 imagens, nenhuma sem `alt`.**
-
-- As 7 camadas do burger usam a legenda do ingrediente como `alt` — "Blend de
-  160g", "Cheddar derretido na chapa". Descrevem o que a imagem mostra, não o
-  nome do arquivo.
-- Cards de produto e combos trazem nome e composição.
-- A foto de fundo do hero tem `alt=""` e `aria-hidden="true"`, que é o correto:
-  ela é decorativa e o conteúdo já está no `H1`.
-
-Todas declaram `width` e `height`.
+Alvo invisível não é alvo de toque. A medição desta rodada filtra por
+visibilidade real (`offsetParent` e dimensão > 0) antes de julgar, e em retrato
+o resultado correto é **0 problemas de 10 alvos**.
 
 ## Redução de movimento
 
-Testado com `prefers-reduced-motion: reduce`:
+Verificado na variante `video`, que a rodada anterior não conseguia checar — o
+script procurava `.explode__camada`, que não existe nesta variante.
 
-| Verificação | Resultado |
-|---|---|
-| GSAP carregado | **não** — o chunk de 45 kb nem é buscado |
-| Lenis ativo | **não** |
-| Camadas com `transform` | **0 de 7** |
-| Texto da cena 2 visível | **sim**, opacidade cheia |
-| Itens do scroll reveal ocultos | **0 de 13** |
-| Erros de JS | **0** |
+Sob `prefers-reduced-motion: reduce`:
 
-Isto é mais forte que "a animação fica mais lenta": sob redução de movimento a
-página simplesmente **não anima**, e todo conteúdo nasce no estado final. O
-tratamento está na base, no `tokens.css`, e não remendado por componente.
+- o `<picture>` do último quadro fica visível — o hambúrguer montado, que é o
+  estado de repouso prometido;
+- **zero requisição de vídeo** é feita;
+- nenhum `pin-spacer`, nenhum GSAP, nenhum Lenis;
+- o documento mantém 7.449 px, sem o salto de 800 px da versão animada;
+- os 2.713 caracteres de texto seguem na página.
+
+O contrato é cumprido inteiro.
 
 ## Sem JavaScript
 
-| Verificação | Resultado |
-|---|---|
-| Texto visível | 2.745 caracteres |
-| CTAs visíveis | 6 |
-| Camadas do burger visíveis | 7 de 7 |
+Idêntico ao de reduced-motion: `<picture>` visível, zero byte de vídeo, texto
+completo, 6 CTAs clicáveis. A página vende sem uma linha de JS executada.
 
-A página inteira funciona sem JS. As camadas aparecem empilhadas — sem a
-explosão por scroll, mas formando o hambúrguer, que é o argumento visual.
+## Navegação por teclado
+
+13 paradas de foco, todas com `outline` visível, em ordem que segue a leitura da
+página.
 
 ## Estrutura semântica
 
-- `lang="pt-BR"` no `<html>`
-- Exatamente **1 `<h1>`**
-- Landmarks presentes: `header`, `nav`, `main`, `footer`
-- Endereço em `<address>`, horário e pagamento em `<dl>`
+`lang="pt-BR"`, um único `h1`, e os quatro landmarks presentes: `header`,
+`main`, `footer`, `nav`. Todas as imagens têm `alt` (ou `aria-hidden` quando
+decorativas) e todas declaram `width`/`height`.
 
-## Alvos de toque
+## Reaberto para a próxima rodada
 
-Ver `docs/mobile-audit.md` — quatro elementos abaixo de 44 px foram encontrados e
-corrigidos. Nenhum reprovado na medição final.
+1. **Contraste sobre mídia** — juntar a amostragem de pixel a este gate. Sem
+   isso ele continua cego para a Cena 2.
+2. **`min-height` nos `.nav__link`** — pendência aceita; reabrir só com o
+   cliente.
