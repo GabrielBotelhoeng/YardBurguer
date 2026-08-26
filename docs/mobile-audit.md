@@ -7,25 +7,32 @@ Task `audit-mobile-experience` · @mobile-performance-guardian
 > LCP 1,01 s, CLS 0,000 e 690 kB. A Cena 2 em vídeo entrou em 26/08 12:27, ou
 > seja, **depois** — o gate nunca tinha visto a variante que está no ar.
 
-## Veredito: REPROVA
+## Veredito: REPROVA — por peso, e só por peso
 
-Dois critérios do `performance-budget.md` estouram na variante `video`:
+O salto de layout que esta rodada encontrou **foi corrigido durante ela**; os
+números abaixo já são os de depois.
 
 | Meta | Alvo | Medido | |
 |---|---|---|---|
 | LCP à chegada | ≤ 2,5 s | **1,69 s** | ✅ |
 | CLS sem interação | ≤ 0,1 | **0,000** | ✅ |
-| **CLS ao rolar desde a chegada** | ≤ 0,1 | **1,85** | ❌ |
+| Empurrão ao rolar (era 800 px) | 0 px | **0 px** | ✅ |
 | **Peso total da rota** | ≤ 1,5 MB | **1,60 MB** | ❌ |
 | Erros de JS | 0 | **0** | ✅ |
 | 404 | 0 | **0** | ✅ |
 
+O único critério em aberto é o peso, e ele é decisão de produto: ou o teto sobe,
+ou o take encolhe. Nada mais reprova.
+
 Medido em Pixel 5, 4G do interior (1,6 Mbps, 150 ms de latência) com CPU a 1/4,
 contra o build de produção servido estático.
 
-## O salto de layout da Cena 2
+## O salto de layout da Cena 2 — achado e corrigido
 
-É o achado desta rodada e não é ruído de medição.
+**Antes: 800 px de empurrão. Depois: 0 px.** Medido no mesmo percurso, nos dois
+builds, servidos lado a lado.
+
+O que segue é o defeito como ele era, porque a causa explica a correção.
 
 O ScrollTrigger monta o pin da Cena 2 **depois** que a cena já está na tela. No
 instante em que monta, insere um `pin-spacer` de **1.527 px** e o documento
@@ -59,8 +66,8 @@ Mas só aparece quando a rolagem começa **enquanto a página ainda carrega** �
 mede 0,000, porque aí o pin já foi montado antes de qualquer coisa entrar em
 quadro.
 
-Isso vale como aviso para quem rodar este gate: **ver 0,000 no `audit.json` não
-significa que o salto sumiu.** Significa que a medição esperou demais.
+Isso vale como aviso para quem rodar este gate: **ver 0,000 de CLS não significa
+que o salto sumiu.** Pode significar que a medição esperou demais.
 
 Reproduzir:
 
@@ -69,27 +76,53 @@ ALVO=http://localhost:4392/ node squads/yard-burguer-squad/scripts/medir-salto-l
 ```
 
 Ele rola em passos de ¼ de tela a cada 180 ms, começando 1,5 s após o load, lista
-cada shift com o elemento que o causou e sai com código 1 quando o CLS passa de
-0,1. `MODO=parado` é o controle e deve dar 0,000.
+cada shift com o elemento que o causou, reporta o empurrão e sai com código 1
+quando ele passa de 4 px. `MODO=parado` é o controle.
 
-### O que o número significa e o que não significa
+### Por que o CLS bruto não serve de gate aqui
 
-O CLS de campo descarta shift ocorrido até 500 ms após input real. Um dedo
-humano rolando provavelmente **não** veria esse salto contabilizado no Core Web
-Vitals. Aqui ele aparece porque a rolagem é programática, que não conta como
-input.
+Depois da correção, com o empurrão em zero, **o CLS continuou marcando 1,8473**.
 
-Isso muda o impacto em SEO, não o impacto na pessoa: o salto de 800 px é visível
-e acontece no meio da cena que a página existe para mostrar. O gate reprova pelo
-que se vê, não pela métrica do relatório do Google.
+O motivo: a API de `layout-shift` dispara quando o ScrollTrigger troca a seção
+de `relative` para `fixed` ao pinar. Como a cena ocupa a tela inteira, essa
+reclassificação pontua perto de 1,0 mesmo sem nada se mover para quem olha.
 
-### Caminho de correção sugerido
+Por isso o gate passou a medir **empurrão**: quanto a seção seguinte andou além
+do que a rolagem explica. Se a pessoa rolou 182 px e o elemento subiu 182 px,
+deslocamento é zero — foi ela quem rolou. O que sobra é empurrão, e é isso que
+se vê.
 
-Reservar a altura do pin **antes** de o GSAP chegar — a seção já sabe quanto o
-trilho vai medir (`+=110%` mobile, `+=180%` desktop). Um `min-height` equivalente
-no CSS faria o espaçador nascer com o HTML, e o ScrollTrigger só ocuparia espaço
-que já existia. Não foi aplicado nesta rodada: muda o comportamento da cena e
-precisa de decisão.
+Some-se a isso que o CLS de campo descarta shift ocorrido até 500 ms após input
+real: um dedo humano provavelmente nunca veria esse número no Core Web Vitals.
+Medir CLS bruto aqui responderia a pergunta errada nas duas pontas.
+
+### A correção aplicada
+
+O espaço do trilho passou a nascer com o HTML, num `<div class="cenavideo__trilho">`
+vazio logo depois da seção, dimensionado por `--trilho-pin` (110svh no celular,
+180svh no desktop). O ScrollTrigger recebeu `pinSpacing: false` e o `end` agora
+**lê** a altura reservada em vez de trazer o próprio número — o CSS virou a
+fonte da verdade do comprimento da cena.
+
+Duas coisas que a correção precisou acertar e não são óbvias:
+
+**A reserva não pode morar na seção.** A primeira tentativa usou `margin-bottom`
+na própria `.cenavideo`. O documento passou a nascer com a altura certa e o
+layout continuou saltando: quando o pin ativa, a seção sai do fluxo e leva a
+margem junto — 800 px evaporando no pior momento possível. Por isso o trilho é
+um **irmão**, não um filho nem uma margem.
+
+**A reserva é uma promessa com prazo.** Há caminhos em que o pin nunca é criado:
+sem `<video>`, sem fonte para o aparelho, erro de mídia, ou o arquivo pendurado
+numa conexão que abre e não entrega byte. Em qualquer um deles a reserva viraria
+um vão de uma tela e meia. Então o script devolve o espaço se em 8 s não houver
+pin para ocupá-lo, e também quando o vigia degrada a cena. Verificado com o mp4
+em 404 e com o mp4 pendurado: nos dois o trilho volta a zero e o documento
+retorna aos 7.449 px.
+
+Sob `prefers-reduced-motion` e sem JavaScript o trilho mede **0 px** e o
+documento fica idêntico ao de antes da mudança — o fallback não paga nada por
+essa correção.
 
 ## Peso: 1,60 MB contra teto de 1,5 MB
 
@@ -132,5 +165,9 @@ PR #5 — antes ele expirava antes de existir seek para julgar.
 
 ## Reaberto para a próxima rodada
 
-- O salto de layout do pin (acima), que precisa de decisão antes de correção.
-- O teto de peso: subir o número ou encolher o take.
+- **O teto de peso**, único critério ainda reprovado: subir o número ou encolher
+  o take. É decisão de produto.
+- **A variante `camadas` não foi corrigida.** O mesmo mecanismo de pin tardio
+  vale para ela (medido: empurrão equivalente, com a cena já fora da tela). Como
+  não é a variante no ar, ficou para quando ela voltar a ser usada — o caminho é
+  o mesmo desta correção.
