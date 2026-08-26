@@ -714,14 +714,31 @@ async function main() {
    * `--choke` sozinho nao vira choke 1. Quem chega como `true` cai no padrao.
    */
   const texto = (chave) => (typeof args[chave] === 'string' ? args[chave] : undefined);
+
+  /**
+   * `--only` sem id REPROVA em vez de virar "todas".
+   *
+   * A flag existe para gerar UMA camada de teste. Sem valor ela caia no ramo
+   * de conjunto completo e mandava gerar as sete — pagas — e, como a flag
+   * continuava presente, o manifest nao era escrito no fim. Sete geracoes
+   * cobradas para produzir nada publicavel, por causa de um valor esquecido.
+   */
+  const somente = texto('only');
+  if ('only' in args && !somente) {
+    throw new Error(
+      '--only exige o id da camada. Sem valor isto geraria as SETE, e pagas. ' +
+        `Opcoes: ${CAMADAS.map((c) => c.id).join(', ')}`
+    );
+  }
+
   const modelo = texto('model') ?? MODELO_PADRAO;
   const choke = texto('choke') !== undefined ? Number(texto('choke')) : CHOKE_PADRAO;
-  const alvo = texto('only') ? CAMADAS.filter((c) => c.id === texto('only')) : CAMADAS;
+  const alvo = somente ? CAMADAS.filter((c) => c.id === somente) : CAMADAS;
   /** Presenca da flag, nao o valor dela: `--reuse` e `--reuse sim` querem a mesma coisa. */
   const reaproveitar = 'reuse' in args;
 
   if (!alvo.length) {
-    throw new Error(`camada "${args.only}" nao existe. Opcoes: ${CAMADAS.map((c) => c.id).join(', ')}`);
+    throw new Error(`camada "${somente}" nao existe. Opcoes: ${CAMADAS.map((c) => c.id).join(', ')}`);
   }
 
   const chave = await carregarChave();
@@ -829,7 +846,7 @@ async function main() {
 
   // Manifest so e reescrito em execucao completa. Rodar --only e teste, e teste
   // nao deve publicar um manifest de uma camada so.
-  if (!args.only && prontas.length === CAMADAS.length) {
+  if (!somente && prontas.length === CAMADAS.length) {
     const manifest = {
       _gerado: new Date().toISOString(),
       _modelo: modelo,
@@ -840,7 +857,7 @@ async function main() {
     };
     await writeFile(join(dirSaida, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
     console.log(`\nmanifest.json escrito com ${prontas.length} camadas.`);
-  } else if (args.only) {
+  } else if (somente) {
     console.log('\n--only e teste: manifest nao foi tocado.');
   } else {
     console.error('\nConjunto incompleto — manifest NAO foi escrito para nao publicar colagem.');

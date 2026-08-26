@@ -378,8 +378,24 @@ const NOMES = ['pao-superior', 'alface', 'tomate-cebola', 'queijo', 'blend', 'ba
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const fatias = Number(args.fatias ?? 7);
+  const fatias = Number(args.fatias ?? NOMES.length);
   const modelo = typeof args.model === 'string' ? args.model : MODELO_PADRAO;
+
+  /**
+   * O numero de fatias nao e livre: os nomes sao SETE e fixos.
+   *
+   * Com --fatias 5 a deteccao encontrava 5, a conferencia de contagem passava
+   * (5 detectadas, 5 pedidas) e o fatiar nomeava com os cinco primeiros NOMES —
+   * publicando um manifest sem bacon nem pao-inferior. Conjunto incompleto e
+   * exatamente o que a regra de composicao unica proibe, entao a checagem tem
+   * de vir ANTES de gerar, nao depois de pagar.
+   */
+  if (fatias !== NOMES.length) {
+    throw new Error(
+      `--fatias ${args.fatias}: a pilha tem ${NOMES.length} camadas nomeadas ` +
+        `(${NOMES.join(', ')}). Outro numero publicaria conjunto incompleto.`
+    );
+  }
 
   await mkdir(dirRaw, { recursive: true });
   const caminhoMae = join(dirRaw, 'burger-mae.png');
