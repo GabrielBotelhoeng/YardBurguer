@@ -200,7 +200,7 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
    * lado. O cliente vai julgar o material, não o comprimento do trilho.
    *
    * QUEM DECIDE É `ehTelaDeCelular`, NÃO `ehMobile`. Esta linha usava o
-   * `ehMobile` do motion.js, que é `matchMedia('(max-width: 767px)')` avaliado
+   * `ehMobile` do motion.js, que era `matchMedia('(max-width: 767px)')` avaliado
    * UMA VEZ no load — o mesmo defeito que já tinha sido corrigido para a escolha
    * do arquivo, ainda vivo num segundo consumidor. Consertaram o arquivo e
    * esqueceram o trilho.
