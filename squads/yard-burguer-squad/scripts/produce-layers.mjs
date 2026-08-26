@@ -378,11 +378,35 @@ const CAMADAS = [
   },
 ];
 
+/**
+ * Argumentos do CLI.
+ *
+ * Andava de dois em dois e gravava sempre o item seguinte como valor. Duas
+ * consequencias, achadas no review de 2026-08-26 e ambas caras:
+ *
+ * 1. `--reuse` sozinho gravava `undefined`, e as checagens la embaixo
+ *    perguntavam por `!== undefined`. A flag fazia o OPOSTO do que promete:
+ *    regerava as sete camadas pagas em vez de reaproveitar o JPEG — e ainda
+ *    liberava as re-rolagens, que tambem custam.
+ * 2. `--reuse --only queijo` engolia o `--only`, porque o passo de dois lia a
+ *    flag seguinte como valor da primeira.
+ *
+ * Agora anda de um em um: flag seguida de outra flag (ou de nada) e booleana e
+ * vale `true`; o resto guarda o valor que veio.
+ */
 function parseArgs(argv) {
   const args = {};
-  for (let i = 0; i < argv.length; i += 2) {
-    const chave = argv[i]?.replace(/^--/, '');
-    if (chave) args[chave] = argv[i + 1];
+  for (let i = 0; i < argv.length; i++) {
+    if (!argv[i].startsWith('--')) continue;
+    const chave = argv[i].slice(2);
+    if (!chave) continue;
+    const proximo = argv[i + 1];
+    if (proximo !== undefined && !proximo.startsWith('--')) {
+      args[chave] = proximo;
+      i += 1;
+    } else {
+      args[chave] = true;
+    }
   }
   return args;
 }
@@ -685,9 +709,16 @@ async function recortar(bufferJpeg, choke, despillForte) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const modelo = args.model || MODELO_PADRAO;
-  const choke = args.choke !== undefined ? Number(args.choke) : CHOKE_PADRAO;
-  const alvo = args.only ? CAMADAS.filter((c) => c.id === args.only) : CAMADAS;
+  /**
+   * Flag booleana nao serve como valor: `--model` sozinho nao nomeia modelo, e
+   * `--choke` sozinho nao vira choke 1. Quem chega como `true` cai no padrao.
+   */
+  const texto = (chave) => (typeof args[chave] === 'string' ? args[chave] : undefined);
+  const modelo = texto('model') ?? MODELO_PADRAO;
+  const choke = texto('choke') !== undefined ? Number(texto('choke')) : CHOKE_PADRAO;
+  const alvo = texto('only') ? CAMADAS.filter((c) => c.id === texto('only')) : CAMADAS;
+  /** Presenca da flag, nao o valor dela: `--reuse` e `--reuse sim` querem a mesma coisa. */
+  const reaproveitar = 'reuse' in args;
 
   if (!alvo.length) {
     throw new Error(`camada "${args.only}" nao existe. Opcoes: ${CAMADAS.map((c) => c.id).join(', ')}`);
@@ -727,7 +758,7 @@ async function main() {
       let resultado;
 
       for (let tentativa = 1; ; tentativa++) {
-        if (args.reuse !== undefined && existsSync(caminhoRaw)) {
+        if (reaproveitar && existsSync(caminhoRaw)) {
           raw = await readFile(caminhoRaw);
         } else {
           raw = await gerarComRetry({ camada, modelo, chave });
@@ -743,7 +774,7 @@ async function main() {
           // estocastica e a regra de composicao unica exige as sete na MESMA
           // execucao, mais re-rolagens por camada saem mais barato que outra
           // rodada completa.
-          const podeRepetir = chromaRuim && args.reuse === undefined && tentativa < 6;
+          const podeRepetir = chromaRuim && !reaproveitar && tentativa < 6;
           if (!podeRepetir) throw erro;
           console.log(`       ${camada.id}: fundo derivou, nova rolagem (${tentativa}/5)`);
         }
