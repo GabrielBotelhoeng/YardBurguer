@@ -38,17 +38,30 @@
 </style>
 <figure>
   <figcaption>celular — 375 x 812</figcaption>
-  <iframe id="mob" src="/" width="375" height="812" scrolling="no"></iframe>
+  <iframe id="mob" src="/" width="375" height="812"></iframe>
 </figure>
 <figure>
   <figcaption>desktop — 1280 x 800</figcaption>
-  <iframe id="desk" src="/" width="1280" height="800" scrolling="no"></iframe>
+  <iframe id="desk" src="/" width="1280" height="800"></iframe>
 </figure>
 <script>
   const PROD = {
     'burger-stack-poster-vertical.webp': { esq: 198/1080, dir: 887/1080, arq: 1080/1920 },
     'burger-stack-poster-16x9.webp':     { esq: 666/1920, dir: 1365/1920, arq: 1920/960 },
   };
+  // Barra de rolagem de largura zero no documento filho: some da captura sem
+  // travar a rolagem e sem roubar 15px do viewport medido.
+  window.semBarra = () => {
+    for (const id of ['mob', 'desk']) {
+      const d = document.getElementById(id).contentDocument;
+      if (d.getElementById('__semBarra')) continue;
+      const e = d.createElement('style');
+      e.id = '__semBarra';
+      e.textContent = 'html::-webkit-scrollbar{width:0;height:0}';
+      d.head.appendChild(e);
+    }
+  };
+
   window.armar = async (qualParada = 3) => {
     const saida = {};
     for (const id of ['mob', 'desk']) {
