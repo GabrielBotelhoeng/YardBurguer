@@ -1,0 +1,85 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Bancada — Cena 2 lado a lado</title>
+<!--
+  BANCADA DA CENA 2 — celular e desktop no mesmo quadro.
+
+    npm run build
+    cp squads/yard-burguer-squad/scripts/bancada-cena2.html dist/__bancada.html
+    npm run preview
+    abrir /__bancada.html e rodar  await armar(0..4)  no console
+
+  POR QUE ISTO EXISTE, e não um teste de browser normal: `IntersectionObserver`
+  NÃO dispara em aba dirigida por CDP (confirmado em 2026-08-26, elemento
+  inteiramente visível, callback nunca chamado). Como o motion.js só importa o
+  chunk da cena quando o observer dispara, a Cena 2 jamais engata sob automação —
+  o <video> fica sem src, em readyState 0, e o pin nunca é criado.
+
+  Então a bancada não tenta rolar a cena: ela MONTA o quadro à mão, com os mesmos
+  valores da timeline de video-scrub.js, sobre o <picture> do poster (que carrega
+  normalmente — só o vídeo é que não decodifica). Serve para julgar COMPOSIÇÃO e
+  para medir se as faixas da marca encostam no hambúrguer, que é o que quebrou
+  quando ela foi para as laterais.
+
+  `armar()` devolve gapEsq/gapDir: distância em px entre a faixa e a borda do
+  produto. NEGATIVO significa que a palavra está por trás do hambúrguer — foi
+  exatamente esse número (-4 e -6 no celular) que mandou recompor o vídeo
+  vertical. Positivo nos dois é o contrato.
+
+  Os valores de PROD vêm de medir a bounding box do produto por saturação nos
+  posters compostos. Se o encode mudar, REMEDIR — senão a bancada aprova uma
+  folga que não existe.
+-->
+<style>
+  body { margin:0; background:#111; color:#ccc; font:12px/1.4 system-ui; display:flex; gap:16px; padding:12px; }
+  figure { margin:0; }
+  figcaption { padding:4px 0; }
+  iframe { border:1px solid #444; display:block; }
+</style>
+<figure>
+  <figcaption>celular — 375 x 812</figcaption>
+  <iframe id="mob" src="/" width="375" height="812" scrolling="no"></iframe>
+</figure>
+<figure>
+  <figcaption>desktop — 1280 x 800</figcaption>
+  <iframe id="desk" src="/" width="1280" height="800" scrolling="no"></iframe>
+</figure>
+<script>
+  const PROD = {
+    'burger-stack-poster-vertical.webp': { esq: 198/1080, dir: 887/1080, arq: 1080/1920 },
+    'burger-stack-poster-16x9.webp':     { esq: 666/1920, dir: 1365/1920, arq: 1920/960 },
+  };
+  window.armar = async (qualParada = 3) => {
+    const saida = {};
+    for (const id of ['mob', 'desk']) {
+      const w = document.getElementById(id).contentWindow, d = w.document;
+      const img = d.querySelector('.cenavideo__poster');
+      img.loading = 'eager';
+      img.src = img.src.split('?')[0] + '?v=' + Date.now();
+      await new Promise(r => { img.onload = r; img.onerror = r; setTimeout(r, 9000); });
+      const secao = d.querySelector('#explode');
+      w.scrollTo(0, w.scrollY + secao.getBoundingClientRect().top);
+      await new Promise(r => setTimeout(r, 250));
+      d.querySelector('[data-veu]').style.opacity = '0.82';
+      [...d.querySelectorAll('[data-marca]')].forEach(m => (m.style.opacity = '0.55'));
+      d.querySelector('[data-conteudo]').style.opacity = '0';
+      [...d.querySelectorAll('[data-passo]')].forEach((p, i) => (p.style.opacity = i === qualParada ? '1' : '0'));
+      const palco = d.querySelector('[data-palco]');
+      const r = palco.getBoundingClientRect();
+      const nome = img.currentSrc.split('/').pop().split('?')[0];
+      const p = PROD[nome];
+      const caixa = r.width / r.height;
+      if (1 - Math.min(p.arq, caixa) / Math.max(p.arq, caixa) <= 0.15) palco.setAttribute('data-fit', 'cover');
+      const larg = p.arq >= caixa ? r.height * p.arq : r.width;
+      const off = (r.width - larg) / 2;
+      const pe = off + p.esq * larg, pd = off + p.dir * larg;
+      const [fe, fd] = [...d.querySelectorAll('[data-marca]')].map(m => m.getBoundingClientRect());
+      saida[id] = {
+        palco: Math.round(r.width) + 'x' + Math.round(r.height),
+        fonte: w.getComputedStyle(d.querySelector('[data-marca]')).fontSize,
+        gapEsq: Math.round(pe - fe.right), gapDir: Math.round(fd.x - pd),
+      };
+    }
+    return saida;
+  };
+</script>

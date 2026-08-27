@@ -204,9 +204,20 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
    * margem que o encode embutiu; caso contrário fica o `contain` do CSS, que
    * mostra o produto inteiro e aceita faixa de carvão.
    *
-   * MARGEM_SEGURA é 0,15 porque o encode compõe com RECUO = 0,85 — 7,5% de
-   * preenchimento por lado, ou 15% num eixo. Se aquele número mudar, este muda
-   * junto; são o mesmo fato escrito nas duas pontas.
+   * MARGEM_SEGURA é 0,15 porque é a MENOR das duas margens compostas, e desde
+   * 2026-08-26 elas deixaram de ser iguais: o encode usa RECUO 0,85 no arquivo
+   * 2:1 (7,5% de preenchimento por lado, 15% num eixo) e RECUO 0,72 no 9:16
+   * (14% por lado, 28% num eixo), porque o vertical precisou abrir lateral para
+   * a marca ladear o hambúrguer.
+   *
+   * Fica no menor de propósito: um único número que vale para os dois é seguro
+   * para ambos, enquanto um número por arquivo seria uma segunda fonte da
+   * verdade sobre a mesma geometria — e nesta cena toda divergência dessas
+   * quebrou alguma coisa em silêncio. O custo é o vertical recusar `cover` em
+   * alguns palcos onde ele caberia; o benefício é que o pior caso é faixa de
+   * carvão, nunca pão decepado.
+   *
+   * Se qualquer um dos dois RECUOs mudar, remedir e reescrever isto.
    */
   const MARGEM_SEGURA = 0.15;
 
@@ -523,9 +534,21 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
    * defeito de antes — com um plano só, o que se vê é um elemento tremendo
    * sozinho sobre o vídeo, não profundidade.
    */
-  const marca = secao.querySelector('[data-marca]');
+  /**
+   * SÃO DUAS FAIXAS, e o tween trata as duas como uma coisa só.
+   *
+   * `querySelectorAll` e não `querySelector`: desde que a marca foi partida em
+   * YARD (esquerda) e BURGUER (direita), existem dois elementos com
+   * `data-marca`. Animar só o primeiro deixaria metade do nome aceso e a outra
+   * metade invisível — e o defeito seria silencioso, porque nada quebra.
+   *
+   * O GSAP aceita array e mantém as duas em fase exata: a marca é UMA palavra
+   * partida, não duas palavras. Se um dia elas precisarem entrar escalonadas,
+   * isso é decisão de cena e vai para o storyboard antes de virar código.
+   */
+  const marca = Array.from(secao.querySelectorAll('[data-marca]'));
   const MARCA_OPACIDADE = 0.55;
-  if (marca) {
+  if (marca.length) {
     trilho.fromTo(
       marca,
       { opacity: 0, scale: 1 },
@@ -680,7 +703,7 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
      */
     const containerParadas = secao.querySelector('[data-passos]');
     if (containerParadas) containerParadas.style.display = 'none';
-    if (marca) marca.style.display = 'none';
+    marca.forEach((m) => (m.style.display = 'none'));
 
     palco.removeAttribute('data-pronto');
 

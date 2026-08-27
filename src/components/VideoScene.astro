@@ -157,6 +157,14 @@ const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
     carvão da seção — e o vídeo nem entraria na conta. A palavra ficaria um
     borrão âmbar sobre fundo liso, atrás de um vídeo opaco que a esconderia por
     completo. Dentro do palco ela blenda com o quadro do vídeo, que é o ponto.
+
+    PARTIDA EM DUAS E JOGADA PARA AS LATERAIS (2026-08-26, segunda passada).
+
+    Centralizada ela cruzava o hambúrguer bem no meio — o cliente viu e recusou.
+    Agora YARD desce pela lateral esquerda e BURGUER pela direita, as duas
+    ladeando o produto em vez de atravessá-lo. O quadro fica com o hambúrguer no
+    centro e a marca emoldurando, que é o que a palavra deveria estar fazendo
+    desde o começo.
   */}
 
   <div class="cenavideo__palco" data-palco>
@@ -217,7 +225,12 @@ const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
       aria-hidden="true"
       tabindex="-1"></video>
 
-    <p class="cenavideo__marca" data-marca aria-hidden="true">{explode.textoFundo}</p>
+    <p class="cenavideo__marca cenavideo__marca--esq" data-marca aria-hidden="true">
+      <span>{explode.marcaLateral.esquerda}</span>
+    </p>
+    <p class="cenavideo__marca cenavideo__marca--dir" data-marca aria-hidden="true">
+      <span>{explode.marcaLateral.direita}</span>
+    </p>
   </div>
 
   {/*
@@ -581,45 +594,100 @@ const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
    * título — e uma palavra âmbar gigante parada por cima dele não é um estado de
    * repouso, é um artefato.
    */
+  /**
+   * AS DUAS FAIXAS DA MARCA — YARD desce pela esquerda, BURGUER pela direita.
+   *
+   * `top: 0; bottom: 0` MAIS flex para centrar na vertical, e nunca
+   * `top: 50% + translateY(-50%)`. É a mesma regra de `.cenavideo__conteudo`, e
+   * pelo mesmo motivo: o GSAP anima `scale` neste elemento, e se a centralização
+   * morasse no transform o primeiro tween resolveria o -50% para pixels e a
+   * faixa sairia do lugar na primeira mudança de altura.
+   */
   .cenavideo__marca {
     position: absolute;
-    inset: 0;
+    top: 0;
+    bottom: 0;
     z-index: 15;
-    /**
-     * FLEX E NÃO GRID, e a diferença não é estilística.
-     *
-     * Com `display: grid; place-items: center` o texto vira um item anônimo e
-     * `justify-items: center` o dimensiona por `max-content` — ou seja, ele
-     * IGNORA a largura do palco e não quebra linha nunca. Medido em 1920: a
-     * palavra saía pelas duas bordas e o que se lia era "YARD BURGUE".
-     *
-     * Em flex o item anônimo tem `flex-shrink: 1`, encolhe até a caixa e quebra
-     * onde deve. Mesmo centro, com quebra.
-     */
     display: flex;
     align-items: center;
-    justify-content: center;
     margin: 0;
-    padding-inline: 1rem;
     pointer-events: none;
 
     font-family: var(--font-display);
     /**
-     * Maior que --text-hero: esta palavra é textura de fundo, não manchete. Mas
-     * dimensionada para caber em DUAS linhas ("YARD" / "BURGUER"), não em uma —
-     * 14vw põe a linha mais longa em ~59% da largura em qualquer viewport, e é
-     * isso que garante margem nas duas pontas de 390px a 1920px.
+     * DUAS RESTRIÇÕES, e a faixa obedece à mais apertada das duas.
+     *
+     * `10svh` é a que dá a COMPOSIÇÃO: a palavra corre na vertical, então é a
+     * altura que decide sua presença, e medir por altura é o que faz o celular e
+     * o desktop terem a mesma proporção. Em vw sozinho não teriam — 12vw são
+     * 45px num celular de 375 e 230px num desktop de 1920.
+     *
+     * `12vw` é a que a faz CABER. A faixa não pode ser mais larga que a lateral
+     * livre entre a borda da tela e o hambúrguer, senão a palavra volta para trás
+     * do produto, que é o defeito que esta rodada existe para consertar. Medido
+     * no arquivo novo: com o produto em 63,8% da largura e centrado, sobram ~48px
+     * de folga de cada lado num palco de celular de 375px. 12vw dá 45px ali —
+     * cabe com 3px de respiro.
+     *
+     * O `min` faz a apertada vencer sozinha em cada aparelho: no celular vence o
+     * vw (45 contra 84), no desktop vence o svh (80 contra 154). Uma fórmula, sem
+     * media query, e nenhum breakpoint para divergir depois.
      */
-    font-size: clamp(3rem, 14vw, 12rem);
-    line-height: 0.82;
-    letter-spacing: -0.02em;
-    text-align: center;
-    text-wrap: balance;
+    font-size: clamp(2rem, min(10svh, 12vw), 6.5rem);
+    line-height: 1;
+    letter-spacing: 0.02em;
     color: var(--color-brasa);
 
     mix-blend-mode: screen;
     opacity: 0;
     will-change: opacity, transform;
+  }
+
+  /**
+   * `writing-mode` no FILHO, não no <p>.
+   *
+   * No <p> ele viraria a caixa flex inteira de lado e `align-items: center`
+   * passaria a centrar no eixo errado. No span só o texto gira; a caixa continua
+   * sendo uma coluna que o flex centra na vertical.
+   *
+   * `vertical-rl` faz o texto correr de CIMA PARA BAIXO, que foi o pedido. Os
+   * glifos latinos giram 90° (é o `text-orientation: mixed` padrão) e a palavra
+   * fica alta e estreita — exatamente a forma de que uma faixa lateral precisa.
+   * `upright`, que empilha as letras de pé, foi descartado: "BURGUER" tem sete
+   * letras e a coluna passaria da altura do palco no celular.
+   */
+  .cenavideo__marca span {
+    writing-mode: vertical-rl;
+    display: block;
+  }
+
+  /**
+   * ONDE AS FAIXAS POUSAM — uma fórmula, dois enquadramentos muito diferentes.
+   *
+   * O pedido é que elas fiquem na lateral DO HAMBÚRGUER. Só que o hambúrguer não
+   * tem a mesma largura nos dois arquivos, e a diferença é enorme — medido nos
+   * posters: no vertical (celular) ele ocupa ~76% da largura do quadro; no 2:1
+   * (desktop) ocupa ~35%. Uma posição fixa acerta um e erra o outro: encostada
+   * na borda, ficaria a meia tela de distância do produto no desktop; encostada
+   * no produto do desktop, ficaria por cima dele no celular.
+   *
+   * `max(0.5rem, calc(50% - 26rem))` resolve os dois com uma conta só:
+   *
+   *   celular 390px  ->  50% = 195px, menos 416px dá negativo, então vence o
+   *                      piso de 0.5rem e a faixa encosta na borda — que é
+   *                      justamente onde a borda do hambúrguer está.
+   *   desktop 1920px ->  960 - 416 = 544px do centro. A borda do hambúrguer no
+   *                      arquivo 2:1 cai por volta de 624px. A faixa pousa
+   *                      colada nela.
+   *
+   * O `26rem` é o raio do produto em telas largas. Se o cliente mandar take com
+   * outro enquadramento, é ESTE número que muda.
+   */
+  .cenavideo__marca--esq {
+    left: max(0.5rem, calc(50% - 26rem));
+  }
+  .cenavideo__marca--dir {
+    right: max(0.5rem, calc(50% - 26rem));
   }
 
   /**

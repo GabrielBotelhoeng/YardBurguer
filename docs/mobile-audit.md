@@ -124,19 +124,33 @@ Sob `prefers-reduced-motion` e sem JavaScript o trilho mede **0 px** e o
 documento fica idêntico ao de antes da mudança — o fallback não paga nada por
 essa correção.
 
-## Peso: 1,64 MB contra teto de 1,5 MB
+## Peso: 1,40 MB contra teto de 1,5 MB — PASSA desde 26/08
 
-| Tipo | kB |
-|---|---|
-| media (o take da Cena 2) | 1.003 |
-| image | 360 |
-| script | 121 |
-| stylesheet | 68 |
-| font | 67 |
-| document | 22 |
-| **total** | **1.640** |
+> **Corrigido em 2026-08-26.** Esta seção afirmava um estouro de 9% que deixou de
+> existir. O quadro vertical foi recomposto (`RECUO 0.72` em vez de 0.85) para abrir a
+> lateral que a marca `YARD` / `BURGUER` precisava, e o efeito colateral resolveu o
+> orçamento: mais área de fundo liso comprime melhor que detalhe.
+>
+> Medido, não estimado: `burger-stack-vertical.mp4` foi de 1.002.587 para 783.668
+> bytes (−21,8%) e o poster de 112.494 para 92.176 (−18,1%).
 
-**Estoura o teto em 9%.** O vídeo sozinho é 61% da rota.
+| Tipo | antes (kB) | agora (kB) |
+|---|---|---|
+| media (o take da Cena 2) | 1.003 | **784** |
+| image | 360 | **339** |
+| script | 121 | 121 |
+| stylesheet | 68 | 68 |
+| font | 67 | 67 |
+| document | 22 | 22 |
+| **total** | **1.640** | **1.401** |
+
+**Passa com 99 kB de folga** (−6,5% do teto), contra os +9,4% de antes. O vídeo
+continua sendo a maior peça da rota, mas caiu de 61% para 56%.
+
+Ressalva de método: `media`, `image` e `font` vêm da medição nova do
+`audit-page.mjs`; `script`, `stylesheet` e `document` foram reaproveitados da
+auditoria anterior, porque naquela corrida o Playwright os serviu de cache e
+reportou zero. Nenhum dos três foi tocado por esta mudança.
 
 Unidade importa aqui, e a primeira versão desta seção errou: os 1.640.127 bytes
 medidos são 1.601 KiB na base 1024, e reportá-los como "1.600 kB" contra um teto
