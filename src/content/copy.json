@@ -192,7 +192,16 @@
     "tituloPagamento": "Pagamento",
     "ctaMapa": "Ver no mapa",
     "ctaWhats": "Chamar no WhatsApp",
-    "notaWhats": "Dúvida sobre o pedido? Chama que a gente responde."
+    "notaWhats": "Dúvida sobre o pedido? Chama que a gente responde.",
+    "_estado": "Textos do selo de aberto/fechado. São moldes com {hora} e {dia} porque quem preenche é o cliente, no fuso da LOJA e não no do visitante. Sem JS nenhum deles aparece — fica só o horário fixo, que continua correto.",
+    "estado": {
+      "aberto": "Aberto agora",
+      "abertoAte": "fecha às {hora}",
+      "fechado": "Fechado agora",
+      "abreHoje": "abre hoje às {hora}",
+      "abreDia": "abre {dia} às {hora}",
+      "fechaEmBreve": "fecha em {min} min"
+    }
   },
   "ctaFinal": {
     "titulo": "Tá com fome",

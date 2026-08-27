@@ -282,7 +282,22 @@ const combos = menu.combos.map((combo) => ({
           </div>
           <div class="onde__dado">
             <dt>{copy.ondeEstamos.tituloHorario}</dt>
-            <dd>{marca.horario.texto}</dd>
+            <dd>
+              {marca.horario.texto}
+              {/*
+                O SELO NASCE VAZIO E SÓ O CLIENTE O PREENCHE.
+
+                Não dá para renderizar isto no build: a página é estática e
+                ficaria congelada dizendo "aberto agora" às três da manhã. Sem
+                JS ele permanece vazio e o que se lê é o horário fixo acima,
+                que continua correto — degradar para menos informação é certo,
+                para informação errada não.
+
+                aria-live=polite: quem usa leitor de tela ouve o estado quando
+                ele chega, sem ter o foco roubado.
+              */}
+              <span class="onde__estado" data-estado hidden aria-live="polite"></span>
+            </dd>
           </div>
           <div class="onde__dado">
             <dt>{copy.ondeEstamos.tituloPagamento}</dt>
@@ -340,6 +355,19 @@ const combos = menu.combos.map((combo) => ({
   <script>
     import '../scripts/motion.js';
   </script>
+
+  {/*
+    O selo de aberto/fechado recebe horário e textos daqui em vez de importar o
+    copy.json: assim o módulo não arrasta a copy inteira para o bundle do
+    cliente, e continua sendo testável passando um horário na mão.
+  */}
+  <script is:inline define:vars={{ horario: marca.horario, textos: copy.ondeEstamos.estado }}>
+    window.__yardLoja = { horario, textos };
+  </script>
+  <script>
+    import { initEstadoLoja } from '../scripts/estado-loja.mjs';
+    initEstadoLoja(window.__yardLoja);
+  </script>
 </Base>
 
 <style>
@@ -380,11 +408,31 @@ const combos = menu.combos.map((combo) => ({
     text-decoration: none;
     letter-spacing: 0.05em;
   }
+  /**
+   * O ALVO DE TOQUE TEM 44px, e o texto continua com 19px de altura.
+   *
+   * Estes três links eram os únicos alvos da página abaixo do mínimo de 44px —
+   * `.rodape__link` e `.onde__link` já pagavam `min-height`, e ninguém tinha
+   * voltado aqui. O gate mobile reprovava os três a cada rodada (Destaques
+   * 77x19, Nosso hambúrguer 138x19, Onde estamos 104x19).
+   *
+   * `inline-flex` + `align-items: center` é o que cresce a ÁREA sem crescer a
+   * linha: o texto fica do mesmo tamanho e do mesmo lugar, e o dedo ganha os
+   * 44px. Padding vertical sozinho empurraria a navbar inteira para baixo.
+   *
+   * Os links só aparecem acima de 640px (a regra logo abaixo os remove no
+   * celular), mas a navbar em PAISAGEM cabe nessa faixa — e paisagem é
+   * exatamente onde o gate media a reprovação.
+   */
   .nav__link {
     color: var(--color-areia);
     text-decoration: none;
     margin-inline: 0.75rem;
     font-size: 0.95rem;
+
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
   }
   .nav__link:hover { color: var(--color-brasa); }
 
@@ -754,6 +802,37 @@ const combos = menu.combos.map((combo) => ({
   .onde { background-color: var(--color-creme); color: var(--color-carvao); }
   .onde__endereco { font-style: normal; line-height: 1.6; }
   .onde__dado { border-top: 1px solid rgb(139 74 43 / 0.18); padding-top: 1rem; }
+
+  /**
+   * O SELO DE ABERTO/FECHADO — cor semântica, e não só cor.
+   *
+   * O ponto colorido antes do texto é decoração: quem não distingue verde de
+   * vermelho lê "Aberto agora" ou "Fechado agora" escrito, que é a informação
+   * inteira. Cor aqui confirma, nunca carrega sozinha.
+   *
+   * O verde não é o verde de sistema: é puxado para a oliva do cerrado para não
+   * brigar com a brasa e o terracota da paleta. O fechado usa o próprio
+   * terracota da marca em vez de vermelho de alerta — a casa fechar às 23h20
+   * não é erro, é o expediente.
+   */
+  .onde__estado {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.35rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .onde__estado::before {
+    content: '';
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background-color: currentColor;
+    flex: none;
+  }
+  .onde__estado[data-aberto='true'] { color: #4A6B24; }
+  .onde__estado[data-aberto='false'] { color: var(--color-terracota); }
   .onde__pgto {
     display: block;
     font-size: 0.7rem;

@@ -168,5 +168,73 @@ const jsonLd = {
 
   <body>
     <slot />
+
+    <!--
+      A MEDIÇÃO QUE JÁ ESTAVA MARCADA E NUNCA FOI LIGADA.
+
+      Seis CTAs carregam `data-evento` desde o começo do projeto —
+      cardapio-hero, cardapio-navbar, cardapio-secao, cardapio-combos,
+      cardapio-final e whatsapp-onde. Alguém escolheu os pontos de medição com
+      cuidado e nada lia os atributos: nenhum gtag, nenhum script, nada. O
+      efeito prático era decidir tudo no escuro — sem saber se a Cena 2 ajuda
+      ou atrapalha, nem qual CTA leva gente ao Brendi.
+
+      POR QUE VERCEL ANALYTICS e não Plausible/GA:
+      - a página já roda na Vercel, então não entra fornecedor novo;
+      - não usa cookie nem identifica pessoa, então NÃO exige banner de
+        consentimento — e um banner destruiria a primeira dobra desta página;
+      - o script mora em /_vercel/insights, mesma origem: sem DNS extra e sem
+        um terceiro no caminho do carregamento.
+
+      PRECISA SER HABILITADO NO PAINEL (Project → Analytics). Enquanto não for,
+      /_vercel/insights/script.js responde 404 e `window.va` nunca existe — daí
+      o guarda no rastrear() abaixo. A página não quebra: ela só não mede.
+    -->
+    <script is:inline defer src="/_vercel/insights/script.js"></script>
+
+    <script is:inline>
+      /**
+       * Delegação no document, e não um listener por CTA.
+       *
+       * Os alvos existem desde o HTML, mas delegar é o que mantém a medição
+       * verdadeira se um CTA passar a ser renderizado depois — e custa um
+       * listener em vez de seis.
+       *
+       * `pointerdown` e não `click`: navegação para fora (Brendi, WhatsApp)
+       * frequentemente descarrega a página antes de o clique completar, e o
+       * evento se perde justamente nos cliques que mais importam. pointerdown
+       * dispara antes de qualquer navegação começar.
+       */
+      (function () {
+        var jaContado = new WeakSet();
+
+        function rastrear(evento) {
+          var alvo = evento.target.closest('[data-evento]');
+          if (!alvo) return;
+
+          // Um pointerdown seguido de click no mesmo alvo é uma intenção só.
+          if (jaContado.has(alvo)) return;
+          jaContado.add(alvo);
+          setTimeout(function () {
+            jaContado.delete(alvo);
+          }, 1000);
+
+          // Sem o painel ligado, window.va não existe: sair calado é o certo,
+          // um erro no console não ajudaria ninguém e sujaria o gate.
+          if (typeof window.va !== 'function') return;
+          window.va('event', {
+            name: 'cta',
+            data: { destino: alvo.dataset.evento },
+          });
+        }
+
+        document.addEventListener('pointerdown', rastrear, { passive: true });
+        // Teclado não emite pointerdown — sem isto, quem navega por Tab+Enter
+        // não seria contado, e é justamente quem usa leitor de tela.
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') rastrear(e);
+        });
+      })();
+    </script>
   </body>
 </html>

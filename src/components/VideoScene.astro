@@ -943,4 +943,53 @@ const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
       width: min(100% - 2.5rem, 34rem);
     }
   }
+
+  /**
+   * TELA BAIXA (celular deitado) — o véu precisa de outra CURVA, não de outra
+   * altura.
+   *
+   * O DEFEITO, medido em 2026-08-27 com a cena rodando: em 844x390 o título
+   * dava 1,03:1 e as cinco paradas 1,83–2,14:1, contra pisos de 3,0 e 4,5. O
+   * texto ficava literalmente sobre o queijo iluminado do hambúrguer — o pior
+   * pixel sob o título era [244,243,236], quase branco.
+   *
+   * POR QUE A CALIBRAÇÃO ANTERIOR NÃO PEGAVA ISTO: ela foi feita contra o
+   * PARÁGRAFO, que mora na base do véu, onde a alfa é 0,96. Só que em tela
+   * baixa o bloco de texto é alto em relação à faixa: com véu de 187px, o
+   * título ocupava de 63% a 96% da altura do gradiente — a região em que a
+   * curva já caiu de 0,5 para quase zero. O véu cobria o título
+   * geometricamente e não o protegia opticamente, que são coisas diferentes.
+   *
+   * A CORREÇÃO É NA CURVA e não na altura, de propósito. Subir a altura
+   * escureceria o hambúrguer inteiro numa tela que já é o caso degradado
+   * (`contain`, com faixa de carvão nas laterais). Segurando a alfa alta até
+   * 78% e derrubando só no fim, o texto ganha fundo em toda a sua caixa sem
+   * comer o produto na mesma proporção.
+   *
+   * OS 56% DE ALTURA SAÍRAM DE MEDIR TRÊS, e não de escolher um. Com a curva
+   * nova: 48% deixa o título em 1,64:1 (ainda reprova), 52% dá 4,97:1 e 58% dá
+   * 11,01:1 escurecendo o hambúrguer quase inteiro. 56% entrega 8,53:1 — quase
+   * três vezes o piso — e devolve altura de produto em relação aos 58%.
+   *
+   * Só `max-height`, sem o `max-width` da consulta de celular: isto é sobre
+   * tela BAIXA. Celular em pé tem 844px de altura e não passa nem perto —
+   * lá o texto já mede 5,61:1 e não há o que corrigir. É a única regra desta
+   * folha que NÃO acompanha CONSULTA_CELULAR, de propósito.
+   *
+   * Se o take mudar, REMEDIR com medir-contraste-cena2.mjs. A curva está
+   * calibrada contra o pixel mais claro deste material.
+   */
+  @media (max-height: 500px) {
+    .cenavideo__veu {
+      height: 56%;
+      background: linear-gradient(
+        to top,
+        rgb(20 12 6 / 0.97) 0%,
+        rgb(20 12 6 / 0.95) 55%,
+        rgb(20 12 6 / 0.88) 78%,
+        rgb(20 12 6 / 0.55) 92%,
+        rgb(20 12 6 / 0) 100%
+      );
+    }
+  }
 </style>
