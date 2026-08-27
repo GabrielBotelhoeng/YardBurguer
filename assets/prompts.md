@@ -473,3 +473,42 @@ Só um `.mp4` é baixado por viewport. Os dois juntos ainda pesam menos que os
 **Preço da seekability, medido a 960x540 crf30:** g=48 (kf a cada 2s) = 500 kB ·
 g=24 = 594 kB · g=12 = 786 kB · g=6 = 1160 kB. Ficamos em g=12: 57% mais pesado
 que g=48, e é o que faz o scrub não travar ao buscar.
+
+---
+
+### [diferenciais] As duas pessoas que ladeiam "Por que o YARD é diferente" — foto do cliente, nota n/a
+
+**Não foi gerada.** São duas fotos de estúdio entregues pelo cliente em
+2026-08-27 (`referencia/fotos/`), com o personagem da marca em traje árabe:
+uma segurando hambúrguer e lata de Coca-Cola, outra segurando hambúrguer e a
+placa "VEM PARA A YARD". Ficam registradas aqui porque o log serve para saber de
+onde veio cada pixel da página, e não só o que passou por modelo.
+
+**O recorte foi descartado, e o motivo importa** — foi a decisão de composição
+desta rodada. A foto da placa tem **manto preto sobre fundo preto**: qualquer
+recorte por luminância ou chroma come o manto e o bordado dourado junto com o
+fundo. A do thobe branco recortaria bem, mas metade recortada e metade não é
+colagem, e a regra de composição única vale aqui igual. O Higgsfield, que tem
+`remove_background`, está em `credits: 0`.
+
+Então o fundo preto virou material: ele é o mesmo carvão `#140C06` da paleta, e
+as fotos entram como duas colunas escuras encostando o areia da seção numa borda
+vertical limpa. A seção lê como cartaz em vez de "duas fotos com margem".
+
+| Saída | Geometria | Peso | Quem baixa |
+|---|---|---|---|
+| `pessoa-{cocacola,placa}-420.webp` | 420x630 | 22 + 25 kB | celular DPR 2 |
+| `pessoa-{cocacola,placa}-620.webp` | 620x930 | 40 + 47 kB | celular DPR 2,6–3 |
+| `pessoa-{cocacola,placa}-840.webp` | 840x1260 | 63 + 74 kB | desktop e paisagem |
+
+**O degrau de 620 nasceu de um defeito medido.** Com só 420w e 840w no `srcset`,
+`sizes="50vw"` num aparelho DPR 3 pede 585px — e o browser, sem candidato entre
+os dois, pegava o 840w. Só o iPhone SE (DPR 2) recebia o arquivo leve; iPhone 13,
+Pixel 7 e o próprio Pixel 5 do gate de peso baixavam 137 kB onde 47 bastariam. O
+620w derruba isso para 85 kB. **Auditado, não estimado** — se mudar o `sizes`
+desta seção, remedir qual arquivo cada DPR baixa antes de dar por certo.
+
+**`object-position` é diferente em cada lado**, porque o assunto está em lugares
+diferentes do quadro: a lata mora na borda esquerda da foto 1 (38%), a placa
+ocupa a metade direita da foto 2 (60%). Centrar as duas comia a lata de um lado
+e a placa do outro.
