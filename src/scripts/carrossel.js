@@ -84,8 +84,30 @@ export function initCarrossel() {
     timer = setInterval(proximo, 5000);
   };
 
-  raiz.addEventListener('mouseenter', parar);
-  raiz.addEventListener('mouseleave', tocar);
+  /**
+   * `pointerenter` FILTRADO POR pointerType, e não `mouseenter`.
+   *
+   * MEDIDO na auditoria mobile: em toque real o Chromium sintetiza eventos de
+   * mouse para compatibilidade, e a sequência que ele emite é
+   * `touchstart, touchend, mouseenter, mousemove, mousedown, mouseup, click` —
+   * SEM `mouseleave` depois, porque um dedo não "sai" de lugar nenhum, ele
+   * apenas some.
+   *
+   * Com `mouseenter` puro, o efeito no celular era: qualquer toque no
+   * carrossel, mesmo um encostar sem querer enquanto se rola a página, matava
+   * o autoplay para sempre. Parar após interação REAL é o certo; parar por um
+   * hover que nunca existiu não é.
+   *
+   * Filtrando por `pointerType === 'mouse'`, o hover volta a ser hover. No
+   * toque, quem derruba o autoplay são os handlers de swipe e de controle, que
+   * é onde houve intenção de verdade.
+   */
+  raiz.addEventListener('pointerenter', (e) => {
+    if (e.pointerType === 'mouse') parar();
+  });
+  raiz.addEventListener('pointerleave', (e) => {
+    if (e.pointerType === 'mouse') tocar();
+  });
   raiz.addEventListener('focusin', parar);
   raiz.addEventListener('focusout', (e) => {
     if (!raiz.contains(e.relatedTarget)) tocar();
