@@ -105,7 +105,35 @@ const combos = menu.combos.map((combo) => ({
       O layout deixou de ser lista corrida e virou grade de cartões, com o
       ícone no topo e uma régua de brasa separando ícone de título.
     -->
+    <!--
+      AS DUAS PESSOAS LADEIAM A SEÇÃO — e o fundo preto delas é decisão, não sobra.
+
+      Recortar era impossível: a foto da placa tem manto PRETO sobre fundo preto,
+      e qualquer recorte por luminância comeria o manto e o bordado dourado (a do
+      thobe branco recortaria bem, mas metade recortada e metade não vira
+      colagem). O preto do estúdio é o mesmo carvão da marca, então ele entra
+      como moldura: duas faixas escuras encostando o areia numa borda vertical
+      limpa, e a seção lê como cartaz.
+
+      A ORDEM NO DOM É ESQUERDA → CONTEÚDO → DIREITA, e não é arrumação: no
+      celular as figuras caem para a linha de baixo por grid-template-areas, e
+      quem estava à esquerda continua à esquerda. Fosse ordem visual por CSS, o
+      leitor de tela ouviria as duas antes do título.
+    -->
     <section class="claro diferenciais" aria-labelledby="dif-titulo">
+      <figure class="dif__gente dif__gente--esq">
+        <img
+          src={`/assets/pessoas/${diferenciais.gente.esquerda.arquivo}-840.webp`}
+          srcset={`/assets/pessoas/${diferenciais.gente.esquerda.arquivo}-420.webp 420w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-620.webp 620w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-840.webp 840w`}
+          sizes="(max-width: 900px) 50vw, 30vw"
+          alt={diferenciais.gente.esquerda.alt}
+          width="840"
+          height="1260"
+          loading="lazy"
+          decoding="async"
+        />
+      </figure>
+
       <div class="claro__wrap">
         <h2 id="dif-titulo" class="secao__titulo">{diferenciais.titulo}</h2>
         <p class="secao__texto">{diferenciais.texto}</p>
@@ -123,6 +151,19 @@ const combos = menu.combos.map((combo) => ({
           }
         </ul>
       </div>
+
+      <figure class="dif__gente dif__gente--dir">
+        <img
+          src={`/assets/pessoas/${diferenciais.gente.direita.arquivo}-840.webp`}
+          srcset={`/assets/pessoas/${diferenciais.gente.direita.arquivo}-420.webp 420w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-620.webp 620w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-840.webp 840w`}
+          sizes="(max-width: 900px) 50vw, 30vw"
+          alt={diferenciais.gente.direita.alt}
+          width="840"
+          height="1260"
+          loading="lazy"
+          decoding="async"
+        />
+      </figure>
     </section>
 
     <!-- Cena 4 — Os mais pedidos -->
@@ -416,7 +457,114 @@ const combos = menu.combos.map((combo) => ({
 
   .claro { background-color: var(--color-areia); color: var(--color-carvao); }
 
-  .diferenciais { position: relative; }
+  /**
+   * A SEÇÃO DOS DIFERENCIAIS É UM CARTAZ DE TRÊS COLUNAS.
+   *
+   * As laterais são as duas pessoas; o miolo é o conteúdo. O `1fr` das pontas
+   * come toda a sobra da tela, então as figuras SANGRAM até a borda — é o que
+   * separa "cartaz" de "duas fotinhas com margem".
+   *
+   * `minmax(0, 68rem)` no meio e não `68rem`: sem o minmax o miolo se recusa a
+   * encolher abaixo do conteúdo e empurra as figuras para fora em telas médias.
+   *
+   * O `align-items` padrão do grid (stretch) é o que faz as duas colunas escuras
+   * terem exatamente a altura da seção. Não travar altura em px aqui: a seção
+   * cresce com a copy, e um número fixo descolaria no dia em que entrar um
+   * quinto pilar.
+   */
+  .diferenciais {
+    position: relative;
+    display: grid;
+    /* 62rem e não os 68rem das outras seções: cada rem que sai do miolo entra
+       nas duas laterais, e é largura de lateral que decide se a placa da foto
+       da direita é legível. Medido em 1440: 68rem deixa 176px por lado (30% da
+       foto, a placa vira "VEM" e um Y); 62rem deixa 224px. Os cartões não
+       sentem — a grade já quebrava em 3+1 nas duas larguras. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 62rem) minmax(0, 1fr);
+    grid-template-areas: 'esq miolo dir';
+  }
+  .diferenciais > .claro__wrap { grid-area: miolo; }
+
+  /**
+   * O BLOCO SANGRA ATÉ A BORDA, O CONTEÚDO DA FOTO NÃO.
+   *
+   * `env(safe-area-inset)` como padding e não como margem: o carvão continua
+   * encostando na borda física da tela (é ele que faz o cartaz), mas a imagem
+   * recua da faixa do notch.
+   *
+   * MEDIDO na auditoria mobile: em paisagem com notch o inset esquerdo é 47px
+   * contra 422px de coluna — 11,1% da figura, e não sobra de fundo preto: é
+   * exatamente onde estão a mão e a lata de Coca-Cola. Sem isto, o aparelho come
+   * o produto.
+   *
+   * Só nas bordas externas de cada figura. A borda interna encosta no areia e
+   * ali não existe notch.
+   */
+  .dif__gente {
+    margin: 0;
+    overflow: hidden;
+    background-color: var(--color-carvao);
+    /* O fundo da foto é o mesmo carvão, então onde a imagem não alcança a
+       emenda não aparece — a coluna continua sendo um bloco só. */
+
+    /* Declarado AQUI e não herdado: este projeto não tem reset global de
+       box-sizing (conferido — `box-sizing` não aparece em nenhum lugar de
+       src/). Sem isto o padding de safe-area abaixo SOMA à largura da coluna e
+       vira overflow horizontal na paisagem com notch, que é exatamente o
+       defeito que o padding existe para não causar. */
+    box-sizing: border-box;
+  }
+  .dif__gente--esq { padding-left: env(safe-area-inset-left); }
+  .dif__gente--dir { padding-right: env(safe-area-inset-right); }
+  .dif__gente--esq { grid-area: esq; }
+  .dif__gente--dir { grid-area: dir; }
+
+  .dif__gente img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* 22% na vertical e não `center`: a coluna do desktop é estreita e alta, e
+       centrar cortaria a cabeça. Ancorando perto do topo, rosto e produto ficam
+       no quadro e o corte cai na barra do traje, que não carrega informação. */
+    object-position: 50% 22%;
+  }
+  /**
+   * A HORIZONTAL É DIFERENTE EM CADA FOTO, porque o que importa está em lugares
+   * diferentes do quadro. Centrar as duas é o que estava comendo a lata de um
+   * lado e a placa do outro.
+   *
+   *   esquerda  a lata de Coca-Cola está na borda esquerda do quadro -> 38%
+   *   direita   a placa "VEM PARA A YARD" ocupa a metade direita     -> 60%
+   *
+   * Só no desktop. No celular a figura é quase tão larga quanto a foto e não há
+   * o que escolher — as duas aparecem praticamente inteiras.
+   */
+  .dif__gente--esq img { object-position: 38% 22%; }
+  .dif__gente--dir img { object-position: 60% 22%; }
+
+  /**
+   * CELULAR — as duas descem, e continuam sendo duas.
+   *
+   * Nada de `display: none`: o público desta landing é celular, e esconder no
+   * celular o que existe no desktop é esconder da maioria. O que muda é o papel
+   * — de moldura lateral para um par que fecha a seção.
+   *
+   * A ordem esquerda/direita se mantém porque as áreas nomeadas respeitam o DOM.
+   * `aspect-ratio` em vez de altura fixa: cada figura ocupa metade da largura e
+   * a altura sai da proporção, então não há número para envelhecer.
+   */
+  @media (max-width: 900px) {
+    .diferenciais {
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        'miolo miolo'
+        'esq   dir';
+    }
+    .diferenciais > .claro__wrap { padding-bottom: 2.5rem; }
+    .dif__gente { aspect-ratio: 3 / 4; }
+    .dif__gente img { object-position: 50% 18%; }
+  }
   /* O wrap so encosta na borda em tela estreita (abaixo dos 68rem de max-width),
      que e justamente onde ha notch. Os env() valem 0 no resto. */
   .claro__wrap {
