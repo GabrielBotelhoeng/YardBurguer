@@ -592,6 +592,24 @@ const combos = menu.combos.map((combo) => ({
   .dif__gente--dir img { object-position: 60% 22%; }
 
   /**
+   * O PRETO DA FOTO NÃO É O PRETO DA MARCA — medido, e a diferença aparece.
+   *
+   * O fundo de estúdio destas fotos é `#020202`: preto neutro, sem temperatura.
+   * O carvão da casa é `#140c06`, marrom quente. Quando os dois se encostam na
+   * página — e eles se encostam, porque a Cena 2 termina em carvão logo acima
+   * destas colunas — o olho lê dois pretos diferentes, e a seção parece montada
+   * com peças de origens distintas.
+   *
+   * O aquecimento é mínimo de propósito: o suficiente para o preto pertencer à
+   * paleta, sem tocar no thobe branco nem no vermelho do keffiyeh, que são o
+   * assunto da foto. Um `sepia` mais alto amarelaria a roupa branca, que é
+   * exatamente o tipo de correção que se nota.
+   */
+  .dif__gente img {
+    filter: sepia(0.12) saturate(1.05) hue-rotate(-4deg);
+  }
+
+  /**
    * CELULAR — as duas descem, e continuam sendo duas.
    *
    * Nada de `display: none`: o público desta landing é celular, e esconder no

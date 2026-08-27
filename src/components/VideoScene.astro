@@ -394,6 +394,65 @@ const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
   }
 
   /**
+   * A EMENDA DO TOPO — por que a cena parecia colada na página.
+   *
+   * MEDIDO no material: o fundo de estúdio do take é `#37393d`–`#3a3b40`, cinza
+   * AZULADO (azul supera vermelho em 6) e três vezes mais claro que o carvão
+   * `#140c06` da marca, que é quente (vermelho supera azul em 14). O hero acaba
+   * em carvão e a cena começa nesse cinza: o corte entre os dois é uma linha
+   * horizontal dura, e foi isso que apareceu no print do cliente.
+   *
+   * NÃO DÁ PARA IGUALAR AS DUAS CORES, e tentar foi o primeiro caminho errado.
+   * Filtro é global: medindo, um aquecimento forte o bastante para o fundo
+   * chegar perto do carvão derruba o laranja do produto de (210,131,22) para
+   * (167,102,46) — a comida perde vivacidade, que é justamente o que esta
+   * página vende. O fundo continua mais claro de qualquer jeito.
+   *
+   * O QUE SE CORRIGE É A EMENDA, não a cor. Este degradê faz o carvão da seção
+   * escoar por cima do topo do vídeo, então a cena EMERGE do fundo da página em
+   * vez de ser colada nela. O olho deixa de ver a linha.
+   *
+   * Ele para em 22% e é `to bottom`: precisa cobrir a emenda e sair do caminho
+   * antes da altura em que o hambúrguer começa. Acima disso, comeria o pão.
+   *
+   * z-index 12: acima da mídia (10) e abaixo da marca (15) e do véu (20) — a
+   * ordem que mantém a palavra em `screen` somando luz ao vídeo, e não a este
+   * degradê.
+   */
+  .cenavideo__palco::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 22%;
+    z-index: 12;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      var(--color-carvao) 0%,
+      rgb(20 12 6 / 0.85) 18%,
+      rgb(20 12 6 / 0.45) 52%,
+      rgb(20 12 6 / 0) 100%
+    );
+  }
+
+  /**
+   * O AQUECIMENTO É DELIBERADAMENTE FRACO.
+   *
+   * Só o suficiente para o fundo deixar de puxar azul: medido, leva a
+   * temperatura de +6 (azulado) para +1 (neutro), e o produto cai de
+   * (210,131,22) para (192,113,32) — perda que não se vê no quadro. Os degraus
+   * mais fortes que testei chegam a -3 e -7 de temperatura, mas custam o dobro
+   * de vivacidade e não valem: a emenda já foi resolvida pelo degradê acima.
+   *
+   * `filter` no elemento de mídia, e não no palco: o palco carrega a marca e o
+   * véu, e filtrar os dois junto mudaria o contraste que está calibrado.
+   */
+  .cenavideo__video,
+  .cenavideo__poster {
+    filter: brightness(0.86) sepia(0.18) saturate(1.1) hue-rotate(-6deg);
+  }
+
+  /**
    * A CAIXA DA MÍDIA — preenche o palco inteiro, e a proteção mudou de lugar.
    *
    * Até agora era `contain` numa janela de 120%: nunca cortava, mas também nunca
