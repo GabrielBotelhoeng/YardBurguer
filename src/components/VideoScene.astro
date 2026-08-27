@@ -662,32 +662,57 @@ const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
   }
 
   /**
-   * ONDE AS FAIXAS POUSAM — uma fórmula, dois enquadramentos muito diferentes.
+   * ONDE AS FAIXAS POUSAM — ancoradas na caixa do produto, não num raio fixo.
    *
    * O pedido é que elas fiquem na lateral DO HAMBÚRGUER. Só que o hambúrguer não
    * tem a mesma largura nos dois arquivos, e a diferença é enorme — medido nos
    * posters: no vertical (celular) ele ocupa ~76% da largura do quadro; no 2:1
-   * (desktop) ocupa ~35%. Uma posição fixa acerta um e erra o outro: encostada
-   * na borda, ficaria a meia tela de distância do produto no desktop; encostada
-   * no produto do desktop, ficaria por cima dele no celular.
+   * (desktop) ocupa ~35%.
    *
-   * `max(0.5rem, calc(50% - 26rem))` resolve os dois com uma conta só:
+   * A VERSÃO ANTERIOR ERA `max(0.5rem, calc(50% - 26rem))` NOS DOIS LADOS, e o
+   * defeito estava na simetria. Ela supunha o produto centrado no quadro; ele não
+   * é. Os números que a bancada já media diziam isso e ninguém somou: no arquivo
+   * 2:1 o produto vai de 34,6% a 71,0% da largura, ou seja seu centro está em
+   * 52,9% — 2,9% à direita do centro do quadro. Com as faixas simétricas, sobrava
+   * folga à esquerda e faltava à direita.
    *
-   *   celular 390px  ->  50% = 195px, menos 416px dá negativo, então vence o
-   *                      piso de 0.5rem e a faixa encosta na borda — que é
-   *                      justamente onde a borda do hambúrguer está.
-   *   desktop 1920px ->  960 - 416 = 544px do centro. A borda do hambúrguer no
-   *                      arquivo 2:1 cai por volta de 624px. A faixa pousa
-   *                      colada nela.
+   * MEDIDO EM PRODUÇÃO (2026-08-27, cena rolando, 13 instantes do take): a faixa
+   * BURGUER passava POR TRÁS do hambúrguer em 13 de 13 amostras — -21px em
+   * 1440px de largura, -75px em 1920px. Exatamente o defeito que a rodada da
+   * marca lateral existia para eliminar, reaparecido só no desktop. No celular
+   * nunca ocorreu (0 de 13, folga mínima de +14px), porque lá os dois lados caem
+   * no piso de 0.5rem e o piso é que manda.
    *
-   * O `26rem` é o raio do produto em telas largas. Se o cliente mandar take com
-   * outro enquadramento, é ESTE número que muda.
+   * A CONTA AGORA. Cada lado tem o seu coeficiente, tirado da medição do take:
+   *
+   *   --proj-cena  largura que o vídeo ocupa depois do `cover`. Enquanto o palco
+   *                for mais alto que 2:1, `cover` escala pela ALTURA e a mídia
+   *                transborda a largura — por isso o max().
+   *   0.154        distância do centro até a borda ESQUERDA do produto
+   *                (50% - 34,6%), em fração da projeção.
+   *   0.210        até a borda DIREITA (71,0% - 50%).
+   *   1.1em        a largura da própria faixa. `em` porque a faixa é texto
+   *                vertical: a largura dela É o corpo da fonte, e assim a conta
+   *                acompanha o clamp lá de cima sozinha.
+   *   0.75rem      respiro. Sem ele a conta fecha em zero e qualquer
+   *                arredondamento vira encosto.
+   *
+   * O piso de 0.5rem continua sendo quem resolve o celular: lá a fórmula dá
+   * negativo nos dois lados e a faixa encosta na borda, que é onde a borda do
+   * hambúrguer está no arquivo vertical. O celular não muda um pixel com isto.
+   *
+   * SE O CLIENTE MANDAR TAKE NOVO, são 0.154 e 0.210 que mudam — e a bancada já
+   * devolve os dois números (PROD, em bancada-cena2.html). Não estimar: medir.
    */
+  .cenavideo {
+    --proj-cena: max(100%, calc(2 * (var(--cena-altura) - var(--faixa-nav))));
+    --respiro-marca: 0.75rem;
+  }
   .cenavideo__marca--esq {
-    left: max(0.5rem, calc(50% - 26rem));
+    left: max(0.5rem, calc(50% - 0.154 * var(--proj-cena) - 1.1em - var(--respiro-marca)));
   }
   .cenavideo__marca--dir {
-    right: max(0.5rem, calc(50% - 26rem));
+    right: max(0.5rem, calc(50% - 0.210 * var(--proj-cena) - 1.1em - var(--respiro-marca)));
   }
 
   /**
