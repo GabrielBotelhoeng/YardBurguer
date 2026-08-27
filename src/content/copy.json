@@ -49,6 +49,11 @@
 
   "explode": {
     "textoFundo": "YARD BURGUER",
+    "_marcaLateral": "A mesma marca, partida em duas para ladear o hambúrguer na variante em VÍDEO — YARD desce pela esquerda, BURGUER pela direita. É partida AQUI e não com um .split(' ') no componente porque qual metade vai para cada lado é decisão de composição, não de string. `textoFundo` continua inteiro porque a ExplodeScene ainda o usa no centro.",
+    "marcaLateral": {
+      "esquerda": "YARD",
+      "direita": "BURGUER"
+    },
     "titulo": "Camada por camada",
     "texto": "Nada aqui é montado no automático. Cada camada entra na ordem certa, na temperatura certa — porque é isso que separa um lanche de um hambúrguer de verdade.",
     "legendas": {
@@ -59,7 +64,32 @@
       "blend": "Blend de 160g",
       "bacon": "Bacon em ponto de crocância",
       "pao-inferior": "Base que segura tudo"
-    }
+    },
+
+    "_passos": "As paradas da variante em VÍDEO, lidas de cima para baixo — a ordem em que o olho percorre a pilha, porque no take as sete camadas estão na tela o tempo todo e nenhuma 'entra' num instante. Não confundir com `legendas`, que é alt-text da variante em camadas.",
+    "_passosFatos": "Cada `texto` carrega um fato conferido em menu.json e nada além dele. PICLES aparece no take e NÃO entra aqui: não existe picles em nenhum burger do cardápio (só jalapeño nas Fritas da Casa). Legenda só nomeia o que está no quadro E no cardápio.",
+    "passos": [
+      {
+        "rotulo": "Pão brioche",
+        "texto": "Macio o bastante pra abraçar o recheio e firme o bastante pra não desmontar na metade."
+      },
+      {
+        "rotulo": "Bacon crocante",
+        "texto": "Fatiado e tostado até quebrar. Está no Supremo, no Tropical e no Apólo."
+      },
+      {
+        "rotulo": "Cheddar derretido",
+        "texto": "Derretido na chapa, em cima da carne ainda quente. No Yard King vai em dobro."
+      },
+      {
+        "rotulo": "Blend de 160g",
+        "texto": "O peso padrão da casa. Quem quer o smash tem o de 90g prensado na chapa."
+      },
+      {
+        "rotulo": "Três molhos da casa",
+        "texto": "Molho da casa, molho especial e o Santiago. Receita nossa — não tem igual em outro cardápio da cidade."
+      }
+    ]
   },
 
   "diferenciais": {

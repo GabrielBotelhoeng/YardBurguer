@@ -29,6 +29,35 @@ import copy from '../content/copy.json';
 const { explode } = copy;
 
 /**
+ * AS PARADAS DA CENA — e por que elas não são "camada por camada".
+ *
+ * O pedido original era legenda amarrada ao instante em que cada ingrediente
+ * entra no quadro. Fui medir o take antes de escrever e ele não faz isso: nos
+ * 192 quadros dos dois arquivos as SETE camadas estão na tela o tempo inteiro. O
+ * que se move é o espaçamento entre elas, que abre até o meio e fecha no fim.
+ * Não existe "o quadro em que o queijo entra" — logo, não existe evento para
+ * amarrar legenda nenhuma.
+ *
+ * O que existe é uma pilha permanentemente legível, de cima para baixo. Então a
+ * rolagem virou uma DESCIDA pela pilha: cada parada nomeia uma camada na ordem
+ * em que o olho a encontraria. Isso é honesto com o material e não depende de
+ * cronometragem que o arquivo não sustenta — se o cliente mandar take novo, as
+ * paradas continuam válidas, o que é justamente o que uma amarração por segundo
+ * não sobreviveria.
+ *
+ * SÃO CINCO, e o número saiu do trilho, não do gosto. As paradas ocupam 68% do
+ * trilho; no celular, 150svh de uma tela de 844 são 1266px, dos quais 861px para
+ * as paradas. Cinco dão 172px de rolagem cada. Sete dariam 123px — a essa altura
+ * a legenda não é lida, é vista piscando.
+ *
+ * As três "provas da casa" que o cliente pediu (blend de 160g, pão brioche, três
+ * molhos) NÃO viraram um bloco separado: estão dentro das paradas 1, 4 e 5. Um
+ * carrossel de fatos ao lado de um carrossel de camadas seriam dois carrosséis
+ * competindo pelo mesmo slot e pelo mesmo trilho.
+ */
+const passos = explode.passos;
+
+/**
  * Dimensões reais dos encodes. Reservam a caixa e evitam CLS.
  *
  * Precisam bater com `encodar-video-cena2.mjs` — é ele quem produz os arquivos,
@@ -92,22 +121,50 @@ const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
 
 <section class="cenavideo textura-brasa" id="explode" data-cena="video" aria-labelledby="explode-titulo">
   {/*
-    O texto de fundo `YARD BURGUER` em parallax foi REMOVIDO desta variante —
-    markup, CSS e o tween em video-scrub.js. Não ficou escondido: saiu.
+    A PALAVRA `YARD BURGUER` — voltou em 2026-08-26, e voltou DIFERENTE.
 
-    Motivo, e é o mesmo que a própria página já registrou na Cena 3 quando tirou
-    o "DO SERTÃO" gigante: palavra de fundo só funciona onde existe espaço vazio
-    para ela ocupar. Full-bleed acabou com o vazio. Não há mais um "atrás": o
-    quadro inteiro é o hambúrguer, e a palavra passaria a cruzar o produto e a
-    disputar o mesmo espaço do título do véu — três camadas de tipografia no
-    mesmo frame.
+    Ela já esteve aqui como texto de fundo em parallax e foi removida com dois
+    argumentos que continuam de pé:
 
-    E o parallax perdeu o sentido junto: profundidade por parallax exige dois
-    planos em velocidades diferentes. Com um plano só, os -33px de deriva não
-    são profundidade, são um elemento tremendo sozinho em cima do vídeo.
+    1. Em full-bleed não existe "atrás". O vídeo é opaco e ocupa o palco inteiro,
+       então qualquer palavra fica EM CIMA do produto — não por trás dele.
+    2. Parallax exige dois planos em velocidades diferentes. Com um plano só, a
+       deriva não lê como profundidade; lê como um elemento tremendo sozinho.
 
-    A ExplodeScene continua com o dela, onde ainda há carvão vazio de sobra —
-    por isso a chave `explode.textoFundo` do copy.json segue viva e usada.
+    O que muda agora é o material da palavra, não a posição dela. Em
+    `mix-blend-mode: screen` ela não se senta sobre a imagem: ela SOMA luz à
+    imagem. O que aparece é o quadro do vídeo clareando na forma das letras —
+    âmbar no fundo escuro, quase nada sobre o pão já claro. Deixa de ser uma
+    terceira camada de tipografia e passa a ser iluminação, que é a única forma
+    de "atrás" que um vídeo opaco admite.
+
+    O parallax NÃO voltou junto, e isso é deliberado: o argumento 2 não foi
+    resolvido por blend mode nenhum. O que ela faz é um `scale` lentíssimo, que
+    em luz projetada lê como a fonte se aproximando — e não como um objeto solto
+    deslizando.
+
+    E ela MORRE ANTES DO TÍTULO (some entre 0.74 e 0.82, ver video-scrub.js). O
+    argumento das "três camadas de tipografia no mesmo frame" era correto e
+    continua sendo: a palavra vive durante as paradas e já saiu quando o véu
+    sobe. Em nenhum instante existem palavra, parada e título juntos.
+
+    aria-hidden: é a marca repetida — o `<h2>` e o `<title>` já a dizem para quem
+    usa leitor de tela. Aqui ela é luz, não conteúdo.
+
+    ELA MORA DENTRO DO PALCO, e não é arrumação: `.cenavideo__palco` declara
+    `isolation: isolate`, ou seja, é um contexto de empilhamento. Um elemento com
+    `mix-blend-mode` fora dele blendaria com o que estiver atrás DO PALCO — o
+    carvão da seção — e o vídeo nem entraria na conta. A palavra ficaria um
+    borrão âmbar sobre fundo liso, atrás de um vídeo opaco que a esconderia por
+    completo. Dentro do palco ela blenda com o quadro do vídeo, que é o ponto.
+
+    PARTIDA EM DUAS E JOGADA PARA AS LATERAIS (2026-08-26, segunda passada).
+
+    Centralizada ela cruzava o hambúrguer bem no meio — o cliente viu e recusou.
+    Agora YARD desce pela lateral esquerda e BURGUER pela direita, as duas
+    ladeando o produto em vez de atravessá-lo. O quadro fica com o hambúrguer no
+    centro e a marca emoldurando, que é o que a palavra deveria estar fazendo
+    desde o começo.
   */}
 
   <div class="cenavideo__palco" data-palco>
@@ -167,6 +224,13 @@ const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
       disablepictureinpicture
       aria-hidden="true"
       tabindex="-1"></video>
+
+    <p class="cenavideo__marca cenavideo__marca--esq" data-marca aria-hidden="true">
+      <span>{explode.marcaLateral.esquerda}</span>
+    </p>
+    <p class="cenavideo__marca cenavideo__marca--dir" data-marca aria-hidden="true">
+      <span>{explode.marcaLateral.direita}</span>
+    </p>
   </div>
 
   {/*
@@ -189,6 +253,38 @@ const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
     também está.
   */}
   <div class="cenavideo__veu" data-veu aria-hidden="true"></div>
+
+  {/*
+    AS PARADAS — no MESMO slot do título, e essa é a decisão inteira.
+
+    A tentação era pendurar cada legenda ao lado da camada que ela nomeia, com
+    uma linha apontando. Não fiz, e o motivo é o histórico desta cena: todo
+    defeito caro aqui veio de posição calculada para um viewport e aplicada em
+    outro. A posição vertical de cada camada muda com o `cover`, com a proporção
+    do arquivo (2:1 no desktop, 9:16 no celular), com a faixa da navbar e com o
+    espaçamento que abre e fecha ao longo do take. Seriam cinco âncoras móveis a
+    manter corretas em duas mídias diferentes.
+
+    O slot da base é o único ponto desta cena cujo contraste está MEDIDO contra o
+    pior pixel do material. Reaproveitá-lo custa nada e herda a prova.
+
+    MEDIDO (2026-08-26): a faixa do texto tem YMAX 255 nos 192 quadros dos DOIS
+    arquivos — há especular estourado ali em todo quadro. Areia #E8DCC8 sobre o
+    véu exige alfa >= 0,650 para AA 4.5:1; o gradiente entrega 0,86 na altura do
+    texto, então o véu rodando a 0,82 de opacidade durante as paradas dá 0,705.
+    Passa, com margem, no pior caso e não no caso típico.
+
+    NÃO são aria-hidden. São conteúdo de produto de verdade — leitor de tela lê
+    as cinco na ordem do documento, que é a mesma ordem em que aparecem.
+  */}
+  <div class="cenavideo__passos" data-passos>
+    {passos.map((passo) => (
+      <p class="cenavideo__passo" data-passo>
+        <span class="cenavideo__passo-rotulo">{passo.rotulo}</span>
+        <span class="cenavideo__passo-texto">{passo.texto}</span>
+      </p>
+    ))}
+  </div>
 
   <div class="cenavideo__conteudo" data-conteudo>
     <h2 id="explode-titulo" class="cenavideo__titulo">{explode.titulo}</h2>
@@ -410,9 +506,28 @@ const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
    * Sob reduced-motion vale o mesmo: o motion.js retorna antes de importar o
    * chunk, o pin não é criado, e a cena fica sendo o <picture> parado.
    */
+  /**
+   * O TRILHO CRESCEU — 180svh → 240svh, e 110svh → 150svh no celular.
+   *
+   * Ele era deliberadamente IGUAL ao da variante em camadas, para o cliente
+   * comparar material e não ritmo. Essa paridade acabou aqui, com autorização
+   * explícita (2026-08-26), porque as duas variantes deixaram de ter o mesmo
+   * conteúdo: esta ganhou cinco paradas de texto e a ExplodeScene não. Comparar
+   * um trilho com cinco leituras contra um sem nenhuma, no mesmo comprimento,
+   * mediria a pressa e não o material.
+   *
+   * A comparação que sobra é outra e é mais útil: "vídeo COM informação" contra
+   * "camadas sem". Quem for julgar precisa saber que é isso que está na mesa.
+   *
+   * DE ONDE SAI O NÚMERO: as paradas ocupam 68% do trilho. No celular, 150svh de
+   * uma tela de 844 são 1266px, dos quais 861px de paradas — 172px de rolagem
+   * por parada, o suficiente para ler duas linhas. No desktop, 240svh de 900 são
+   * 2160px e cada parada tem 294px. Com os 110svh antigos seriam 116px por
+   * parada: tempo de ver que havia texto, não de lê-lo.
+   */
   .cenavideo__trilho {
-    /* 180% de uma tela no desktop; o breakpoint de celular baixa para 110%. */
-    --trilho-pin: 180svh;
+    /* 240% de uma tela no desktop; o breakpoint de celular baixa para 150%. */
+    --trilho-pin: 240svh;
     height: 0;
   }
 
@@ -443,6 +558,250 @@ const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
   }
   .cenavideo__palco[data-pronto] .cenavideo__video {
     opacity: 1;
+  }
+
+  /**
+   * A MARCA EM LUZ — `screen`, e a escolha do modo é o assunto todo.
+   *
+   * O pedido foi "o nome bem grande atrás, num tom de deserto puxado pro laranja
+   * meio amarelado". O tom não precisou ser inventado: é o `--color-brasa`
+   * #C87A2E, o âmbar de acento que já é token desta marca. Cor nova aqui seria
+   * uma quarta cor num projeto que tem três.
+   *
+   * POR QUE `screen` E NÃO `overlay`:
+   *
+   * `overlay` foi a primeira ideia e está errada para este material. Ele clareia
+   * onde a base é clara e ESCURECE onde a base é escura — e a base aqui é o
+   * cinza-carvão do take, bem abaixo de 50%. A palavra sairia mais escura que o
+   * fundo, um vulto marrom, exatamente o oposto do que foi pedido.
+   *
+   * `screen` só soma luz: `1-(1-a)(1-b)`. Sobre o fundo escuro do take ele
+   * levanta um âmbar quente; sobre o pão já claro ele quase não tem para onde
+   * subir e o efeito some sozinho. Ou seja, o modo protege o produto por
+   * construção — a palavra aparece onde há vazio e recua onde há hambúrguer, que
+   * era a única coisa que o texto de fundo antigo não sabia fazer.
+   *
+   * A OPACIDADE É BAIXA DE PROPÓSITO (o tween para em 0.42, ver video-scrub.js).
+   * Em 1.0 o `screen` com brasa estoura o topo do pão para perto do branco e a
+   * cena perde o produto para a tipografia.
+   *
+   * NASCE EM 0, ao contrário do resto desta cena.
+   *
+   * A regra local é o oposto — título e parágrafo nascem visíveis no CSS porque
+   * sem JS o GSAP nunca roda e o texto precisa estar lá. Aqui não: isto é
+   * decoração, não conteúdo (daí o aria-hidden). Sem JS ou sob reduced-motion o
+   * estado de repouso desta cena é o <picture> do hambúrguer montado com o
+   * título — e uma palavra âmbar gigante parada por cima dele não é um estado de
+   * repouso, é um artefato.
+   */
+  /**
+   * AS DUAS FAIXAS DA MARCA — YARD desce pela esquerda, BURGUER pela direita.
+   *
+   * `top: 0; bottom: 0` MAIS flex para centrar na vertical, e nunca
+   * `top: 50% + translateY(-50%)`. É a mesma regra de `.cenavideo__conteudo`, e
+   * pelo mesmo motivo: o GSAP anima `scale` neste elemento, e se a centralização
+   * morasse no transform o primeiro tween resolveria o -50% para pixels e a
+   * faixa sairia do lugar na primeira mudança de altura.
+   */
+  .cenavideo__marca {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    margin: 0;
+    pointer-events: none;
+
+    font-family: var(--font-display);
+    /**
+     * DUAS RESTRIÇÕES, e a faixa obedece à mais apertada das duas.
+     *
+     * `10svh` é a que dá a COMPOSIÇÃO: a palavra corre na vertical, então é a
+     * altura que decide sua presença, e medir por altura é o que faz o celular e
+     * o desktop terem a mesma proporção. Em vw sozinho não teriam — 12vw são
+     * 45px num celular de 375 e 230px num desktop de 1920.
+     *
+     * `12vw` é a que a faz CABER. A faixa não pode ser mais larga que a lateral
+     * livre entre a borda da tela e o hambúrguer, senão a palavra volta para trás
+     * do produto, que é o defeito que esta rodada existe para consertar. Medido
+     * no arquivo novo: com o produto em 63,8% da largura e centrado, sobram ~48px
+     * de folga de cada lado num palco de celular de 375px. 12vw dá 45px ali —
+     * cabe com 3px de respiro.
+     *
+     * O `min` faz a apertada vencer sozinha em cada aparelho: no celular vence o
+     * vw (45 contra 84), no desktop vence o svh (80 contra 154). Uma fórmula, sem
+     * media query, e nenhum breakpoint para divergir depois.
+     */
+    font-size: clamp(2rem, min(10svh, 12vw), 6.5rem);
+    line-height: 1;
+    letter-spacing: 0.02em;
+    color: var(--color-brasa);
+
+    mix-blend-mode: screen;
+    opacity: 0;
+    will-change: opacity, transform;
+  }
+
+  /**
+   * `writing-mode` no FILHO, não no <p>.
+   *
+   * No <p> ele viraria a caixa flex inteira de lado e `align-items: center`
+   * passaria a centrar no eixo errado. No span só o texto gira; a caixa continua
+   * sendo uma coluna que o flex centra na vertical.
+   *
+   * `vertical-rl` faz o texto correr de CIMA PARA BAIXO, que foi o pedido. Os
+   * glifos latinos giram 90° (é o `text-orientation: mixed` padrão) e a palavra
+   * fica alta e estreita — exatamente a forma de que uma faixa lateral precisa.
+   * `upright`, que empilha as letras de pé, foi descartado: "BURGUER" tem sete
+   * letras e a coluna passaria da altura do palco no celular.
+   */
+  .cenavideo__marca span {
+    writing-mode: vertical-rl;
+    display: block;
+  }
+
+  /**
+   * ONDE AS FAIXAS POUSAM — uma fórmula, dois enquadramentos muito diferentes.
+   *
+   * O pedido é que elas fiquem na lateral DO HAMBÚRGUER. Só que o hambúrguer não
+   * tem a mesma largura nos dois arquivos, e a diferença é enorme — medido nos
+   * posters: no vertical (celular) ele ocupa ~76% da largura do quadro; no 2:1
+   * (desktop) ocupa ~35%. Uma posição fixa acerta um e erra o outro: encostada
+   * na borda, ficaria a meia tela de distância do produto no desktop; encostada
+   * no produto do desktop, ficaria por cima dele no celular.
+   *
+   * `max(0.5rem, calc(50% - 26rem))` resolve os dois com uma conta só:
+   *
+   *   celular 390px  ->  50% = 195px, menos 416px dá negativo, então vence o
+   *                      piso de 0.5rem e a faixa encosta na borda — que é
+   *                      justamente onde a borda do hambúrguer está.
+   *   desktop 1920px ->  960 - 416 = 544px do centro. A borda do hambúrguer no
+   *                      arquivo 2:1 cai por volta de 624px. A faixa pousa
+   *                      colada nela.
+   *
+   * O `26rem` é o raio do produto em telas largas. Se o cliente mandar take com
+   * outro enquadramento, é ESTE número que muda.
+   */
+  .cenavideo__marca--esq {
+    left: max(0.5rem, calc(50% - 26rem));
+  }
+  .cenavideo__marca--dir {
+    right: max(0.5rem, calc(50% - 26rem));
+  }
+
+  /**
+   * Onde `screen` não existe, a palavra não entra.
+   *
+   * Sem o blend mode ela deixaria de ser luz e voltaria a ser o que a decisão
+   * anterior recusou: uma terceira camada de tipografia opaca por cima do
+   * produto. O @supports garante que o degradê seja "sem palavra", nunca "com a
+   * palavra errada".
+   */
+  @supports not (mix-blend-mode: screen) {
+    .cenavideo__marca {
+      display: none;
+    }
+  }
+
+  /**
+   * AS PARADAS — mesma caixa do título, uma sobre a outra.
+   *
+   * Empilhadas no mesmo ponto e não em sequência: quem faz uma sair e a próxima
+   * entrar é o tween, e para o cruzamento ser um crossfade limpo elas precisam
+   * ocupar exatamente o mesmo lugar. Em fluxo normal a segunda empurraria a
+   * primeira e o que se veria seria a legenda deslizando para cima.
+   *
+   * `bottom` idêntico ao de `.cenavideo__conteudo`: é o slot cujo contraste está
+   * medido. Não é coincidência que sejam o mesmo número — é o motivo de as
+   * paradas estarem aqui embaixo e não ao lado das camadas.
+   */
+  .cenavideo__passos {
+    position: absolute;
+    z-index: 30;
+    left: 0;
+    right: 0;
+    bottom: calc(clamp(2rem, 7svh, 5rem) + env(safe-area-inset-bottom));
+    width: min(100% - 3rem, 40rem);
+    margin-inline: auto;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .cenavideo__passo {
+    /* Todas no mesmo ponto: a primeira ocupa o fluxo, as outras se sobrepõem a
+       ela. `grid` em vez de `position: absolute` em todas porque assim a caixa
+       do container cresce até a MAIOR parada, e nenhuma é cortada. */
+    grid-area: 1 / 1;
+    margin: 0;
+    opacity: 0;
+    will-change: opacity, transform;
+  }
+
+  .cenavideo__passo-rotulo {
+    display: block;
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 4.2vw, 2.75rem);
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    color: var(--color-creme);
+    text-shadow: 0 1px 14px rgb(20 12 6 / 0.55);
+  }
+
+  .cenavideo__passo-texto {
+    display: block;
+    margin-top: 0.6rem;
+    /**
+     * Areia, e é ELA que dita a alfa do véu.
+     *
+     * Medido contra o pior pixel do take (especular 255, presente nos 192
+     * quadros dos dois arquivos): areia #E8DCC8 precisa de alfa >= 0,650 para AA
+     * 4.5:1; creme #F5EFE4 se contenta com 0,605. O véu a 0,82 de opacidade
+     * entrega 0,705 na altura do texto, então a mais exigente das duas passa.
+     *
+     * Brasa NÃO pode ser usada aqui: exigiria alfa 0,900 para AA, e a essa
+     * altura o véu apagaria o take inteiro. Ela vale como texto grande (3:1 em
+     * qualquer alfa) e é por isso que só aparece na palavra de fundo, que é
+     * decorativa e aria-hidden.
+     */
+    color: var(--color-areia);
+    font-size: clamp(0.95rem, 2.4vw, 1.125rem);
+    line-height: 1.55;
+    text-shadow: 0 1px 10px rgb(20 12 6 / 0.5);
+  }
+
+  /**
+   * SEM JS OU SOB REDUCED-MOTION AS PARADAS NÃO EXISTEM — e nada se perde.
+   *
+   * A pergunta certa não é "dá para mostrar as cinco paradas paradas?", é "o
+   * usuário fica sem a informação?". Não fica: os fatos que elas carregam já
+   * estão na página, em texto estático, na seção `diferenciais` — "Blend de
+   * 160g", "Pão brioche" e "Três molhos da casa" são literalmente três dos
+   * quatro pilares, com a mesma copy. Cheddar e bacon aparecem nas descrições da
+   * seção `maisPedidos`.
+   *
+   * As paradas são a MESMA informação encenada pela rolagem. Sem rolagem
+   * dirigida elas não são informação nova, são cinco parágrafos empilhados por
+   * cima do título — e o estado de repouso desta cena, que é o contrato mais
+   * importante da página, é o hambúrguer inteiro com o título legível.
+   *
+   * `display: none` e não `opacity: 0`: opacidade zero continuaria no fluxo do
+   * leitor de tela, que passaria a ouvir cinco parágrafos duplicando o que a
+   * seção de diferenciais já diz.
+   */
+  .cenavideo__passos {
+    display: none;
+  }
+  :global(html[data-js]) .cenavideo__passos {
+    display: grid;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(html[data-js]) .cenavideo__passos {
+      display: none;
+    }
+    .cenavideo__marca {
+      display: none;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -537,9 +896,9 @@ const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
    * MUDA AQUI JUNTO. As duas strings são a mesma pergunta.
    */
   @media (max-width: 900px), (max-height: 500px) {
-    /* Mesmo trilho da variante em camadas: 110% de tela no celular. */
+    /* Cinco paradas a 172px de rolagem cada. Ver a nota em .cenavideo__trilho. */
     .cenavideo__trilho {
-      --trilho-pin: 110svh;
+      --trilho-pin: 150svh;
     }
 
     .cenavideo__veu {
@@ -547,6 +906,14 @@ const CONSULTA_CELULAR = '(max-width: 900px), (max-height: 500px)';
     }
 
     .cenavideo__conteudo {
+      bottom: calc(clamp(1.5rem, 5svh, 3rem) + env(safe-area-inset-bottom));
+      width: min(100% - 2.5rem, 34rem);
+    }
+
+    /* Mesmo slot do título, e por isso o mesmo `bottom` — se um mudar aqui, o
+       outro muda junto, senão a parada e o título deixam de pousar no ponto
+       cujo contraste foi medido. */
+    .cenavideo__passos {
       bottom: calc(clamp(1.5rem, 5svh, 3rem) + env(safe-area-inset-bottom));
       width: min(100% - 2.5rem, 34rem);
     }

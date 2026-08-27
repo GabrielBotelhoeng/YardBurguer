@@ -144,6 +144,51 @@ const SEEKAVEL = [
 const RECUO = 0.85;
 
 /**
+ * O VERTICAL RECUA MAIS — 0.72 contra os 0.85 do desktop.
+ *
+ * Até 2026-08-26 o recuo era o mesmo nos dois, e a simetria estava certa
+ * enquanto a margem servia só para o `cover` ter o que cortar. Ela passou a
+ * servir para outra coisa: a marca `YARD` / `BURGUER` agora desce pelas laterais
+ * do hambúrguer, e faixa lateral precisa de lateral.
+ *
+ * MEDIDO, e é por isso que os dois não podem ter o mesmo número. Com RECUO 0.85
+ * nos dois, o produto ocupa 36,4% da largura no arquivo 2:1 e 75,7% no 9:16 — a
+ * mesma composição dá quadros completamente diferentes. Na tela, num palco de
+ * celular de 375x768, sobravam 38px de lateral livre à esquerda e 10px à
+ * direita. As palavras ficavam atrás do hambúrguer; no desktop ladeavam limpo.
+ * Era exatamente a divergência entre desktop e celular que o cliente proibiu.
+ *
+ * 0.72 põe o produto em 64,5% da largura do quadro vertical, o que devolve ~48px
+ * de faixa livre de CADA lado no mesmo palco de 375px. A conta que liga os dois:
+ * o `cover` do celular renderiza o arquivo a 432px e corta 28,5px por lado, e é
+ * disso que a folga precisa sobrar.
+ *
+ * O CUSTO É REAL e foi escolhido com o cliente: o hambúrguer passa de 328px para
+ * ~240px de largura na tela do celular. Foi a opção "meio-termo" — 0.61 daria
+ * faixas do tamanho exato das do desktop e derrubaria o produto para 206px, perto
+ * demais do "quadradinho no meio da tela" que ele já recusou uma vez.
+ */
+const RECUO_VERTICAL = 0.72;
+
+/**
+ * O TAKE VERTICAL NASCE TORTO, e sem corrigir isso o recuo acima é desperdiçado.
+ *
+ * Medido em 12 quadros do `burger-stack-vertical-original.mp4` (1080 de largura):
+ * o produto vai de x=96 a x=1063 no quadro mais largo. São 96px de fundo à
+ * esquerda e 17px à direita — o hambúrguer está deslocado 39,5px para a direita
+ * do centro do quadro.
+ *
+ * `compor` centraliza o TAKE no quadro de saída, não o PRODUTO dentro do take.
+ * Então a torção do material atravessava a composição inteira e chegava na tela:
+ * com faixas simétricas em CSS, a da direita batia no hambúrguer 12px antes da
+ * esquerda. Sem esta correção o 0.72 acima entregaria 61px de folga à esquerda e
+ * 37px à direita — e é sempre o lado apertado que decide o tamanho da fonte.
+ *
+ * O deslocamento é aplicado em pixels da SAÍDA, então escala junto com o recuo.
+ */
+const DESLOC_PRODUTO_VERTICAL = -39.5;
+
+/**
  * RESOLUÇÃO SAI DE PIXEL FÍSICO, NÃO DE PIXEL CSS. Foi o que faltava aqui.
  *
  * O celular saía em 640 de largura, dimensionado contra os ~390 CSS px do palco
@@ -275,7 +320,7 @@ function medir(arquivo) {
  * 4511:2880 — o browser exibia como 1002x1388, proporção 0,72 em vez de 0,46. O
  * ffprobe de width/height mostra o número certo; é o SAR que mente.
  */
-const compor = (fonte, l, a, escala = 1) => {
+const compor = (fonte, l, a, escala = 1, deslocX = 0) => {
   const { corTopo, corBase } = fonte;
   // Quanto o take cabe dentro de `escala` do quadro, preservando a proporção.
   const fator = Math.min((l * escala) / fonte.w, (a * escala) / fonte.h);
@@ -298,7 +343,21 @@ const compor = (fonte, l, a, escala = 1) => {
    */
   const fw = Math.round((fonte.w * fator) / 4) * 4;
   const fh = Math.round((fonte.h * fator) / 4) * 4;
-  const esq = Math.floor((l - fw) / 4) * 2;
+  /**
+   * O deslocamento entra AQUI e sai par, como todo o resto.
+   *
+   * `Math.round(deslocX / 2) * 2` mantém a margem esquerda par — a mesma razão da
+   * nota acima sobre croma: margem ímpar deixa parte do plano de croma sem
+   * preencher e o `pad` devolve uma tarja preta. Já aconteceu uma vez, em 81px.
+   *
+   * O clamp existe porque deslocar demais zeraria uma das margens e o
+   * `fillborders` receberia largura negativa. Na prática o deslocamento é ~28px
+   * contra margens de ~150px, mas quem mexer no RECUO depois não vai lembrar
+   * disso.
+   */
+  const esqCentrado = Math.floor((l - fw) / 4) * 2;
+  const desloc = Math.round(deslocX * fator / 2) * 2;
+  const esq = Math.min(Math.max(esqCentrado + desloc, 0), l - fw);
   const topo = Math.floor((a - fh) / 4) * 2;
   const dir = l - fw - esq;
   const base = a - fh - topo;
@@ -379,7 +438,7 @@ const VARIANTES = [
   {
     origem: 'vertical',
     nome: 'burger-stack-vertical.mp4',
-    vf: compor(FONTE.vertical, CELULAR.largura, CELULAR.altura, RECUO),
+    vf: compor(FONTE.vertical, CELULAR.largura, CELULAR.altura, RECUO_VERTICAL, DESLOC_PRODUTO_VERTICAL),
     crf: '38',
     nivel: '4.2',
     para: 'celular — 9:16 composto, margem em volta',
@@ -395,7 +454,7 @@ const VARIANTES = [
  */
 const POSTERS = [
   { origem: 'larga', nome: 'burger-stack-poster-16x9.webp', vf: compor(FONTE.larga, LARGA.largura, LARGA.altura, RECUO) },
-  { origem: 'vertical', nome: 'burger-stack-poster-vertical.webp', vf: compor(FONTE.vertical, CELULAR.largura, CELULAR.altura, RECUO) },
+  { origem: 'vertical', nome: 'burger-stack-poster-vertical.webp', vf: compor(FONTE.vertical, CELULAR.largura, CELULAR.altura, RECUO_VERTICAL, DESLOC_PRODUTO_VERTICAL) },
 ];
 
 function ff(args) {

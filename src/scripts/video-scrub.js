@@ -204,9 +204,20 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
    * margem que o encode embutiu; caso contrário fica o `contain` do CSS, que
    * mostra o produto inteiro e aceita faixa de carvão.
    *
-   * MARGEM_SEGURA é 0,15 porque o encode compõe com RECUO = 0,85 — 7,5% de
-   * preenchimento por lado, ou 15% num eixo. Se aquele número mudar, este muda
-   * junto; são o mesmo fato escrito nas duas pontas.
+   * MARGEM_SEGURA é 0,15 porque é a MENOR das duas margens compostas, e desde
+   * 2026-08-26 elas deixaram de ser iguais: o encode usa RECUO 0,85 no arquivo
+   * 2:1 (7,5% de preenchimento por lado, 15% num eixo) e RECUO 0,72 no 9:16
+   * (14% por lado, 28% num eixo), porque o vertical precisou abrir lateral para
+   * a marca ladear o hambúrguer.
+   *
+   * Fica no menor de propósito: um único número que vale para os dois é seguro
+   * para ambos, enquanto um número por arquivo seria uma segunda fonte da
+   * verdade sobre a mesma geometria — e nesta cena toda divergência dessas
+   * quebrou alguma coisa em silêncio. O custo é o vertical recusar `cover` em
+   * alguns palcos onde ele caberia; o benefício é que o pior caso é faixa de
+   * carvão, nunca pão decepado.
+   *
+   * Se qualquer um dos dois RECUOs mudar, remedir e reescrever isto.
    */
   const MARGEM_SEGURA = 0.15;
 
@@ -406,14 +417,148 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
    * do take.
    */
   const veu = secao.querySelector('[data-veu]');
+
+  /**
+   * O VÉU AGORA TEM DOIS NÍVEIS, e a premissa antiga mudou de verdade.
+   *
+   * A decisão anterior dizia: "durante os 86% em que o hambúrguer está se
+   * montando não há texto nenhum para proteger, e um véu permanente só apagaria
+   * o terço de baixo do take". O argumento estava certo — e a condição que ele
+   * descrevia acabou. Agora HÁ texto naquele trecho: cinco paradas, no mesmo
+   * slot da base.
+   *
+   * Então o véu acende cedo, mas não inteiro:
+   *
+   *   0.04 → 0.10   0 para VEU_PARADAS (0.82)  — antes da primeira parada
+   *   0.80 → 0.94   VEU_PARADAS para 1         — junto com o título
+   *
+   * VEU_PARADAS NÃO É UM VALOR DE GOSTO. Medido em 2026-08-26 contra o pior
+   * pixel do material: a faixa do texto tem YMAX 255 nos 192 quadros dos DOIS
+   * arquivos (16:9 e vertical) — há especular estourado ali em todo quadro.
+   * Sobre branco puro, areia #E8DCC8 precisa de alfa >= 0,650 para AA 4.5:1. O
+   * gradiente do véu vale 0,86 na altura do texto, então 0,86 x 0,82 = 0,705.
+   * Passa com margem, e passa no pior caso — não no caso típico.
+   *
+   * Baixar isto para "ficar mais bonito" reprova a cena no gate de a11y. O piso
+   * é 0,650 / 0,86 = 0,756.
+   */
+  const VEU_PARADAS = 0.82;
   const DUR_VEU = 0.14;
   if (veu) {
     trilho.fromTo(
       veu,
       { opacity: 0 },
-      { opacity: 1, ease: 'none', duration: DUR_VEU },
-      FIM_DA_MONTAGEM - DUR_VEU
+      { opacity: VEU_PARADAS, ease: 'none', duration: 0.06 },
+      0.04
     );
+    trilho.to(veu, { opacity: 1, ease: 'none', duration: DUR_VEU }, FIM_DA_MONTAGEM - DUR_VEU);
+  }
+
+  /**
+   * AS CINCO PARADAS — a descida pela pilha.
+   *
+   * Elas ocupam de 0.10 a 0.78 do trilho: começam depois que o véu já subiu (ou
+   * o creme pousaria na tábua clara desprotegida, o mesmo motivo pelo qual o véu
+   * sempre precedeu o título) e terminam antes de a palavra de fundo sair.
+   *
+   * A JANELA É EXCLUSIVA de propósito. Em nenhum instante existem parada, marca
+   * e título ao mesmo tempo — a objeção documentada de "três camadas de
+   * tipografia no mesmo frame" continua valendo, e o que a respeita é este
+   * escalonamento:
+   *
+   *   0.04 ─ véu sobe
+   *   0.06 ─ marca acende          0.10 ─ paradas começam
+   *                                0.78 ─ paradas terminam
+   *   0.80 ─ marca apagada, véu fecha
+   *   0.84 ─ título entra
+   *
+   * O CRUZAMENTO É CROSSFADE, não corte: a saída de uma parada e a entrada da
+   * seguinte se sobrepõem em nada — cada beat tem entrada, permanência e saída
+   * dentro da própria fatia. Foi testado com sobreposição e, empilhadas no mesmo
+   * ponto (grid-area 1/1), duas legendas semitransparentes uma sobre a outra
+   * viram borrão ilegível.
+   */
+  const paradas = Array.from(secao.querySelectorAll('[data-passo]'));
+  const PARADAS_INICIO = 0.1;
+  const PARADAS_FIM = 0.78;
+
+  if (paradas.length) {
+    const fatia = (PARADAS_FIM - PARADAS_INICIO) / paradas.length;
+    /**
+     * 0.03 de rampa. Em números do celular: 150svh de uma tela de 844 são
+     * 1266px, então 0.03 são ~38px de rolagem para aparecer e outros 38 para
+     * sair, com ~96px de permanência no meio. Rampa mais longa come a
+     * permanência; mais curta lê como corte seco no meio de um scrub contínuo.
+     */
+    const RAMPA = 0.03;
+
+    paradas.forEach((parada, i) => {
+      const entrada = PARADAS_INICIO + i * fatia;
+      const saida = entrada + fatia - RAMPA;
+
+      // `y` e não `translateY` no CSS: o bloco é centralizado por
+      // left/right/margin-inline justamente para deixar o canal de transform
+      // livre para o GSAP. Mesma regra de .cenavideo__conteudo.
+      trilho.fromTo(
+        parada,
+        { opacity: 0, y: 14 },
+        { opacity: 1, y: 0, ease: 'none', duration: RAMPA },
+        entrada
+      );
+      trilho.to(parada, { opacity: 0, y: -10, ease: 'none', duration: RAMPA }, saida);
+    });
+  }
+
+  /**
+   * A MARCA EM LUZ — acende com as paradas, apaga antes do título.
+   *
+   * 0.55, e o número saiu de olhar as três — não de calcular.
+   *
+   * Em `mix-blend-mode: screen`, brasa #C87A2E em opacidade cheia soma luz
+   * demais sobre o pão, que já é a região mais clara do quadro, e o topo do
+   * hambúrguer estoura para perto do branco: a palavra passa a competir com o
+   * produto em vez de emoldurá-lo. Comparados no build, sobre o quadro montado
+   * em 1920:
+   *
+   *   0.42 — preserva o produto, mas o tom lê marrom e não o âmbar de deserto
+   *          que foi pedido. A palavra quase some.
+   *   0.62 — o tom fica certo, e onde a palavra cruza o bacon ela o lava.
+   *   0.55 — o tom lê como deserto e o bacon continua bacon. É esta.
+   *
+   * Se o cliente mandar take novo, REMEDIR. O valor depende de quão escuro é o
+   * fundo do arquivo: `screen` sobre um fundo mais claro precisa de menos.
+   *
+   * O `scale` é o ÚNICO movimento, e é o que substitui o parallax que foi
+   * recusado. 1.0 → 1.06 ao longo de toda a permanência: em luz projetada isso
+   * lê como a fonte se aproximando. Deriva em `y` foi tentada e devolveu o mesmo
+   * defeito de antes — com um plano só, o que se vê é um elemento tremendo
+   * sozinho sobre o vídeo, não profundidade.
+   */
+  /**
+   * SÃO DUAS FAIXAS, e o tween trata as duas como uma coisa só.
+   *
+   * `querySelectorAll` e não `querySelector`: desde que a marca foi partida em
+   * YARD (esquerda) e BURGUER (direita), existem dois elementos com
+   * `data-marca`. Animar só o primeiro deixaria metade do nome aceso e a outra
+   * metade invisível — e o defeito seria silencioso, porque nada quebra.
+   *
+   * O GSAP aceita array e mantém as duas em fase exata: a marca é UMA palavra
+   * partida, não duas palavras. Se um dia elas precisarem entrar escalonadas,
+   * isso é decisão de cena e vai para o storyboard antes de virar código.
+   */
+  const marca = Array.from(secao.querySelectorAll('[data-marca]'));
+  const MARCA_OPACIDADE = 0.55;
+  if (marca.length) {
+    trilho.fromTo(
+      marca,
+      { opacity: 0, scale: 1 },
+      { opacity: MARCA_OPACIDADE, ease: 'none', duration: 0.1 },
+      0.06
+    );
+    trilho.to(marca, { scale: 1.06, ease: 'none', duration: 0.66 }, 0.06);
+    // Apagada em 0.80: o véu fecha em 0.80 e o título entra em 0.84. A marca
+    // nunca divide o quadro com ele.
+    trilho.to(marca, { opacity: 0, ease: 'none', duration: 0.06 }, 0.74);
   }
 
   /**
@@ -541,6 +686,25 @@ export async function initVideoScrubScene({ secao, ehMobile }) {
     // vão de uma tela e meia entre a cena degradada e a seção seguinte.
     liberarReserva();
     gsap.set([conteudo, veu].filter(Boolean), { clearProps: 'all' });
+
+    /**
+     * Paradas e marca somem no caminho degradado, e não é a mesma limpeza.
+     *
+     * `clearProps` devolveria as paradas à opacidade 0 do CSS e a marca também —
+     * invisíveis, tecnicamente correto. Mas sem pin não há mais rolagem dirigida
+     * para revelá-las, então elas seriam cinco parágrafos que o leitor de tela
+     * anuncia e que ninguém nunca vê, duplicando o que a seção de diferenciais
+     * já diz em texto estático. É o mesmo raciocínio do fallback sem JS, e a
+     * conclusão é a mesma: fora da árvore, não invisível.
+     *
+     * A marca sai porque, sem timeline, ela ficaria acesa em cima do quadro
+     * final — a "terceira camada de tipografia" que a decisão de 2026-08-26
+     * recusou, reaparecendo justamente pelo caminho de erro.
+     */
+    const containerParadas = secao.querySelector('[data-passos]');
+    if (containerParadas) containerParadas.style.display = 'none';
+    marca.forEach((m) => (m.style.display = 'none'));
+
     palco.removeAttribute('data-pronto');
 
     /**
