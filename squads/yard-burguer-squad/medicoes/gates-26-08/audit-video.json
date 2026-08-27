@@ -1,11 +1,11 @@
 {
   "lcpChegada": {
-    "lcp": 1652,
+    "lcp": 1656,
     "elemento": "H1.hero__titulo",
     "cls": 0
   },
   "vitals": {
-    "lcp": 9964,
+    "lcp": 9904,
     "cls": 0,
     "lcpElemento": "IMG.card__foto"
   },
@@ -14,14 +14,14 @@
     "requisicoes": 17,
     "quatroCentoQuatro": [],
     "porTipo": {
-      "document": 21491,
-      "stylesheet": 67389,
+      "document": 22291,
+      "stylesheet": 67817,
       "image": 359578,
-      "script": 120757,
+      "script": 120986,
       "font": 66868,
       "media": 1002587
     },
-    "totalBytes": 1638670
+    "totalBytes": 1640127
   },
   "toque": [
     {
@@ -262,6 +262,76 @@
     "camadasVisiveis": 0
   },
   "paisagem": {
+    "a11y": {
+      "contrastes": [],
+      "totalTextos": 82,
+      "imagens": [
+        {
+          "src": "/assets/hero.webp",
+          "alt": "",
+          "ariaHidden": true,
+          "temDimensoes": true
+        },
+        {
+          "src": "/assets/video/burger-stack-poster-16x9.webp",
+          "alt": "O hambúrguer do YARD montado sobre a tábua de madeira: pão brioche, dois blends e cheddar derretido.",
+          "ariaHidden": false,
+          "temDimensoes": true
+        },
+        {
+          "src": "/assets/produtos/tapera-do-sertao.webp",
+          "alt": "Tápera do Sertão do YARD Burguer",
+          "ariaHidden": false,
+          "temDimensoes": true
+        },
+        {
+          "src": "/assets/produtos/supremo.webp",
+          "alt": "Supremo do YARD Burguer",
+          "ariaHidden": false,
+          "temDimensoes": true
+        },
+        {
+          "src": "/assets/produtos/yard-king.webp",
+          "alt": "Yard King do YARD Burguer",
+          "ariaHidden": false,
+          "temDimensoes": true
+        },
+        {
+          "src": "/assets/produtos/combo-mega.webp",
+          "alt": "Combo Mega: 2 Tápera + Batata + Refrigerante 1L",
+          "ariaHidden": false,
+          "temDimensoes": true
+        },
+        {
+          "src": "/assets/produtos/combo-casal.webp",
+          "alt": "Combo Casal: King + Apólo + Batata + Refrigerante 1L",
+          "ariaHidden": false,
+          "temDimensoes": true
+        },
+        {
+          "src": "/assets/produtos/combo-familia.webp",
+          "alt": "Combo Família: 4 Burguer Salad + Batata + Refrigerante 1L",
+          "ariaHidden": false,
+          "temDimensoes": true
+        },
+        {
+          "src": "/assets/produtos/combo-solteiro.webp",
+          "alt": "Combo Solteiro: Cheese Burger + Refrigerante lata + Batata",
+          "ariaHidden": false,
+          "temDimensoes": true
+        }
+      ],
+      "imagensSemAlt": [],
+      "semDimensoes": [],
+      "idioma": "pt-BR",
+      "h1": 1,
+      "landmarks": {
+        "header": 1,
+        "main": 1,
+        "footer": 1,
+        "nav": 1
+      }
+    },
     "toque": [
       {
         "texto": "Destaques",
