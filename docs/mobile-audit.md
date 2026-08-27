@@ -17,7 +17,7 @@ números abaixo já são os de depois.
 | LCP à chegada | ≤ 2,5 s | **1,69 s** | ✅ |
 | CLS sem interação | ≤ 0,1 | **0,000** | ✅ |
 | Empurrão ao rolar (era 800 px) | 0 px | **0 px** | ✅ |
-| **Peso total da rota** | ≤ 1,5 MB | **1,60 MB** | ❌ |
+| **Peso total da rota** | ≤ 1,5 MB | **1,64 MB** | ❌ |
 | Erros de JS | 0 | **0** | ✅ |
 | 404 | 0 | **0** | ✅ |
 
@@ -124,22 +124,29 @@ Sob `prefers-reduced-motion` e sem JavaScript o trilho mede **0 px** e o
 documento fica idêntico ao de antes da mudança — o fallback não paga nada por
 essa correção.
 
-## Peso: 1,60 MB contra teto de 1,5 MB
+## Peso: 1,64 MB contra teto de 1,5 MB
 
 | Tipo | kB |
 |---|---|
-| media (o take da Cena 2) | 979 |
-| image | 351 |
-| script | 118 |
-| stylesheet | 66 |
-| font | 65 |
-| document | 21 |
-| **total** | **1.600** |
+| media (o take da Cena 2) | 1.003 |
+| image | 360 |
+| script | 121 |
+| stylesheet | 68 |
+| font | 67 |
+| document | 22 |
+| **total** | **1.640** |
 
-Estoura o teto em 4%. O vídeo sozinho é 61% da rota. É o preço da variante
-`video` e é uma decisão de produto, não um defeito de implementação — mas o
-orçamento é um número acordado, e o número foi rompido. Ou o teto sobe por
-decisão explícita, ou o take encolhe.
+**Estoura o teto em 9%.** O vídeo sozinho é 61% da rota.
+
+Unidade importa aqui, e a primeira versão desta seção errou: os 1.640.127 bytes
+medidos são 1.601 KiB na base 1024, e reportá-los como "1.600 kB" contra um teto
+de "1,5 MB" comparava base binária com rótulo decimal — o estouro parecia 4%
+quando é 9%. Este documento usa kB e MB decimais (1 kB = 1.000 bytes), que é o
+que o `performance-budget.md` quer dizer com 1,5 MB.
+
+É o preço da variante `video` e é uma decisão de produto, não um defeito de
+implementação — mas o orçamento é um número acordado, e o número foi rompido.
+Ou o teto sobe por decisão explícita, ou o take encolhe.
 
 Vale registrar o que **não** entra nessa conta: sob `prefers-reduced-motion` e
 sem JavaScript, **zero byte de vídeo é pedido** (verificado nesta rodada). O
