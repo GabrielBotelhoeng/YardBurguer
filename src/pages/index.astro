@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import ExplodeScene from '../components/ExplodeScene.astro';
 import VideoScene from '../components/VideoScene.astro';
 import Icone from '../components/Icone.astro';
+import Carrossel from '../components/Carrossel.astro';
 import { CENA2 } from '../config/cena2.js';
 import { existsSync } from 'node:fs';
 import copy from '../content/copy.json';
@@ -166,33 +167,23 @@ const combos = menu.combos.map((combo) => ({
       </figure>
     </section>
 
-    <!-- Cena 4 — Os mais pedidos -->
+    {/*
+      Cena 4 — Os mais pedidos, agora em carrossel coverflow.
+
+      A grade de três cartões virou pilha 3D a pedido do cliente. Ver o cabeçalho
+      de Carrossel.astro para o que foi corrigido em relação à referência React
+      que veio junto com o pedido.
+
+      A <section> fica AQUI e não dentro do componente: o `<style>` do Astro é
+      escopado, e `.claro` / `.secao__titulo` / `.secao__texto` moram nesta
+      folha. Levar a section para o componente lhe custava o fundo areia — o
+      texto virava branco sobre escuro, medido na primeira tentativa.
+    */}
     <section class="claro" id="mais-pedidos" aria-labelledby="mp-titulo">
       <div class="claro__wrap">
         <h2 id="mp-titulo" class="secao__titulo">{maisPedidos.titulo}</h2>
         <p class="secao__texto">{maisPedidos.texto}</p>
-        <ul class="cards" role="list" data-reveal>
-          {
-            destaques.map((item) => (
-              <li class:list={['card', item.destaque && 'card--destaque']}>
-                {item.foto && (
-                  <img
-                    class="card__foto"
-                    src={item.foto}
-                    alt={`${item.nome} do YARD Burguer`}
-                    width="240"
-                    height="240"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                )}
-                {item.selo && <span class="card__selo">{item.selo}</span>}
-                <h3 class="card__nome">{item.nome}</h3>
-                <p class="card__texto">{item.texto}</p>
-              </li>
-            ))
-          }
-        </ul>
+        <Carrossel />
       </div>
     </section>
 
@@ -354,6 +345,11 @@ const combos = menu.combos.map((combo) => ({
 
   <script>
     import '../scripts/motion.js';
+  </script>
+
+  <script>
+    import { initCarrossel } from '../scripts/carrossel.js';
+    initCarrossel();
   </script>
 
   {/*
