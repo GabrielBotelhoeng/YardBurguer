@@ -1,0 +1,477 @@
+---
+/**
+ * CARROSSEL COVERFLOW — os três de "Comece por estes".
+ *
+ * PORTADO, NÃO COPIADO. A referência que o cliente mandou é um componente React
+ * com Tailwind e shadcn; este projeto é Astro com CSS puro e zero framework (ver
+ * CLAUDE.md). Trazer React para cá custaria ~45 kB gzip de runtime para
+ * gerenciar UM número inteiro — o índice do slide ativo. O efeito 3D é
+ * `transform` puro e não precisa de framework nenhum.
+ *
+ * TRÊS COISAS DA REFERÊNCIA FORAM CORRIGIDAS, não copiadas:
+ *
+ * 1. O DESLOCAMENTO ERA FIXO em pixels — `translateX(285px)` e `510px`, com
+ *    card de 330px. Numa tela de 390px isso joga os cards vizinhos para fora e
+ *    cria rolagem horizontal. Aqui tudo é relativo à largura do card, então o
+ *    mesmo código serve 320px e 1920px.
+ *
+ * 2. A LÓGICA DE POSIÇÃO QUEBRAVA COM 3 ITENS. A referência testa
+ *    `offset === 2` antes de `offset === total - 1`; com três itens os dois são
+ *    a mesma coisa, e o primeiro ganha — o terceiro card ia para a DIREITA em
+ *    vez da esquerda, deixando dois de um lado e nenhum do outro. Aqui a
+ *    distância é ASSINADA (-1, 0, +1), que é simétrica por construção.
+ *
+ * 3. O AUTOPLAY NÃO TINHA COMO PARAR. Movimento automático acima de 5s exige
+ *    mecanismo de pausa (WCAG 2.2.2). Aqui ele para no hover, no foco do
+ *    teclado, quando a aba sai de vista, e nem começa sob reduced-motion.
+ *
+ * A FOTO É QUADRADA (480x480, o melhor que o CDN do Brendi entrega) e o card é
+ * 4/5. A referência usava 2:3, que cortaria 34% da largura da foto; 4/5 corta
+ * 20% e ainda lê como card.
+ */
+import copy from '../content/copy.json';
+
+const { maisPedidos, marca } = copy;
+
+/**
+ * A ordem importa e é a da copy: o carro-chefe no meio. Com três itens, o
+ * índice inicial 0 deixaria o Tápera na posição central — que é onde ele deve
+ * começar, já que é o item com selo.
+ */
+const itens = maisPedidos.itens.map((item) => ({
+  ...item,
+  foto: `/assets/produtos/${item.id}.webp`,
+}));
+---
+
+{/*
+  SO O CARROSSEL MORA AQUI, e a <section> ficou no index.astro de proposito.
+
+  O <style> do Astro e ESCOPADO por componente: `.claro`, `.claro__wrap`,
+  `.secao__titulo` e `.secao__texto` sao declarados no index e nao alcancam um
+  componente filho. Ao trazer a section inteira para ca, ela perdia o fundo
+  areia e o texto virava branco sobre escuro — medido, nao suposto.
+
+  Duplicar aquelas regras aqui seria a outra saida, e a pior: duas fontes para
+  a mesma cor de secao, divergindo no dia em que alguem mexer numa so.
+*/}
+{/*
+      `aria-roledescription` diz "carrossel" ao leitor de tela; o `role=group`
+      em cada slide com `aria-label` "1 de 3" dá a noção de posição que a
+      pilha visual dá a quem enxerga.
+
+      NÃO é uma <ul>: lista sugere que a ordem de leitura é a ordem visual, e
+      aqui a ordem visual muda a cada clique. Grupo nomeado é mais honesto.
+    */}
+    <div
+      class="carrossel"
+      data-carrossel
+      role="group"
+      aria-roledescription="carrossel"
+      aria-label={maisPedidos.titulo}
+    >
+      <div class="carrossel__palco" data-palco>
+        {
+          itens.map((item, i) => (
+            <article
+              class="cart"
+              data-slide
+              data-indice={i}
+              role="group"
+              aria-roledescription="slide"
+              aria-label={`${i + 1} de ${itens.length}: ${item.nome}`}
+            >
+              <img
+                class="cart__foto"
+                src={item.foto}
+                alt={`${item.nome} do YARD Burguer`}
+                width="480"
+                height="480"
+                loading="lazy"
+                decoding="async"
+              />
+              <div class="cart__veu" aria-hidden="true"></div>
+              <div class="cart__corpo">
+                {item.selo && <span class="cart__selo">{item.selo}</span>}
+                <div class="cart__base">
+                  <h3 class="cart__nome">{item.nome}</h3>
+                  <p class="cart__texto">{item.texto}</p>
+                  <a
+                    class="cart__cta"
+                    href={marca.cardapioUrl}
+                    data-evento="cardapio-carrossel"
+                    tabindex="-1"
+                  >
+                    Ver no cardápio
+                  </a>
+                </div>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+
+      {/*
+        Os controles ficam FORA do palco 3D. Dentro, herdariam a `perspective`
+        e girariam junto com os cards — e um botão em rotateY é um botão que o
+        dedo erra.
+      */}
+      <div class="carrossel__controles">
+        <button class="carrossel__seta" type="button" data-anterior aria-label="Anterior">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        </button>
+
+        <div class="carrossel__pontos" data-pontos role="tablist" aria-label="Escolher item">
+          {
+            itens.map((item, i) => (
+              <button
+                class="carrossel__ponto"
+                type="button"
+                data-ponto={i}
+                role="tab"
+                aria-label={item.nome}
+                aria-selected={i === 0 ? 'true' : 'false'}
+              />
+            ))
+          }
+        </div>
+
+        <button class="carrossel__seta" type="button" data-proximo aria-label="Próximo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+<style>
+  /**
+   * A LARGURA DO CARD É A UNIDADE DE MEDIDA DE TUDO.
+   *
+   * Deslocamento, altura e tipografia saem dela. É o que faz o mesmo código
+   * funcionar de 320px a 1920px sem uma media query para posição — a referência
+   * tinha números fixos em px e estourava no celular.
+   *
+   * 74vw no celular deixa os vizinhos aparecendo pelas bordas, que é o que
+   * comunica "tem mais coisa aqui" antes de qualquer seta.
+   */
+  .carrossel {
+    --cart-larg: clamp(15rem, 74vw, 20.5rem);
+    --cart-desloc: calc(var(--cart-larg) * 0.62);
+    margin-top: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  @media (min-width: 700px) {
+    .carrossel {
+      --cart-larg: clamp(17rem, 30vw, 21rem);
+      --cart-desloc: calc(var(--cart-larg) * 0.78);
+    }
+  }
+
+  /**
+   * `perspective` mora aqui e não nos filhos: uma perspectiva por elemento faz
+   * cada card ter o próprio ponto de fuga, e a pilha deixa de parecer uma cena
+   * para parecer três adesivos girados.
+   */
+  .carrossel__palco {
+    position: relative;
+    height: calc(var(--cart-larg) * 1.25 + 1rem);
+    perspective: 1400px;
+    display: grid;
+    place-items: center;
+
+    /**
+     * `clip` no eixo X, e não `hidden`. MEDIDO: sem isto o carrossel vazava
+     * (`scrollWidth > clientWidth`) num iPhone 13 — o card da esquerda começa
+     * em -105px e empurra a largura do documento, dando rolagem lateral na
+     * página inteira. É o mesmo defeito da referência, que usava deslocamento
+     * fixo em px.
+     *
+     * `hidden` resolveria o vazamento e criaria um contexto de rolagem, o que
+     * obrigaria o eixo Y a virar `auto` e decaparia a sombra do card do meio.
+     * `clip` corta sem criar scroll container, então o Y continua `visible`.
+     */
+    overflow-x: clip;
+    overflow-y: visible;
+    /* A sombra do card central é larga; o padding devolve o espaço que o clip
+       tiraria dela na vertical. */
+    padding-block: 0.75rem;
+  }
+
+  .cart {
+    position: absolute;
+    width: var(--cart-larg);
+    aspect-ratio: 4 / 5;
+    border-radius: 1.1rem;
+    overflow: hidden;
+    background-color: var(--color-carvao);
+    border: 1px solid rgb(232 220 200 / 0.14);
+    transform-origin: center center;
+    will-change: transform, opacity;
+    /* A curva da referência: sai rápido, chega devagar. */
+    transition:
+      transform 700ms cubic-bezier(0.25, 1, 0.5, 1),
+      opacity 700ms cubic-bezier(0.25, 1, 0.5, 1),
+      filter 700ms cubic-bezier(0.25, 1, 0.5, 1),
+      box-shadow 700ms ease;
+  }
+
+  /* Estado padrão = fora de cena. O JS promove os três visíveis. */
+  .cart {
+    opacity: 0;
+    transform: scale(0.4);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .cart[data-pos='0'] {
+    opacity: 1;
+    transform: translateX(0) scale(1) rotateY(0deg);
+    z-index: 30;
+    filter: none;
+    pointer-events: auto;
+    box-shadow:
+      0 25px 60px rgb(0 0 0 / 0.55),
+      0 0 35px rgb(200 122 46 / 0.22);
+  }
+  .cart[data-pos='1'] {
+    opacity: 0.62;
+    transform: translateX(var(--cart-desloc)) scale(0.84) rotateY(-24deg);
+    z-index: 20;
+    filter: brightness(0.7);
+    cursor: pointer;
+    pointer-events: auto;
+    box-shadow: 0 15px 35px rgb(0 0 0 / 0.45);
+  }
+  .cart[data-pos='-1'] {
+    opacity: 0.62;
+    transform: translateX(calc(var(--cart-desloc) * -1)) scale(0.84) rotateY(24deg);
+    z-index: 20;
+    filter: brightness(0.7);
+    cursor: pointer;
+    pointer-events: auto;
+    box-shadow: 0 15px 35px rgb(0 0 0 / 0.45);
+  }
+  .cart[data-pos='2'] {
+    opacity: 0.3;
+    transform: translateX(calc(var(--cart-desloc) * 1.75)) scale(0.68) rotateY(-38deg);
+    z-index: 10;
+    filter: brightness(0.5) blur(1px);
+    cursor: pointer;
+    pointer-events: auto;
+  }
+  .cart[data-pos='-2'] {
+    opacity: 0.3;
+    transform: translateX(calc(var(--cart-desloc) * -1.75)) scale(0.68) rotateY(38deg);
+    z-index: 10;
+    filter: brightness(0.5) blur(1px);
+    cursor: pointer;
+    pointer-events: auto;
+  }
+
+  .cart__foto {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* A foto é quadrada e o produto vive no meio-alto dela. */
+    object-position: 50% 42%;
+  }
+
+  .cart__veu {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgb(20 12 6 / 0.42) 0%,
+      rgb(20 12 6 / 0.08) 26%,
+      rgb(20 12 6 / 0.72) 62%,
+      rgb(20 12 6 / 0.96) 100%
+    );
+  }
+
+  .cart__corpo {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    padding: 1rem 1.1rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .cart__selo {
+    align-self: flex-end;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-carvao);
+    background-color: var(--color-brasa);
+    padding: 0.3rem 0.6rem;
+    border-radius: 999px;
+  }
+
+  .cart__base {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    /* O conteúdo do card só existe para o card do meio. Nos laterais ele
+       atrapalharia a leitura da pilha e seria texto ilegível a 30%. */
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 450ms ease, transform 450ms ease;
+  }
+  .cart[data-pos='0'] .cart__base {
+    opacity: 1;
+    transform: none;
+  }
+
+  .cart__nome {
+    font-family: var(--font-display);
+    font-size: clamp(1.35rem, 5vw, 1.7rem);
+    text-transform: uppercase;
+    color: var(--color-areia);
+    margin: 0;
+    line-height: 1.05;
+  }
+  .cart__texto {
+    margin: 0;
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: rgb(232 220 200 / 0.88);
+    /* Três linhas: o Tápera tem a descrição mais longa do cardápio e encheria
+       o card inteiro, empurrando o CTA para fora. */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .cart__cta {
+    align-self: flex-start;
+    margin-top: 0.25rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-carvao);
+    background-color: var(--color-fogo);
+    padding: 0.6rem 1rem;
+    border-radius: 999px;
+    text-decoration: none;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .cart__cta:hover { filter: brightness(1.08); }
+
+  /* --------------------------------------------------------- controles */
+  .carrossel__controles {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .carrossel__seta {
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid rgb(20 12 6 / 0.22);
+    background-color: transparent;
+    color: var(--color-carvao);
+    cursor: pointer;
+    flex: none;
+  }
+  .carrossel__seta:hover {
+    background-color: rgb(20 12 6 / 0.06);
+  }
+
+  .carrossel__pontos {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  /**
+   * O ponto tem 8px de bolinha e 44px de ÁREA. Alvo de toque não é o que se vê,
+   * é o que o dedo alcança — três bolinhas de 8px lado a lado seriam
+   * impossíveis de acertar no celular, que é o público desta página.
+   */
+  .carrossel__ponto {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .carrossel__ponto::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background-color: rgb(20 12 6 / 0.28);
+    transition: background-color 250ms ease, width 250ms ease;
+  }
+  .carrossel__ponto[aria-selected='true']::before {
+    width: 22px;
+    background-color: var(--color-terracota);
+  }
+
+  :global(.carrossel__seta:focus-visible),
+  :global(.carrossel__ponto:focus-visible),
+  :global(.cart__cta:focus-visible) {
+    outline: 2px solid var(--color-terracota);
+    outline-offset: 3px;
+  }
+
+  /**
+   * Sem movimento: a pilha vira uma coluna simples e legível.
+   *
+   * Não é "carrossel sem animação" — é o conteúdo inteiro, sem nada escondido
+   * atrás de um controle que não se move. Os três cards aparecem juntos, com o
+   * texto de todos visível.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .carrossel__palco {
+      position: static;
+      height: auto;
+      perspective: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+      gap: 1.2rem;
+      place-items: stretch;
+    }
+    .cart,
+    .cart[data-pos='0'],
+    .cart[data-pos='1'],
+    .cart[data-pos='-1'],
+    .cart[data-pos='2'],
+    .cart[data-pos='-2'] {
+      position: static;
+      width: auto;
+      opacity: 1;
+      transform: none;
+      filter: none;
+      transition: none;
+      pointer-events: auto;
+      box-shadow: none;
+      z-index: auto;
+    }
+    .cart__base {
+      opacity: 1;
+      transform: none;
+    }
+    .carrossel__controles { display: none; }
+  }
+</style>

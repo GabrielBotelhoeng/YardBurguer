@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import ExplodeScene from '../components/ExplodeScene.astro';
 import VideoScene from '../components/VideoScene.astro';
 import Icone from '../components/Icone.astro';
+import Carrossel from '../components/Carrossel.astro';
 import { CENA2 } from '../config/cena2.js';
 import { existsSync } from 'node:fs';
 import copy from '../content/copy.json';
@@ -166,33 +167,23 @@ const combos = menu.combos.map((combo) => ({
       </figure>
     </section>
 
-    <!-- Cena 4 — Os mais pedidos -->
+    {/*
+      Cena 4 — Os mais pedidos, agora em carrossel coverflow.
+
+      A grade de três cartões virou pilha 3D a pedido do cliente. Ver o cabeçalho
+      de Carrossel.astro para o que foi corrigido em relação à referência React
+      que veio junto com o pedido.
+
+      A <section> fica AQUI e não dentro do componente: o `<style>` do Astro é
+      escopado, e `.claro` / `.secao__titulo` / `.secao__texto` moram nesta
+      folha. Levar a section para o componente lhe custava o fundo areia — o
+      texto virava branco sobre escuro, medido na primeira tentativa.
+    */}
     <section class="claro" id="mais-pedidos" aria-labelledby="mp-titulo">
       <div class="claro__wrap">
         <h2 id="mp-titulo" class="secao__titulo">{maisPedidos.titulo}</h2>
         <p class="secao__texto">{maisPedidos.texto}</p>
-        <ul class="cards" role="list" data-reveal>
-          {
-            destaques.map((item) => (
-              <li class:list={['card', item.destaque && 'card--destaque']}>
-                {item.foto && (
-                  <img
-                    class="card__foto"
-                    src={item.foto}
-                    alt={`${item.nome} do YARD Burguer`}
-                    width="240"
-                    height="240"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                )}
-                {item.selo && <span class="card__selo">{item.selo}</span>}
-                <h3 class="card__nome">{item.nome}</h3>
-                <p class="card__texto">{item.texto}</p>
-              </li>
-            ))
-          }
-        </ul>
+        <Carrossel />
       </div>
     </section>
 
@@ -354,6 +345,11 @@ const combos = menu.combos.map((combo) => ({
 
   <script>
     import '../scripts/motion.js';
+  </script>
+
+  <script>
+    import { initCarrossel } from '../scripts/carrossel.js';
+    initCarrossel();
   </script>
 
   {/*
@@ -590,6 +586,24 @@ const combos = menu.combos.map((combo) => ({
    */
   .dif__gente--esq img { object-position: 38% 22%; }
   .dif__gente--dir img { object-position: 60% 22%; }
+
+  /**
+   * O PRETO DA FOTO NÃO É O PRETO DA MARCA — medido, e a diferença aparece.
+   *
+   * O fundo de estúdio destas fotos é `#020202`: preto neutro, sem temperatura.
+   * O carvão da casa é `#140c06`, marrom quente. Quando os dois se encostam na
+   * página — e eles se encostam, porque a Cena 2 termina em carvão logo acima
+   * destas colunas — o olho lê dois pretos diferentes, e a seção parece montada
+   * com peças de origens distintas.
+   *
+   * O aquecimento é mínimo de propósito: o suficiente para o preto pertencer à
+   * paleta, sem tocar no thobe branco nem no vermelho do keffiyeh, que são o
+   * assunto da foto. Um `sepia` mais alto amarelaria a roupa branca, que é
+   * exatamente o tipo de correção que se nota.
+   */
+  .dif__gente img {
+    filter: sepia(0.12) saturate(1.05) hue-rotate(-4deg);
+  }
 
   /**
    * CELULAR — as duas descem, e continuam sendo duas.
