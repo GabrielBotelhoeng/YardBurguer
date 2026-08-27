@@ -6,11 +6,20 @@
  * sem depender de ele abrir o aparelho. Não substitui o teste em celular real —
  * ver o bloco "o que estes prints NÃO provam", no fim.
  *
- * O PROBLEMA QUE ELE RESOLVE: `IntersectionObserver` não dispara em aba dirigida
- * por CDP (confirmado em 2026-08-26). Como o motion.js arma o scroll reveal e a
- * Cena 2 pelo observer, uma captura ingênua fotografa uma página quase vazia —
- * os grupos [data-reveal] ficam com .reveal-armado e nunca recebem
- * .reveal-visivel.
+ * O PROBLEMA QUE ELE RESOLVE: em navegador HEADLESS a aba fica com
+ * `visibilityState: 'hidden'`, e sob essa condição o `IntersectionObserver` não
+ * reporta interseção. Como o motion.js arma o scroll reveal e a Cena 2 pelo
+ * observer, uma captura ingênua fotografa uma página quase vazia — os grupos
+ * [data-reveal] ficam com .reveal-armado e nunca recebem .reveal-visivel.
+ *
+ * NÃO É O CDP. Isso foi diagnosticado errado até 2026-08-27, e o erro custou
+ * caro: a Cena 2 passou por duas rodadas dada como "não verificável por
+ * automação". Com `headless: false` a aba fica visível, o observer dispara, o
+ * vídeo decodifica e o pin é criado — a cena roda inteira sob automação. Quem
+ * precisa da cena RODANDO usa medir-marca-no-take.mjs, que é headed.
+ *
+ * Este script segue headless de propósito: para fotografar a página parada, o
+ * caminho por reduced-motion é mais rápido e mais estável que esperar o vídeo.
  *
  * A SAÍDA É reducedMotion: 'reduce'. Sob essa preferência o motion.js retorna
  * cedo nas duas funções, ANTES de armar qualquer coisa: nada é escondido e a
