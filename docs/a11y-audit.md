@@ -14,6 +14,12 @@ Um critério objetivo reprova, e ele já era conhecido e aceito. Mais importante
 esta rodada descobriu que o método de contraste é **cego para o caso principal
 da Cena 2** — ver a seção seguinte, que vale mais que o veredito.
 
+Os dois números de contraste abaixo saem do próprio `audit-page.mjs` e ficam no
+`audit.json`. Na primeira versão desta rodada só o de retrato saía dali — o de
+paisagem foi medido à mão, por um script de bancada, e o relatório afirmava um
+número que o instrumento não coletava. Era o mesmo defeito que esta rodada veio
+denunciar, em escala menor; foi corrigido antes de o documento valer.
+
 | Critério | Retrato | Paisagem |
 |---|---|---|
 | Contraste de texto | 0 reprovados de 79 | 0 reprovados de 82 |

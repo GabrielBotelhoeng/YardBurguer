@@ -50,6 +50,101 @@ async function medirWebVitals(pagina) {
   );
 }
 
+/**
+ * A MEDIDA DE ACESSIBILIDADE, extraida para rodar em QUALQUER orientacao.
+ *
+ * Estava embutida no bloco de retrato, e por isso a passada de paisagem so
+ * conseguia coletar alvo de toque. O relatorio, porem, afirmava contraste em
+ * paisagem — numero obtido a mao, fora deste script. Gate que afirma o que o
+ * proprio instrumento nao coleta e exatamente o defeito que esta rodada veio
+ * corrigir; ficar com metade dele seria repetir o erro em escala menor.
+ */
+const MEDIR_A11Y = () => {
+    const luminancia = (r, g, b) => {
+      const f = (c) => {
+        c /= 255;
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+    };
+    /**
+     * Alfa importa. A primeira versão lia os três primeiros números do rgba e
+     * tratava como opaco — e reportou contraste 1 nos cards de combo, que na
+     * verdade passam com 5.14. Falso positivo em auditoria é pior que nenhuma
+     * auditoria: manda corrigir o que não está quebrado.
+     */
+    const parse = (cor) => {
+      const n = (cor.match(/[\d.]+/g) || []).map(Number);
+      return { rgb: n.slice(0, 3), alfa: n.length > 3 ? n[3] : 1 };
+    };
+    const misturar = (frente, fundo) =>
+      frente.rgb.map((c, i) => Math.round(c * frente.alfa + fundo[i] * (1 - frente.alfa)));
+    const contraste = (a, b) => {
+      const [l1, l2] = [luminancia(...a), luminancia(...b)].sort((x, y) => y - x);
+      return (l1 + 0.05) / (l2 + 0.05);
+    };
+
+    /** Sobe na árvore até achar um fundo que não seja transparente. */
+    const fundoReal = (el) => {
+      const camadas = [];
+      let no = el;
+      while (no && no !== document.documentElement) {
+        const bg = parse(getComputedStyle(no).backgroundColor);
+        if (bg.alfa > 0) {
+          camadas.push(bg);
+          if (bg.alfa === 1) break;
+        }
+        no = no.parentElement;
+      }
+      // Compõe de trás para frente até chegar num fundo opaco.
+      let resultado = [20, 12, 6];
+      for (const camada of camadas.reverse()) resultado = misturar(camada, resultado);
+      return resultado;
+    };
+
+    const textos = Array.from(
+      document.querySelectorAll('h1,h2,h3,p,a,dt,dd,address,span,li')
+    ).filter((el) => (el.textContent || '').trim().length > 2 && el.offsetParent !== null);
+
+    const contrastes = textos.map((el) => {
+      const s = getComputedStyle(el);
+      const tamanho = parseFloat(s.fontSize);
+      const peso = Number(s.fontWeight) || 400;
+      const grande = tamanho >= 24 || (tamanho >= 18.66 && peso >= 700);
+      const razao = contraste(misturar(parse(s.color), fundoReal(el)), fundoReal(el));
+      return {
+        texto: (el.textContent || '').trim().slice(0, 40),
+        tag: el.tagName,
+        razao: Math.round(razao * 100) / 100,
+        minimo: grande ? 3 : 4.5,
+        ok: razao >= (grande ? 3 : 4.5),
+      };
+    });
+
+    const imagens = Array.from(document.querySelectorAll('img')).map((img) => ({
+      src: img.getAttribute('src'),
+      alt: img.getAttribute('alt'),
+      ariaHidden: img.getAttribute('aria-hidden') === 'true',
+      temDimensoes: !!(img.getAttribute('width') && img.getAttribute('height')),
+    }));
+
+    return {
+      contrastes: contrastes.filter((c) => !c.ok),
+      totalTextos: contrastes.length,
+      imagens,
+      imagensSemAlt: imagens.filter((i) => i.alt === null && !i.ariaHidden),
+      semDimensoes: imagens.filter((i) => !i.temDimensoes),
+      idioma: document.documentElement.lang,
+      h1: document.querySelectorAll('h1').length,
+      landmarks: {
+        header: document.querySelectorAll('header').length,
+        main: document.querySelectorAll('main').length,
+        footer: document.querySelectorAll('footer').length,
+        nav: document.querySelectorAll('nav').length,
+      },
+    };
+};
+
 async function auditar() {
   const navegador = await chromium.launch();
   const relatorio = {};
@@ -148,91 +243,7 @@ async function auditar() {
   );
 
   // ---------- Acessibilidade ----------
-  relatorio.a11y = await mobile.evaluate(() => {
-    const luminancia = (r, g, b) => {
-      const f = (c) => {
-        c /= 255;
-        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-      };
-      return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
-    };
-    /**
-     * Alfa importa. A primeira versão lia os três primeiros números do rgba e
-     * tratava como opaco — e reportou contraste 1 nos cards de combo, que na
-     * verdade passam com 5.14. Falso positivo em auditoria é pior que nenhuma
-     * auditoria: manda corrigir o que não está quebrado.
-     */
-    const parse = (cor) => {
-      const n = (cor.match(/[\d.]+/g) || []).map(Number);
-      return { rgb: n.slice(0, 3), alfa: n.length > 3 ? n[3] : 1 };
-    };
-    const misturar = (frente, fundo) =>
-      frente.rgb.map((c, i) => Math.round(c * frente.alfa + fundo[i] * (1 - frente.alfa)));
-    const contraste = (a, b) => {
-      const [l1, l2] = [luminancia(...a), luminancia(...b)].sort((x, y) => y - x);
-      return (l1 + 0.05) / (l2 + 0.05);
-    };
-
-    /** Sobe na árvore até achar um fundo que não seja transparente. */
-    const fundoReal = (el) => {
-      const camadas = [];
-      let no = el;
-      while (no && no !== document.documentElement) {
-        const bg = parse(getComputedStyle(no).backgroundColor);
-        if (bg.alfa > 0) {
-          camadas.push(bg);
-          if (bg.alfa === 1) break;
-        }
-        no = no.parentElement;
-      }
-      // Compõe de trás para frente até chegar num fundo opaco.
-      let resultado = [20, 12, 6];
-      for (const camada of camadas.reverse()) resultado = misturar(camada, resultado);
-      return resultado;
-    };
-
-    const textos = Array.from(
-      document.querySelectorAll('h1,h2,h3,p,a,dt,dd,address,span,li')
-    ).filter((el) => (el.textContent || '').trim().length > 2 && el.offsetParent !== null);
-
-    const contrastes = textos.map((el) => {
-      const s = getComputedStyle(el);
-      const tamanho = parseFloat(s.fontSize);
-      const peso = Number(s.fontWeight) || 400;
-      const grande = tamanho >= 24 || (tamanho >= 18.66 && peso >= 700);
-      const razao = contraste(misturar(parse(s.color), fundoReal(el)), fundoReal(el));
-      return {
-        texto: (el.textContent || '').trim().slice(0, 40),
-        tag: el.tagName,
-        razao: Math.round(razao * 100) / 100,
-        minimo: grande ? 3 : 4.5,
-        ok: razao >= (grande ? 3 : 4.5),
-      };
-    });
-
-    const imagens = Array.from(document.querySelectorAll('img')).map((img) => ({
-      src: img.getAttribute('src'),
-      alt: img.getAttribute('alt'),
-      ariaHidden: img.getAttribute('aria-hidden') === 'true',
-      temDimensoes: !!(img.getAttribute('width') && img.getAttribute('height')),
-    }));
-
-    return {
-      contrastes: contrastes.filter((c) => !c.ok),
-      totalTextos: contrastes.length,
-      imagens,
-      imagensSemAlt: imagens.filter((i) => i.alt === null && !i.ariaHidden),
-      semDimensoes: imagens.filter((i) => !i.temDimensoes),
-      idioma: document.documentElement.lang,
-      h1: document.querySelectorAll('h1').length,
-      landmarks: {
-        header: document.querySelectorAll('header').length,
-        main: document.querySelectorAll('main').length,
-        footer: document.querySelectorAll('footer').length,
-        nav: document.querySelectorAll('nav').length,
-      },
-    };
-  });
+  relatorio.a11y = await mobile.evaluate(MEDIR_A11Y);
 
   // ---------- Navegação por teclado ----------
   await mobile.evaluate(() => window.scrollTo(0, 0));
@@ -341,6 +352,7 @@ async function auditar() {
   await paisagem.waitForTimeout(2000);
 
   relatorio.paisagem = {
+    a11y: await paisagem.evaluate(MEDIR_A11Y),
     toque: await paisagem.evaluate(() =>
       Array.from(document.querySelectorAll('a, button'))
         .map((el) => {
