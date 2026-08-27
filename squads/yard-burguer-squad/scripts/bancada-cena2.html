@@ -9,11 +9,25 @@
     npm run preview
     abrir /__bancada.html e rodar  await armar(0..4)  no console
 
-  POR QUE ISTO EXISTE, e não um teste de browser normal: `IntersectionObserver`
-  NÃO dispara em aba dirigida por CDP (confirmado em 2026-08-26, elemento
-  inteiramente visível, callback nunca chamado). Como o motion.js só importa o
-  chunk da cena quando o observer dispara, a Cena 2 jamais engata sob automação —
-  o <video> fica sem src, em readyState 0, e o pin nunca é criado.
+  POR QUE ISTO EXISTE: para julgar COMPOSIÇÃO em dois aparelhos no mesmo quadro,
+  sem esperar o take carregar e sem depender de a cena engatar.
+
+  ATENÇÃO — O MOTIVO ORIGINAL ESTAVA ERRADO. Até 2026-08-27 este cabeçalho
+  afirmava que `IntersectionObserver` não dispara em aba dirigida por CDP. O
+  culpado é outro: a aba com `visibilityState: 'hidden'`, que é o estado de todo
+  browser HEADLESS. Sem visibilidade o observer não reporta interseção, o vídeo
+  não decodifica (readyState 0) e o `await video.play()` nunca settla — daí o pin
+  jamais ser criado.
+
+  Com `headless: false` a cena engata normalmente sob automação, e foi assim que
+  se descobriu que a marca atravessava o produto no desktop — defeito que esta
+  bancada aprovava, porque ela mede UM palco (1280x724) sobre o quadro PARADO.
+  Para a cena rodando, o instrumento é medir-marca-no-take.mjs.
+
+  O QUE ISTO AINDA RESOLVE BEM: comparar celular e desktop lado a lado num piscar
+  de olhos, sem take, sem GSAP e sem esperar rede. Só não confunda "a bancada
+  aprovou" com "a cena está certa" — foi exatamente essa confusão que deixou o
+  defeito passar.
 
   Então a bancada não tenta rolar a cena: ela MONTA o quadro à mão, com os mesmos
   valores da timeline de video-scrub.js, sobre o <picture> do poster (que carrega
