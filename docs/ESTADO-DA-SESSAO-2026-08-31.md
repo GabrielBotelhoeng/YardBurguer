@@ -71,18 +71,41 @@ A copy daquela seção (`ece7e68`) já veio para cá por cherry-pick e está no 
 
 ---
 
-## Suspeita não confirmada
+## Suspeita levantada e DERRUBADA — a navbar está correta
 
-**A navbar pode não ficar sólida ao rolar.** Medido `rgba(20,12,6,0.22)` com
-`data-scrolled` aplicado e a página parada, e no screenshot dava para ver o CTA
-de combos através da barra. Desligar a `transition` fazia saltar para
-`rgb(20,12,6)` sólido — ou seja, a transição estava congelada num quadro
-intermediário, não é regra CSS errada.
+Fica registrada porque o método de derrubar vale mais que o achado.
 
-**Mas cheguei nesse estado com `scrollIntoView` programático e Lenis ativo**, e
-este projeto tem histórico de artefatos exatamente assim. **Confirmar com
-rolagem humana antes de mexer.** Se for real, o alvo é a interação entre o
-`toggleAttribute` do `initNavbar` e o scroll sintético do Lenis.
+**O falso positivo:** a navbar aparecia translúcida com `data-scrolled` aplicado
+e a página parada — `rgba(20,12,6,0.22)` numa medição, `rgba(20,12,6,0.682)` em
+outra. No screenshot dava para ver o CTA de combos através da barra. Desligar a
+`transition` fazia saltar para sólido. Tudo apontava para defeito.
+
+**O que denunciou:** `nav.getAnimations()` mostrava uma `CSSTransition` em
+estado `running` que não avançava depois de 4 segundos parado — treze vezes a
+duração dela. Transição "rodando" que não progride não é comportamento de CSS,
+é relógio parado.
+
+**A prova:** contar quadros e comparar os dois relógios.
+
+```js
+const t0 = document.timeline.currentTime, p0 = performance.now();
+let quadros = 0;
+const conta = () => { quadros++; requestAnimationFrame(conta); };
+requestAnimationFrame(conta);
+await new Promise(r => setTimeout(r, 2000));
+// document.timeline parado + performance.now() andando = renderer congelado
+```
+
+Deu **0 quadros em 2 s** e `document.timeline` avançando **0 ms** enquanto
+`performance.now()` avançava 2.133 ms. O renderer da aba estava congelado pela
+automação — os `Page.captureScreenshot` que deram timeout com "renderer may be
+frozen" na mesma sessão eram o mesmo sintoma.
+
+**Regra para a próxima vez:** antes de reportar qualquer defeito de transição,
+animação ou timing observado sob automação neste projeto, rodar o teste dos dois
+relógios. Vale para Chrome via CDP e vale para o histórico de
+[[cena2-so-engata-com-aba-visivel]] — a página quase sempre está certa e o
+ambiente de medição é que mente.
 
 ---
 
