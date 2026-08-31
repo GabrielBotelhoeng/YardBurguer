@@ -86,6 +86,48 @@ function initScrollReveal() {
 }
 
 /**
+ * Barra fixa de pedido — aparece quando o hero sai da tela.
+ *
+ * IntersectionObserver e um atributo. Nada mais entra aqui: o GSAP desta página
+ * é buscado por import dinâmico só quando a Cena 2 se aproxima, e trazê-lo para
+ * cá derrubaria 45kb gzip em cima do LCP para animar uma barra que um
+ * `transform` de CSS resolve de graça.
+ *
+ * O SCRIPT NÃO PERGUNTA SE É CELULAR. Quem responde isso é a media query de
+ * `.barra-pedido` — a mesma consulta deste arquivo, escrita uma vez, no lugar
+ * onde ela se reavalia sozinha quando o aparelho gira. `ehMobile` aqui em cima
+ * é resolvido na carga e envelhece na rotação; para Lenis e Cena 2 isso é
+ * aceitável (as duas decidem uma vez e seguem), para um elemento que precisa
+ * aparecer e sumir com a orientação, não é.
+ *
+ * As zonas mortas vêm do HTML (`data-esconde-barra`) e não de uma lista de
+ * seletores aqui: quem decide que o hero e o CTA final não querem a barra é a
+ * composição da página, e ela mora no markup.
+ */
+function initBarraPedido() {
+  const barra = document.querySelector('[data-barra-pedido]');
+  if (!barra) return;
+
+  const zonas = document.querySelectorAll('[data-esconde-barra]');
+  if (!zonas.length) return;
+
+  // Duas zonas podem estar na tela ao mesmo tempo em telas altas; um booleano
+  // só faria a última entrada mandar em tudo. O conjunto guarda quem está
+  // dentro, e a barra aparece quando ele esvazia.
+  const naTela = new Set();
+
+  const observador = new IntersectionObserver((entradas) => {
+    for (const entrada of entradas) {
+      if (entrada.isIntersecting) naTela.add(entrada.target);
+      else naTela.delete(entrada.target);
+    }
+    barra.toggleAttribute('data-visivel', naTela.size === 0);
+  });
+
+  zonas.forEach((zona) => observador.observe(zona));
+}
+
+/**
  * Cena 2 — a montagem do burger. Único ponto que justifica o peso do GSAP,
  * então ele só é buscado quando a cena está a uma tela de distância.
  *
@@ -157,6 +199,7 @@ async function initSmoothScroll() {
 function init() {
   initNavbar();
   initScrollReveal();
+  initBarraPedido();
   initExplodeQuandoPerto();
 
   // Publicado como promessa, não como valor: o explode.js pode chegar antes do
