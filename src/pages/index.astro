@@ -57,7 +57,12 @@ const combos = menu.combos.map((combo) => ({
 
   <main>
     <!-- Cena 1 — Hero -->
-    <section class="hero textura-brasa" aria-labelledby="hero-titulo">
+    <!--
+      `data-esconde-barra`: enquanto esta seção estiver na tela, a barra fixa do
+      rodapé fica fora. O CTA do hero já está debaixo do polegar aqui, e uma
+      segunda pílula vermelha na mesma dobra só divide o clique em dois.
+    -->
+    <section class="hero textura-brasa" aria-labelledby="hero-titulo" data-esconde-barra>
       {
         temFotoHero && (
           <img
@@ -391,7 +396,12 @@ const combos = menu.combos.map((combo) => ({
     </section>
 
     <!-- Cena 7 — CTA final -->
-    <section class="final textura-brasa" aria-labelledby="final-titulo">
+    <!--
+      O mesmo motivo do hero, invertido no tempo: aqui a página inteira já foi
+      lida e o CTA final ocupa o centro da tela. Deixar a barra por cima dele
+      seria pôr dois botões idênticos na mesma dobra e ainda cobrir o rodapé.
+    -->
+    <section class="final textura-brasa" aria-labelledby="final-titulo" data-esconde-barra>
       <h2 id="final-titulo" class="final__titulo">
         {ctaFinal.titulo} <span class="final__destaque">{ctaFinal.tituloDestaque}</span>
         {ctaFinal.tituloFim}
@@ -401,6 +411,28 @@ const combos = menu.combos.map((combo) => ({
       <p class="final__apoio">{ctaFinal.apoio}</p>
     </section>
   </main>
+
+  <!--
+    BARRA FIXA DE PEDIDO — só no celular, e só depois que o hero sai da tela.
+
+    O pedido acontece no Brendi, e a página inteira existe para entregar esse
+    clique. Entre o hero e o CTA final há cinco seções em que a única porta era
+    a pílula pequena do canto da navbar — no celular, no topo, longe do polegar.
+    Esta barra é a mesma porta, sempre à mão.
+
+    FICA FORA DO <main> de propósito: é chrome da página, não conteúdo dela.
+    Antes do <footer> na ordem do DOM porque quem navega por Tab deve encontrar
+    o botão de pedir antes dos links de rodapé, não depois.
+
+    Sem JavaScript ela nunca aparece — nenhum `data-visivel` é escrito e o
+    estado de repouso é fora da tela. É a degradação certa: o CTA do hero, o da
+    navbar, o da seção de cardápio, o dos combos e o final continuam todos lá.
+  -->
+  <div class="barra-pedido" data-barra-pedido>
+    <a class="cta barra-pedido__cta" href={marca.cardapioUrl} data-evento="cardapio-barra">
+      {copy.barraPedido.cta}
+    </a>
+  </div>
 
   <!-- Cena 8 — Footer -->
   <footer class="rodape">
@@ -526,6 +558,121 @@ const combos = menu.combos.map((combo) => ({
     }
     .nav__logo { font-size: 1.05rem; white-space: nowrap; }
     .nav__cta { padding-inline: 1.1rem; font-size: 0.9rem; }
+  }
+
+  /**
+   * BARRA FIXA DE PEDIDO — a porta do Brendi debaixo do polegar.
+   *
+   * "É CELULAR?" É A MESMA PERGUNTA QUE motion.js FAZ, letra por letra:
+   * `(max-width: 900px), (max-height: 500px)`. Largura sozinha não responde —
+   * um iPhone 13 deitado tem 844px de largura e passaria por desktop. O lado
+   * curto de um aparelho não muda quando ele gira, e é essa a segunda condição.
+   * Toda vez que essas duas perguntas divergiram neste projeto, alguma coisa
+   * quebrou em silêncio.
+   *
+   * A PERGUNTA É FEITA NO CSS, e não no JavaScript, de propósito. O `ehMobile`
+   * do motion.js é resolvido uma vez na carga: quem gira o aparelho depois fica
+   * com a resposta velha. A media query reavalia sozinha na rotação. Ao script
+   * sobra a única pergunta que independe de orientação — "o hero já saiu?".
+   *
+   * DEITADO ELA CONTINUA APARECENDO, e isso é escolha, não descuido: o público
+   * desta landing é celular, e sumir com a porta principal porque o aparelho
+   * girou seria esconder da maioria. O que muda é o respiro — em 390px de tela
+   * útil cada pixel do rodapé é caro, então o padding encolhe e o que fica de
+   * pé é o alvo de 48px.
+   *
+   * Fundo sólido em vez de backdrop-filter: por cima da barra passa desde o
+   * areia dos destaques até o take em vídeo da Cena 2, e desfoque em tempo real
+   * sobre vídeo é exatamente o custo de GPU que esta página não paga.
+   */
+  .barra-pedido {
+    display: none;
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 90; /* abaixo da navbar (100): as duas nunca se encostam, mas a
+                    ordem tem que ser deliberada e não sorteada pelo DOM. */
+
+    /* Este projeto não tem reset global de box-sizing — o padding de safe-area
+       abaixo somaria à largura de 100% e viraria overflow horizontal. Mesmo
+       motivo já documentado em .dif__gente. */
+    box-sizing: border-box;
+
+    /**
+     * SAFE AREA NO PADDING, não na margem.
+     *
+     * Com viewport-fit=cover (ver Base.astro) a área útil vai até a borda
+     * física. No iPhone com barra de gestos, um rodapé fixo sem este env()
+     * nasce POR BAIXO dela: o botão aparece inteiro e o toque não chega —
+     * defeito que não se vê em print nenhum.
+     *
+     * O fundo continua encostando na borda de baixo (é o env() no padding que
+     * garante isso), então não sobra faixa clara entre a barra e o aparelho.
+     */
+    padding-block: 0.6rem calc(0.6rem + env(safe-area-inset-bottom));
+    padding-left: calc(1rem + env(safe-area-inset-left));
+    padding-right: calc(1rem + env(safe-area-inset-right));
+
+    background-color: var(--color-carvao);
+    border-top: 1px solid rgb(232 220 200 / 0.12);
+
+    /**
+     * ESCONDIDA É `display: none`, e isso foi MEDIDO antes de ser escolhido.
+     *
+     * A primeira versão usava `visibility: hidden`, que já resolve Tab e leitor
+     * de tela. Mas `visibility` mantém a caixa no layout, e o `audit-page.mjs`
+     * filtra elemento oculto por `offsetParent !== null` — que ignora
+     * `visibility`. Resultado medido: `semJs.ctasVisiveis` subiu de 6 para 7,
+     * contando um botão que ninguém vê. Cegar o instrumento para caber a
+     * feature é pior do que não ter a feature; a barra some de verdade.
+     *
+     * O estado de chegada continua sendo só `translateY(0)`: ele existe
+     * estático, sem depender de animação nenhuma. Sob `prefers-reduced-motion`
+     * a regra global de tokens.css zera a duração e a barra simplesmente
+     * APARECE — sem deslizar, mas nunca ausente.
+     *
+     * `allow-discrete` + `@starting-style` são o que deixa `display` participar
+     * da transição: sem eles o navegador troca `none`/`block` de uma vez e o
+     * transform não teria de onde partir. Onde não houver suporte, a declaração
+     * de `transition` é descartada inteira e a barra aparece de estalo — que é
+     * exatamente o mesmo estado final, só sem o deslize.
+     *
+     * `transform` e nada mais: a barra é `fixed`, não ocupa espaço no fluxo e
+     * não desloca um pixel de layout ao entrar. O gate deste projeto mede
+     * EMPURRÃO, e o empurrão aqui é zero por construção — verificado em 0px.
+     */
+    transform: translateY(100%);
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+      display 0.28s allow-discrete;
+  }
+  /* Largura inteira: num rodapé de celular o alvo certo é a faixa toda, não uma
+     pílula centrada que obriga a mirar. 48px e não os 44px do mínimo — 44 é o
+     piso de auditoria, e este é o botão mais importante da página. */
+  .barra-pedido__cta {
+    width: 100%;
+    min-height: 48px;
+    font-size: 1.05rem;
+  }
+
+  /**
+   * O `display: block` mora DENTRO da media query, e é só ele que faz a barra
+   * existir. No desktop o script continua escrevendo `data-visivel` — deixá-lo
+   * cego para a orientação é o que mantém a rotação correta — e a media query
+   * simplesmente não lhe dá corpo.
+   */
+  @media (max-width: 900px), (max-height: 500px) {
+    .barra-pedido[data-visivel] {
+      display: block;
+      transform: translateY(0);
+    }
+    @starting-style {
+      .barra-pedido[data-visivel] { transform: translateY(100%); }
+    }
+  }
+
+  /* Em paisagem o rodapé disputa 390px de altura com a página inteira. */
+  @media (max-height: 500px) {
+    .barra-pedido { padding-block: 0.35rem calc(0.35rem + env(safe-area-inset-bottom)); }
   }
 
   .hero {
@@ -1109,5 +1256,28 @@ const combos = menu.combos.map((combo) => ({
     min-height: 44px;
     padding-inline: 0.5rem;
     color: var(--color-brasa);
+  }
+
+  /**
+   * O ESPAÇADOR DA BARRA DE PEDIDO — e ele mora AQUI, depois de `.rodape`.
+   *
+   * Media query não soma especificidade: escrito lá em cima, junto do resto da
+   * barra, este `padding-bottom` perdia para o `padding-block` de `.rodape`
+   * simplesmente por vir antes no arquivo. Medido: 48px onde deviam ser 115px,
+   * e sem nenhum aviso — a regra existia, só não valia.
+   *
+   * O que ele reserva: a barra some sobre a Cena 7 (`data-esconde-barra`), então
+   * em condições normais nunca chega a cobrir o rodapé. Este padding é o cinto —
+   * se um dia o CTA final encolher abaixo da altura da tela, a barra reaparece no
+   * fim da página e comeria a linha de direitos autorais.
+   *
+   * É estático, presente desde o primeiro quadro pintado, então não desloca
+   * nada. E como o rodapé já é carvão, o acréscimo é carvão embaixo de carvão:
+   * invisível para quem lê, garantido para quem toca.
+   */
+  @media (max-width: 900px), (max-height: 500px) {
+    .rodape {
+      padding-bottom: calc(3rem + env(safe-area-inset-bottom) + var(--barra-pedido-altura));
+    }
   }
 </style>

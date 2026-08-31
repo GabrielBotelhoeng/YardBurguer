@@ -208,6 +208,10 @@
       "fechaEmBreve": "fecha em {min} min"
     }
   },
+  "_barraPedido": "A barra fixa do rodapé no celular. Texto PRÓPRIO, não uma referência a ctaFinal.cta: as duas frases coincidem hoje, mas nascem de decisões diferentes — a do rodapé fecha a página, esta persegue o dedo durante a leitura inteira. Amarrar uma na outra faria mexer numa mudar a outra em silêncio.",
+  "barraPedido": {
+    "cta": "Pedir meu YARD"
+  },
   "ctaFinal": {
     "titulo": "Tá com fome",
     "tituloDestaque": "agora",

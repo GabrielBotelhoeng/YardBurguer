@@ -32,6 +32,18 @@
 :root {
   color-scheme: dark;
   background-color: var(--color-carvao);
+
+  /**
+   * Altura da barra fixa de pedido — botão de 48px mais o respiro de 0,6rem em
+   * cima e embaixo.
+   *
+   * Mora aqui, e não no `<style>` da página, porque DUAS regras precisam
+   * concordar sobre ela: a própria barra e o padding do rodapé que reserva o
+   * espaço dela. Dois números soltos que precisam bater é um número que vai
+   * descolar. A safe area NÃO entra na conta — ela é somada em cada lugar, já
+   * que quem consome também paga o próprio recorte.
+   */
+  --barra-pedido-altura: calc(48px + 1.2rem);
 }
 
 body {
