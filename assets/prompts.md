@@ -512,3 +512,68 @@ desta seção, remedir qual arquivo cada DPR baixa antes de dar por certo.
 diferentes do quadro: a lata mora na borda esquerda da foto 1 (38%), a placa
 ocupa a metade direita da foto 2 (60%). Centrar as duas comia a lata de um lado
 e a placa do outro.
+
+---
+
+### [carrossel] Os três cards de "Comece por estes" — foto do cliente, nota n/a
+
+**Não foi gerada por mim.** São cinco imagens entregues pelo cliente em
+2026-08-31 (`referencia/hambugueres/`), saídas do gerador de imagem do ChatGPT.
+Ficam registradas porque o log serve para saber de onde veio cada pixel da
+página, e não só o que passou pelos modelos deste projeto.
+
+**O que substituíram:** os quadrados 480x480 do CDN do Brendi, que eram o teto
+do que aquele CDN entrega. As três fotos antigas somavam 48 kB e eram o material
+mais fraco da página — reamostragem de miniatura de delivery.
+
+**Mapeamento, conferido contra `menu.json` ingrediente por ingrediente:**
+
+| Arquivo de origem | O que está no quadro | Card |
+|---|---|---|
+| `...14_51_11.png` | coalho tostado, banana da terra caramelizada, bacon | `tapera-do-sertao` |
+| `...14_51_33.png` | duas carnes empilhadas, cheddar cremoso em cordão | `supremo` |
+| `...15_01_47.png` | jalapeño, pimenta vermelha, cebola crispy | `yard-king` |
+
+**Duas escolhas do cliente contra o que o cardápio diz** — ficam anotadas para
+quem for mexer depois não achar que foi descuido:
+
+1. `supremo` recebeu a foto de duas carnes empilhadas, que é a descrição do
+   **Yard King**, não do Supremo (Catupiry, costela desfiada, cebola
+   caramelizada). O `yard-king` recebeu a foto de jalapeño, que **não
+   corresponde a item nenhum** do cardápio. A troca foi pedida explicitamente
+   depois de a divergência ser apresentada.
+2. A foto do `yard-king` tem a marca **"Alta Grill" gravada na bandeja de cobre**,
+   na borda inferior. Aprovada mesmo assim. Na prática o véu do card (0.96 de
+   opacidade na base) mais o bloco de texto cobrem quase toda a gravação — mas se
+   o véu mudar, ela reaparece.
+
+**As duas sobras não entraram:** `...15_00_09.png` é uma segunda tomada do Tápera
+(mesma composição, outro ângulo) e `...14_51_28.png` mostra cebola crispy com
+Catupiry, que é o **Open Crysp** — produto real, mas sem card no carrossel hoje.
+São o material pronto se o carrossel virar 4 itens.
+
+**O corte virou decisão, e é a mudança que importa.** O original é retrato
+(1023x1537 ≈ 2:3) e o card é 4/5. Antes a foto era quadrada e o `object-fit:
+cover` cortava 20% sem ninguém escolher onde — daí o `object-position: 50% 42%`
+que existia para empurrar o corte. Agora cada foto foi recortada em 4/5 **no
+arquivo**, com o hambúrguer centrado, e o `cover` não tem mais nada a tirar. O
+`object-position` voltou para o centro e só existe como rede.
+
+| Saída | Geometria | Peso | Corte de origem (`crop=l:a:x:y`) |
+|---|---|---|---|
+| `tapera-do-sertao.webp` | 640x800 | 47 kB | `1023:1279:0:258` |
+| `supremo.webp` | 640x800 | 63 kB | `1023:1279:0:218` |
+| `yard-king.webp` | 640x800 | 57 kB | `1086:1358:0:90` |
+
+Fórmula, sem dependência nova — o `ffmpeg` do sistema já tem `libwebp`:
+
+```
+ffmpeg -i entrada.png -vf "crop=L:A:X:Y,scale=640:800:flags=lanczos" \
+       -c:v libwebp -quality 76 -compression_level 6 -y saida.webp
+```
+
+**640x800 e não maior, por causa do gate de peso.** O card chega a 21rem (336px)
+no desktop, então 640 cobre 2x em retina com folga. As três somam 166 kB contra
+os 48 kB de antes: **+118 kB** numa folga medida de 224 kB (1,217 MB de teto
+1,5 MB, ver `docs/mobile-audit.md`). Sobra ~106 kB. Se entrar uma quarta foto
+nesse carrossel, **remedir antes** — não há espaço para duas.
