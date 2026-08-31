@@ -350,8 +350,39 @@ const combos = menu.combos.map((combo) => ({
           >
             {copy.ondeEstamos.ctaWhats}
           </a>
+          {/*
+            NÃO HÁ MAPA AQUI, E É DECISÃO — não esquecimento.
+
+            Um iframe do Google Maps custa centenas de kB e traz JS de terceiro
+            numa página que está a 167 kB do teto e não tem banner de consentimento.
+            A Static Maps API exige chave paga, que este projeto não tem. Desenhar
+            um mapa nosso sem material seria pior que tudo: mapa errado manda o
+            cliente para a rua errada, e aí o link honesto vira prejuízo.
+
+            O que dá para melhorar de graça é o próprio link: alvo grande com
+            borda, pino, a rua escrita nele e o aviso de que abre outra aba. Ele
+            deixa de ser uma palavra sublinhada perdida ao lado de um botão
+            vermelho e passa a parecer o que é — o caminho até a porta.
+          */}
           <a class="onde__link" href={marca.mapaUrl} target="_blank" rel="noopener">
-            {copy.ondeEstamos.ctaMapa}
+            <svg
+              class="onde__link-pino"
+              viewBox="0 0 24 24"
+              width="22"
+              height="22"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                d="M12 2a7 7 0 0 0-7 7c0 5.05 6.13 12.3 6.39 12.61a.8.8 0 0 0 1.22 0C12.87 21.3 19 14.05 19 9a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 14.5 9 2.5 2.5 0 0 1 12 11.5Z"
+              />
+            </svg>
+            <span class="onde__link-texto">
+              <span class="onde__link-titulo">{copy.ondeEstamos.ctaMapa}</span>
+              <span class="onde__link-apoio">
+                {marca.rua} · {copy.ondeEstamos.mapaApoio}
+              </span>
+            </span>
           </a>
         </div>
 
@@ -986,15 +1017,51 @@ const combos = menu.combos.map((combo) => ({
    * o passo que antes não tinha para onde ir.
    */
   .cta--whats { background-color: var(--color-terracota); }
-  /* Área de toque de 44px: medido 97x24 na auditoria, abaixo do mínimo.
-     O padding vertical resolve sem mudar o peso visual do link. */
+  /**
+   * O LINK DO MAPA VIRA CARTÃO — porque ele é o segundo destino da seção.
+   *
+   * Ele já tinha os 44px de altura desde a auditoria que mediu 97x24. O que
+   * faltava era LARGURA de intenção: "Ver no mapa" sublinhado ao lado de um
+   * botão vermelho de WhatsApp lia como rodapé do botão, não como caminho até
+   * a porta. A borda dá corpo, o pino diz o assunto antes da leitura, e a
+   * segunda linha entrega a rua e avisa que a aba muda.
+   *
+   * Não há imagem de mapa aqui de propósito — ver o comentário no markup.
+   */
   .onde__link {
     display: inline-flex;
     align-items: center;
+    gap: 0.75rem;
     min-height: 44px;
+    padding: 0.6rem 1.1rem;
+    border: 1px solid rgb(139 74 43 / 0.35);
+    border-radius: 0.75rem;
+    background-color: rgb(255 255 255 / 0.45);
     color: var(--color-terracota);
     font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+  .onde__link:hover {
+    background-color: #fff;
+    border-color: var(--color-terracota);
+  }
+  .onde__link-pino { flex: none; fill: currentColor; }
+  .onde__link-texto { display: grid; gap: 0.1rem; }
+  .onde__link-titulo {
+    text-decoration: underline;
     text-underline-offset: 3px;
+  }
+  /**
+   * Alfa no `color`, nunca `opacity` no elemento: o gate de acessibilidade
+   * compõe alfa de cor contra o fundo real e ignora opacity de caixa. Baixar
+   * opacity aqui deixaria o texto mais fraco do que o número diria.
+   */
+  .onde__link-apoio {
+    font-size: 0.78rem;
+    font-weight: 400;
+    line-height: 1.35;
+    color: rgb(20 12 6 / 0.75);
   }
   .onde__nota {
     margin-top: 1.25rem;
