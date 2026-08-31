@@ -266,9 +266,49 @@ const combos = menu.combos.map((combo) => ({
           <div class="onde__dado">
             <dt>{copy.ondeEstamos.tituloEndereco}</dt>
             <dd>
-              <address class="onde__endereco">
+              <address class="onde__endereco" data-endereco-texto>
                 {marca.rua}<br />{marca.bairro}<br />{marca.cidade} – {marca.estado}, {marca.cep}
               </address>
+              {/*
+                O BOTÃO NASCE ESCONDIDO, IGUAL AO SELO ACIMA.
+
+                Copiar é operação de JS: sem ele o botão ficaria na tela
+                prometendo o que não faz. O que sobra sem script é o endereço
+                escrito, que continua correto e continua selecionável.
+
+                O texto de sucesso e o de falha viajam em data-atributo em vez
+                de estarem no módulo: assim a copy continua morando no
+                copy.json e o script não arrasta a copy inteira para o bundle.
+
+                aria-live=polite no aviso, e ele já está no DOM desde o
+                primeiro quadro justamente para poder anunciar depois.
+              */}
+              <p class="onde__copiar-linha">
+                <button
+                  type="button"
+                  class="onde__copiar"
+                  data-copiar-endereco
+                  data-endereco={marca.enderecoCompleto}
+                  data-ok-texto={copy.ondeEstamos.copiarOk}
+                  data-falha-texto={copy.ondeEstamos.copiarFalhou}
+                  hidden
+                >
+                  <svg
+                    class="onde__copiar-icone"
+                    viewBox="0 0 24 24"
+                    width="17"
+                    height="17"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path
+                      d="M9 3h8a2 2 0 0 1 2 2v10h-2V5H9V3Zm-4 4h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Zm0 2v10h8V9H5Z"
+                    />
+                  </svg>
+                  {copy.ondeEstamos.ctaCopiar}
+                </button>
+                <span class="onde__copiado" data-copiar-aviso aria-live="polite"></span>
+              </p>
             </dd>
           </div>
           <div class="onde__dado">
@@ -360,9 +400,16 @@ const combos = menu.combos.map((combo) => ({
   <script is:inline define:vars={{ horario: marca.horario, textos: copy.ondeEstamos.estado }}>
     window.__yardLoja = { horario, textos };
   </script>
+  {/*
+    Os dois módulos da seção "Onde a gente fica" dividem o mesmo <script>: cada
+    bloco vira um chunk próprio no build, e uma requisição a menos no 4G do
+    interior vale mais que a separação cosmética.
+  */}
   <script>
     import { initEstadoLoja } from '../scripts/estado-loja.mjs';
+    import { initCopiarEndereco } from '../scripts/copiar-endereco.mjs';
     initEstadoLoja(window.__yardLoja);
+    initCopiarEndereco();
   </script>
 </Base>
 
@@ -847,6 +894,56 @@ const combos = menu.combos.map((combo) => ({
   }
   .onde__estado[data-aberto='true'] { color: #4A6B24; }
   .onde__estado[data-aberto='false'] { color: var(--color-terracota); }
+  /**
+   * COPIAR ENDEREÇO — 44px de alvo sem virar um segundo CTA.
+   *
+   * O padding entrega os 44px auditados sem inchar a tipografia: o rótulo
+   * continua em 0,85rem, do tamanho do dado que ele serve. A cor é terracota e
+   * não fogo porque `--yard-fogo` é reservado a quem leva ao cardápio — botão
+   * utilitário que rouba a cor do CTA enfraquece o CTA.
+   *
+   * O aviso vive na mesma linha, com margem só quando tem texto: região
+   * aria-live precisa estar no DOM desde o começo, e um `display: none`
+   * intermitente é exatamente o que faz leitor de tela perder o anúncio.
+   */
+  .onde__copiar-linha {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    margin: 0.75rem 0 0;
+  }
+  .onde__copiar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 44px;
+    padding-inline: 0.9rem;
+    border: 1px solid rgb(139 74 43 / 0.4);
+    border-radius: 999px;
+    background-color: transparent;
+    color: var(--color-terracota);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+  .onde__copiar:hover {
+    background-color: rgb(139 74 43 / 0.08);
+    border-color: var(--color-terracota);
+  }
+  .onde__copiar-icone { flex: none; fill: currentColor; }
+  .onde__copiado {
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .onde__copiado:not(:empty) { margin-left: 0.75rem; }
+  /* Mesma dupla semântica do selo de aberto/fechado: a cor confirma o texto,
+     nunca o substitui. */
+  .onde__copiado[data-ok='true'] { color: #3f5c1f; }
+  .onde__copiado[data-ok='false'] { color: var(--color-terracota); }
+
   .onde__pgto {
     display: block;
     font-size: 0.7rem;
