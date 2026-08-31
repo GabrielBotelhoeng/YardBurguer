@@ -46,6 +46,20 @@ A copy daquela seção (`ece7e68`) já veio para cá por cherry-pick e está no 
 
 ---
 
+## Sujeira conhecida em `.claude/worktrees/`
+
+Duas worktrees já integradas — `agent-a094f8db959928c72` (copiar endereço) e
+`agent-abdcad1c0593ce9b1` (barra fixa) — foram **desregistradas do git**, mas os
+diretórios **não puderam ser apagados**: há processos segurando binários dentro
+dos `node_modules` delas (`rolldown-binding.win32-x64-msvc.node`).
+
+Consequência prática: `git worktree list` já está limpo e correto, mas as pastas
+existem no disco. Se alguém tentar criar worktree nesses mesmos caminhos, vai
+falhar por diretório ocupado. **Apagar à mão depois de fechar os processos node**
+— o conteúdo delas já está todo na branch, não há nada a salvar ali.
+
+A worktree de `agent-a4138ff1022650326` é a única que **deve continuar existindo**.
+
 ## Trava por decisão do dono, não por técnica
 
 1. **"Montado na hora do pedido"** — o quarto pilar novo está no ar mas **não
