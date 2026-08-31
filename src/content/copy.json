@@ -111,26 +111,29 @@
     "titulo": "Por que o YARD é diferente",
     "texto": "Hambúrguer bom não tem segredo — tem cuidado. E cuidado não dá pra terceirizar.",
     "_icones": "Chave de ícone SVG em ExplodeIcones/Pilares. Emoji como ícone foi removido: renderiza diferente em cada sistema e derruba a credibilidade de uma página que quer parecer profissional.",
+    "_divisao": "A VISTA EXPLODIDA FALA DO PRODUTO; ESTA SEÇÃO FALA DO PROCESSO E DA CASA. Sem essa divisão os dois blocos repetem: até 31/08 três dos quatro pilares traziam PALAVRA POR PALAVRA o texto de `explode.passos`, que aparece na mesma rolagem, uma tela acima — 'Pão brioche' e 'Três molhos da casa' idênticos, 'Blend de 160g' idêntico menos uma frase. Quem rolava sentia que a página tinha travado. Regra para quem editar depois: se o pilar responde 'o que tem no lanche', ele é da Cena 2; aqui só entra o que responde 'por que escolher esta casa e não a de baixo'.",
+    "_pilaresFatos": "Cada pilar traça de volta a uma fonte, e a fonte está anotada — Constitution, Artigo IV. brasa: `hero.titulo` ('FEITO NA BRASA.') e `seo.ogTitle`, fato que a página já assume no ponto mais visível dela. blend 160g / smash 90g: menu.json `fatos`. cheddar derretido na chapa: descrição oficial do Yard King e do Apólo. três molhos: menu.json `fatos.molhosDaCasa`. costela, coalho no mel e banana da terra: `ingredientesChave` do Tápera do Sertão. PENDENTE DE CONFIRMAÇÃO DO DONO: 'Montado na hora do pedido' — não há NADA em menu.json que sustente a afirmação. O mais perto que a página chega é `hero.tituloDestaque` ('SERVIDO NA HORA.'), que é promessa de entrega, não descrição de processo. Se o dono desmentir, o pilar sai inteiro; não reescrever para uma versão mais fraca do mesmo palpite.",
+    "_brasaEChapa": "O pilar diz 'não na chapa fria' e não 'não na chapa' — a diferença é obrigatória. O cardápio tem smash prensado na chapa (Apólo, Burguer Kids) e cheddar derretido na chapa em quase todos os burgers. Negar a chapa contradiria menu.json; o que o pilar nega é a chapa MORNA, esperando pedido. Por isso o texto cita a chapa quente logo em seguida, em vez de fingir que ela não existe.",
     "pilares": [
       {
-        "icone": "carne",
-        "titulo": "Blend de 160g",
-        "texto": "O peso padrão da casa. Quem quer mais pede o King, com duas carnes. Quem quer o smash tem o de 90g prensado na chapa."
-      },
-      {
-        "icone": "pao",
-        "titulo": "Pão brioche",
-        "texto": "Macio o bastante pra abraçar o recheio e firme o bastante pra não desmontar na metade."
+        "icone": "brasa",
+        "titulo": "Na brasa, não na chapa fria",
+        "texto": "Fogo de verdade antes de qualquer coisa: o blend de 160g encontra a brasa, não uma chapa morna esperando pedido. A chapa entra depois, quente, pra derreter o cheddar e prensar o smash de 90g."
       },
       {
         "icone": "molho",
-        "titulo": "Três molhos da casa",
-        "texto": "Molho da casa, molho especial e o Santiago. Receita nossa — não tem igual em outro cardápio da cidade."
+        "titulo": "O molho é nosso",
+        "texto": "Molho da casa, molho especial e Santiago saem da nossa cozinha, não de um galão. Ingrediente qualquer um compra igual; receita, não — é por isso que esse sabor termina aqui."
       },
       {
         "icone": "cerrado",
-        "titulo": "Sabor do cerrado",
-        "texto": "Costela desfiada, queijo coalho tostado no mel e banana da terra caramelizada. Ingrediente daqui, não de rede americana."
+        "titulo": "Sabor do cerrado, não de rede",
+        "texto": "Costela, queijo coalho no mel e banana da terra não entram no cardápio de rede nenhuma. Entram no nosso porque é o que se come nesta região — o carro-chefe da casa nasceu disso, não de manual de franquia."
+      },
+      {
+        "icone": "hora",
+        "titulo": "Montado na hora do pedido",
+        "texto": "Nada fica pronto esperando cliente. O pedido entra, e só então a montagem começa — é o que separa um hambúrguer que chega quente de um que chega morno de bancada."
       }
     ],
     "_gente": "As duas fotos de estúdio do cliente que ladeiam a seção. Entram COM o fundo preto de propósito: recortar era impossível — a foto da placa tem manto preto sobre fundo preto, e qualquer recorte por luminância comeria o manto e o bordado dourado. O preto do estúdio é o mesmo carvão da marca, então o fundo virou moldura em vez de defeito. O alt descreve o que está no quadro, sem supor quem são as pessoas.",
