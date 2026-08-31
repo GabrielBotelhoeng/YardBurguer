@@ -25,9 +25,14 @@
  *    mecanismo de pausa (WCAG 2.2.2). Aqui ele para no hover, no foco do
  *    teclado, quando a aba sai de vista, e nem começa sob reduced-motion.
  *
- * A FOTO É QUADRADA (480x480, o melhor que o CDN do Brendi entrega) e o card é
- * 4/5. A referência usava 2:3, que cortaria 34% da largura da foto; 4/5 corta
- * 20% e ainda lê como card.
+ * A FOTO AGORA NASCE NA PROPORÇÃO DO CARD (640x800 = 4/5). Antes era o quadrado
+ * de 480x480 do CDN do Brendi, e o card cortava 20% dela no `object-fit`, sem
+ * ninguém escolher o quê. O material próprio do cliente chegou em retrato
+ * (~1023x1537), então o corte virou decisão: cada foto foi recortada em 4/5 com
+ * o hambúrguer centrado no quadro, e o `cover` não tem mais nada para tirar.
+ *
+ * A referência usava 2:3, que cortaria 34% da largura da foto; 4/5 lê como card
+ * e é a razão que as fotos agora têm de nascença.
  */
 import copy from '../content/copy.json';
 
@@ -85,8 +90,8 @@ const itens = maisPedidos.itens.map((item) => ({
                 class="cart__foto"
                 src={item.foto}
                 alt={`${item.nome} do YARD Burguer`}
-                width="480"
-                height="480"
+                width="640"
+                height="800"
                 loading="lazy"
                 decoding="async"
               />
@@ -279,8 +284,11 @@ const itens = maisPedidos.itens.map((item) => ({
     width: 100%;
     height: 100%;
     object-fit: cover;
-    /* A foto é quadrada e o produto vive no meio-alto dela. */
-    object-position: 50% 42%;
+    /* Centro, e não os 42% de antes: a foto já vem em 4/5, o corte foi feito no
+       arquivo com o hambúrguer no meio, e não sobra nada para o `cover` tirar.
+       A dupla `cover` + `50% 50%` fica como rede — se um dia entrar foto fora de
+       4/5, ela cobre pelo centro em vez de distorcer. */
+    object-position: 50% 50%;
   }
 
   .cart__veu {
@@ -302,11 +310,23 @@ const itens = maisPedidos.itens.map((item) => ({
     padding: 1rem 1.1rem 1.2rem;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    /**
+     * `flex-end`, e NÃO `space-between`. Era space-between e havia um defeito:
+     * o selo é condicional (só o Tápera tem), então nos outros dois cards
+     * sobrava um filho só — e space-between com um filho o encosta no TOPO.
+     * O texto do Supremo e do Yard King subia para o alto do card, que é onde o
+     * véu está em 0.42 de opacidade; o gradiente foi desenhado para texto na
+     * base, em 0.96. Passava despercebido com os quadrados escuros do CDN, e
+     * ficou gritante com as fotos do cliente, que têm topo claro.
+     */
+    justify-content: flex-end;
   }
 
   .cart__selo {
     align-self: flex-end;
+    /* O que segura o selo no topo agora que o corpo é `flex-end`: a margem
+       automática come a sobra e empurra a base para baixo. */
+    margin-bottom: auto;
     font-size: 0.72rem;
     font-weight: 600;
     letter-spacing: 0.08em;
