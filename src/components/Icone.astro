@@ -10,8 +10,16 @@
  * Traço em vez de preenchimento porque o desenho fica com o mesmo peso visual
  * do texto ao lado. `currentColor` deixa a cor ser decidida pelo contexto.
  */
+/**
+ * `carne` e `pao` continuam aqui sem uso na página desde 31/08, quando os
+ * pilares deixaram de repetir a vista explodida e passaram a falar de processo.
+ * Não foram removidos porque o componente é renderizado no servidor: o galho
+ * que não casa com `nome` não gera um byte de HTML, então manter a chave
+ * completa custa zero no cliente e evita redesenhar o ícone no dia em que um
+ * pilar de produto voltar.
+ */
 interface Props {
-  nome: 'carne' | 'pao' | 'molho' | 'cerrado';
+  nome: 'carne' | 'pao' | 'molho' | 'cerrado' | 'brasa' | 'hora';
   tamanho?: number;
 }
 
@@ -60,6 +68,38 @@ const { nome, tamanho = 32 } = Astro.props;
         <path d="M11 4h10l-1.5 6h-7z" />
         <path d="M16 10v5" />
         <path d="M16 15c3.3 3.4 5 6.1 5 8.2A5 5 0 0 1 11 23.2c0-2.1 1.7-4.8 5-8.2z" />
+      </>
+    )
+  }
+
+  {
+    nome === 'brasa' && (
+      <>
+        {/*
+          Chama com língua interna sobre duas linhas de brasa.
+
+          A língua interna e as linhas da base existem para separar este ícone
+          do `molho`, que também é uma gota fechada e apontada — sem elas os
+          dois viram a mesma silhueta a 32px. As linhas embaixo também dão ao
+          fogo uma FONTE no quadro, que é a mesma regra que o LOOK.md cobra das
+          imagens.
+        */}
+        <path d="M16 3.5c-4.2 4.6-6.3 8-6.3 10.4a6.3 6.3 0 0 0 12.6 0c0-2.4-2.1-5.8-6.3-10.4z" />
+        <path d="M16 12.6c-1.6 1.9-2.4 3.3-2.4 4.3a2.4 2.4 0 0 0 4.8 0c0-1-.8-2.4-2.4-4.3z" />
+        <path d="M7 24h18" />
+        <path d="M10.5 27.5h11" />
+      </>
+    )
+  }
+
+  {
+    nome === 'hora' && (
+      <>
+        {/* Cronômetro: o pedido é que dá a partida na montagem */}
+        <circle cx="16" cy="17.5" r="9.5" />
+        <path d="M16 12.5v5l3.5 2.5" />
+        <path d="M12.5 4.5h7" />
+        <path d="M16 4.5V8" />
       </>
     )
   }
