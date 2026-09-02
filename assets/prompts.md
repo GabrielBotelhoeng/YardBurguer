@@ -577,3 +577,53 @@ no desktop, então 640 cobre 2x em retina com folga. As três somam 166 kB contr
 os 48 kB de antes: **+118 kB** numa folga medida de 224 kB (1,217 MB de teto
 1,5 MB, ver `docs/mobile-audit.md`). Sobra ~106 kB. Se entrar uma quarta foto
 nesse carrossel, **remedir antes** — não há espaço para duas.
+
+---
+
+## 2026-09-02 — hero vertical para o celular: recorte, não geração ★
+
+- **Modelo:** nenhum · **Custo:** 0 crédito
+- **Origem:** `public/assets/hero.webp` (o take aprovado 5/5 de 25/08, seed
+  `44182`, `gemini-3.1-flash-image`)
+- **Saída:** `public/assets/hero-vertical.webp`, 432×768, **23.608 bytes**
+
+**O defeito que motivou.** O dono descreveu: no celular "dá pra ver só uma
+grelha e uma mesa". Medido: o arquivo é 16:9 e num aparelho em pé o `cover`
+mostra **25,8% da largura**, o centro. E a composição aprovada pôs de propósito
+a grelha à esquerda, o burger à direita e o vazio escuro no centro para receber
+o texto — ou seja, o assunto está exatamente nas duas pontas que o recorte
+descarta primeiro.
+
+**Por que recorte e não take novo.** Um take 9:16 gerado teria que reproduzir a
+luz, a fumaça âmbar e o grão de uma imagem que já está aprovada, e o log de
+25/08 registra que a seed foi aceita pela API **sem determinismo verificado** —
+não há garantia de bater. O recorte carrega a composição aprovada por
+construção, e não gasta crédito.
+
+**Fórmula, sem dependência nova (`sharp` já está no projeto):**
+
+```js
+sharp('public/assets/hero.webp')
+  .extract({ left: 910, top: 0, width: 432, height: 768 })
+  .webp({ quality: 78 })
+  .toFile('public/assets/hero-vertical.webp');
+```
+
+O corte em x=910 põe o hambúrguer (que ocupa x≈990–1310 no original) centrado,
+com ~80px de fundo escuro à esquerda para o texto não encostar na comida, e
+mantém o pôr do sol na borda direita. Qualidade 78 escolhida medindo as três:
+72 dá 20.644 B, 78 dá 23.608 B, 84 dá 29.226 B.
+
+**Peso: ele SUBTRAI.** `<source media>` substitui, não soma. Medido por CDP na
+carga real: celular baixa `hero-vertical.webp` = **23.876 B**; desktop baixa
+`hero.webp` = **80.638 B**, e nenhum dos dois baixa o outro. O celular economiza
+**56.762 bytes** — numa folga de orçamento que era de apenas 21 kB.
+
+**Nitidez também melhora.** Hoje o celular estica 355px do original (os 25,8%)
+para 1170px físicos num DPR3: 3,3×. Com o recorte são 432px para os mesmos
+1170: **2,7×**. Menos upscale, não mais.
+
+**O que continua em aberto:** 432px de fonte para 1170px de tela ainda é
+upscale. Resolver de vez exige um take vertical em resolução maior — decisão do
+dono, porque custa crédito e a regra de composição única manda regerar a peça
+inteira.
