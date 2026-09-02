@@ -1,6 +1,11 @@
 ---
 /**
- * CARROSSEL COVERFLOW — os três de "Comece por estes".
+ * CARROSSEL COVERFLOW — o cardápio de hambúrguer inteiro.
+ *
+ * Nasceu com os três de "Comece por estes" e passou a onze em 02/09, a pedido
+ * do dono. O que mudou no componente foi só a paginação (ver os controles); a
+ * lógica de posição já era genérica, porque a distância até o centro é ASSINADA
+ * e calculada no anel de N itens — ela nunca soube quantos eram.
  *
  * PORTADO, NÃO COPIADO. A referência que o cliente mandou é um componente React
  * com Tailwind e shadcn; este projeto é Astro com CSS puro e zero framework (ver
@@ -25,7 +30,7 @@
  *    mecanismo de pausa (WCAG 2.2.2). Aqui ele para no hover, no foco do
  *    teclado, quando a aba sai de vista, e nem começa sob reduced-motion.
  *
- * A FOTO AGORA NASCE NA PROPORÇÃO DO CARD (640x800 = 4/5). Antes era o quadrado
+ * A FOTO NASCE NA PROPORÇÃO DO CARD (800x1000 = 4/5). Antes era o quadrado
  * de 480x480 do CDN do Brendi, e o card cortava 20% dela no `object-fit`, sem
  * ninguém escolher o quê. O material próprio do cliente chegou em retrato
  * (~1023x1537), então o corte virou decisão: cada foto foi recortada em 4/5 com
@@ -33,20 +38,49 @@
  *
  * A referência usava 2:3, que cortaria 34% da largura da foto; 4/5 lê como card
  * e é a razão que as fotos agora têm de nascença.
+ *
+ * 800x1000 e não os 640x800 do primeiro corte: medido em DPR3, o card central
+ * ocupa 287 CSS px e pede 860 pixels físicos. Com fonte de 640 isso era
+ * ampliação de 1,35x a 1,49x, e aparecia como suavização nas bordas do pão.
+ * Agora é 1,07x. Ver squads/.../scripts/recortar-fotos-cliente.mjs.
  */
 import copy from '../content/copy.json';
+import { existsSync } from 'node:fs';
 
 const { maisPedidos, marca } = copy;
 
 /**
- * A ordem importa e é a da copy: o carro-chefe no meio. Com três itens, o
- * índice inicial 0 deixaria o Tápera na posição central — que é onde ele deve
- * começar, já que é o item com selo.
+ * A ORDEM É A DA COPY, e ela existe por um motivo: o carrossel começa no índice
+ * 0, então quem estiver em primeiro na copy nasce no card central. É o Tápera
+ * do Sertão, o único com selo e o `carroChefe: true` do menu.json.
+ *
+ * O AVIF SÓ ENTRA ONDE ELE GANHA, e quem responde isso é o disco.
+ *
+ * As fotos vindas do CDN do Brendi são reamostragens de um original de 240px:
+ * pouco detalhe fino, e nelas o AVIF fica em ~64% do webp (medido, 9.049 contra
+ * 14.060 bytes na mesma imagem). Já as fotos próprias do cliente nascem
+ * grandes, e ali o AVIF empata ou perde — 101% a 104% do webp nas mesmas três.
+ *
+ * Em vez de manter uma lista de "quem tem avif" (que envelheceria no dia em que
+ * uma foto trocasse de origem), o componente pergunta ao sistema de arquivos.
+ * `fetch-menu-images.mjs` grava o par `.webp` + `.avif`;
+ * `recortar-fotos-cliente.mjs` grava só o `.webp`. O markup segue o que existe.
  */
 const itens = maisPedidos.itens.map((item) => ({
   ...item,
   foto: `/assets/produtos/${item.id}.webp`,
+  fotoAvif: existsSync(new URL(`../../public/assets/produtos/${item.id}.avif`, import.meta.url))
+    ? `/assets/produtos/${item.id}.avif`
+    : null,
 }));
+
+/**
+ * Até quantos itens a fila de pontos ainda cabe na tela. Ver o comentário no
+ * markup dos controles: cada ponto carrega 44px de área de toque, então cinco
+ * é o teto de uma tela de 320px. Acima disso o componente troca a fila por um
+ * contador.
+ */
+const LIMITE_PONTOS = 5;
 ---
 
 {/*
@@ -62,8 +96,9 @@ const itens = maisPedidos.itens.map((item) => ({
 */}
 {/*
       `aria-roledescription` diz "carrossel" ao leitor de tela; o `role=group`
-      em cada slide com `aria-label` "1 de 3" dá a noção de posição que a
-      pilha visual dá a quem enxerga.
+      em cada slide com `aria-label` "1 de 11" dá a noção de posição que a
+      pilha visual dá a quem enxerga. O número sai de `itens.length`, então ele
+      acompanha o cardápio sem ninguém precisar lembrar de vir aqui.
 
       NÃO é uma <ul>: lista sugere que a ordem de leitura é a ordem visual, e
       aqui a ordem visual muda a cada clique. Grupo nomeado é mais honesto.
@@ -86,15 +121,18 @@ const itens = maisPedidos.itens.map((item) => ({
               aria-roledescription="slide"
               aria-label={`${i + 1} de ${itens.length}: ${item.nome}`}
             >
-              <img
-                class="cart__foto"
-                src={item.foto}
-                alt={`${item.nome} do YARD Burguer`}
-                width="640"
-                height="800"
-                loading="lazy"
-                decoding="async"
-              />
+              <picture>
+                {item.fotoAvif && <source type="image/avif" srcset={item.fotoAvif} />}
+                <img
+                  class="cart__foto"
+                  src={item.foto}
+                  alt={`${item.nome} do YARD Burguer`}
+                  width="800"
+                  height="1000"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </picture>
               <div class="cart__veu" aria-hidden="true"></div>
               <div class="cart__corpo">
                 {item.selo && <span class="cart__selo">{item.selo}</span>}
@@ -128,9 +166,26 @@ const itens = maisPedidos.itens.map((item) => ({
           </svg>
         </button>
 
-        <div class="carrossel__pontos" data-pontos role="tablist" aria-label="Escolher item">
-          {
-            itens.map((item, i) => (
+        {/*
+          FILA DE PONTOS ATÉ 5 ITENS; ACIMA DISSO, CONTADOR.
+
+          Cada ponto tem 44px de ÁREA de toque — regra do projeto, e ela não se
+          negocia. Com os onze hambúrgueres do cardápio isso daria 484px de
+          fila numa tela de 390px: rolagem horizontal na página inteira, que é
+          o defeito que este componente foi escrito para não ter.
+
+          Encolher a área do ponto resolveria o vazamento e quebraria o toque —
+          troca ruim. Um contador diz a mesma coisa ("onde estou, de quantos")
+          em 60px, e quem navega continua tendo as setas, o arrasto e o clique
+          nos cards vizinhos. O que se perde é o salto direto para um item
+          específico, que com onze itens já não era um gesto plausível.
+
+          `aria-live="polite"` porque o número muda sozinho no autoplay: sem
+          isso, quem usa leitor de tela vê a posição mudar e não ouve nada.
+        */}
+        {itens.length <= LIMITE_PONTOS ? (
+          <div class="carrossel__pontos" data-pontos role="tablist" aria-label="Escolher item">
+            {itens.map((item, i) => (
               <button
                 class="carrossel__ponto"
                 type="button"
@@ -139,9 +194,15 @@ const itens = maisPedidos.itens.map((item) => ({
                 aria-label={item.nome}
                 aria-selected={i === 0 ? 'true' : 'false'}
               />
-            ))
-          }
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p class="carrossel__contador" data-contador aria-live="polite">
+            <span data-contador-atual>1</span>
+            <span aria-hidden="true"> / </span>
+            <span class="carrossel__contador-total">{itens.length}</span>
+          </p>
+        )}
 
         <button class="carrossel__seta" type="button" data-proximo aria-label="Próximo">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
@@ -418,6 +479,32 @@ const itens = maisPedidos.itens.map((item) => ({
     display: flex;
     align-items: center;
     gap: 0.4rem;
+  }
+
+  /**
+   * O contador ocupa o lugar da fila de pontos entre as duas setas, e precisa
+   * ter a MESMA altura delas: se encolher, as setas pulam para o centro
+   * vertical de uma linha mais baixa a cada vez que o número muda de largura.
+   * `min-width` porque "1" e "11" não medem igual — sem isso as setas dançam a
+   * cada troca de card.
+   */
+  .carrossel__contador {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 4.5rem;
+    min-height: 44px;
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+    color: var(--color-carvao);
+    /* Tabular para o "1" e o "7" ocuparem a mesma largura — número que muda
+       sozinho no autoplay não pode fazer o texto tremer. */
+    font-variant-numeric: tabular-nums;
+  }
+  .carrossel__contador-total {
+    opacity: 0.55;
   }
   /**
    * O ponto tem 8px de bolinha e 44px de ÁREA. Alvo de toque não é o que se vê,

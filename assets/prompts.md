@@ -627,3 +627,59 @@ para 1170px físicos num DPR3: 3,3×. Com o recorte são 432px para os mesmos
 upscale. Resolver de vez exige um take vertical em resolução maior — decisão do
 dono, porque custa crédito e a regra de composição única manda regerar a peça
 inteira.
+
+---
+
+## 2026-09-02 — o carrossel passa a mostrar o cardápio inteiro
+
+- **Modelo:** nenhum · **Custo:** 0 crédito
+- **Saída:** 11 fotos de hambúrguer + 4 de combo em `public/assets/produtos/`
+
+**O pedido do dono:** "pode adicionar todos os hambúrgueres, pois são fotos
+provisórias — assim que eu mandar pra eles vou falar sobre as imagens". O
+carrossel mostrava 3 de 11 itens do cardápio.
+
+**De onde veio cada foto:**
+
+| Origem | Itens | Formato |
+|---|---|---|
+| Material próprio do cliente (PNG de 31/08) | tapera-do-sertao, supremo, yard-king, **open-crysp** | webp 800×1000 q58 |
+| CDN do Brendi (`fetch-menu-images.mjs`) | apolo, yard-tropical, yard-moda, burguer-salad, american-smash, cheese-burger, burguer-kids | avif + webp 400px |
+| CDN do Brendi | os 4 combos | avif + webp 280px |
+
+**`open-crysp` é o achado.** O `imageId` dele responde **404** no CDN desde
+hoje — o Brendi trocou o id. A foto veio da quinta PNG do material do cliente,
+que estava sobrando: a mesma que o log de 31/08 identificou como "Open Crysp" e
+deixou de fora por não haver card para ela. Crop `1023:1279:0:258`.
+
+**Por que AVIF só em algumas.** Medido na mesma imagem: nas fotos do CDN
+(reamostragem de um original de 240px, pouco detalhe fino) o AVIF fica em 64%
+do webp — 9.049 contra 14.060 bytes. Nas fotos próprias, que nascem grandes, ele
+empata ou perde: 101% a 104%. Então o par `.avif` só existe para as do CDN, e o
+componente pergunta ao disco em vez de guardar uma lista.
+
+**Por que cada tamanho.** Medido em 390×844 DPR3, o aparelho do público:
+
+- card do carrossel: 287 CSS px → 860px físicos. Fonte 800 = ampliação **1,07×**
+  (era 1,35× a 1,49× com as fotos de 640, e aparecia nas bordas do pão).
+- foto de combo: 76–88 CSS px → no máximo 264px físicos. 280 cobre com 6% de
+  folga; os 400 anteriores eram 51% de área paga para jogar fora.
+- burgers do CDN: 400 e não mais, porque a **fonte** tem 240px. Nenhum número
+  alcança a tela quando o teto é o original.
+
+**Peso — passou de 3 para 11 cards sem estourar.** Medido por CDP com a página
+rolada inteira: **1.482.098 bytes** contra teto de 1,5 MB, folga de 17.902. O
+`main` com 3 cards media 1.479.042. Onze fotos, resolução maior nas próprias, e
+3 kB de diferença.
+
+Reproduzir:
+
+```
+node squads/yard-burguer-squad/scripts/fetch-menu-images.mjs
+node squads/yard-burguer-squad/scripts/recortar-fotos-cliente.mjs
+```
+
+**Continua valendo o que o log de 31/08 registrou:** a foto do `supremo` mostra
+o produto do Yard King, e a do `yard-king` traz jalapeño e cebola crispy, que
+não estão na descrição de nenhum item. São fotos provisórias por decisão do
+dono, que vai tratar disso com o cliente.

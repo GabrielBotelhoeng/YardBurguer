@@ -42,9 +42,18 @@ const destaques = maisPedidos.itens.map((item) => ({
   foto: fotoPorId.get(item.id) ?? null,
 }));
 
+/**
+ * O AVIF das fotos de combo — mesma regra do carrossel: existe no disco só
+ * onde ele ganha, e quem responde é o disco, não uma lista aqui. As quatro
+ * fotos de combo vêm do CDN do Brendi (reamostragem de 240px), que é
+ * exatamente o caso em que o AVIF fica em ~64% do webp.
+ */
 const combos = menu.combos.map((combo) => ({
   ...combo,
   foto: fotoPorId.get(combo.id) ?? null,
+  fotoAvif: existsSync(new URL(`../../public/assets/produtos/${combo.id}.avif`, import.meta.url))
+    ? `/assets/produtos/${combo.id}.avif`
+    : null,
 }));
 ---
 
@@ -252,15 +261,18 @@ const combos = menu.combos.map((combo) => ({
             combos.map((combo) => (
               <li class="combo">
                 {combo.foto && (
-                  <img
-                    class="combo__foto"
-                    src={combo.foto}
-                    alt={`${combo.nome}: ${combo.composicao}`}
-                    width="240"
-                    height="240"
-                    loading="lazy"
-                    decoding="async"
-                  />
+                  <picture>
+                    {combo.fotoAvif && <source type="image/avif" srcset={combo.fotoAvif} />}
+                    <img
+                      class="combo__foto"
+                      src={combo.foto}
+                      alt={`${combo.nome}: ${combo.composicao}`}
+                      width="240"
+                      height="240"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </picture>
                 )}
                 <div>
                   <h3 class="combo__nome">{combo.nome}</h3>

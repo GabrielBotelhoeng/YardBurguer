@@ -31,6 +31,7 @@ export function initCarrossel() {
 
   const slides = [...raiz.querySelectorAll('[data-slide]')];
   const pontos = [...raiz.querySelectorAll('[data-ponto]')];
+  const contadorAtual = raiz.querySelector('[data-contador-atual]');
   const total = slides.length;
   if (total < 2) return;
 
@@ -58,6 +59,10 @@ export function initCarrossel() {
       if (cta) cta.tabIndex = d === 0 ? 0 : -1;
     });
     pontos.forEach((p, i) => p.setAttribute('aria-selected', i === centro ? 'true' : 'false'));
+
+    // Um dos dois existe, nunca os dois: o componente troca a fila de pontos
+    // por um contador quando o cardápio não cabe em bolinhas de 44px.
+    if (contadorAtual) contadorAtual.textContent = String(centro + 1);
   };
 
   const irPara = (i) => {
