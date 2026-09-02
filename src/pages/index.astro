@@ -59,12 +59,43 @@ const combos = menu.combos.map((combo) => ({
 
 <Base>
   <!-- Cena 0 — Navbar -->
+  <!--
+    OS LINKS SAEM DO copy.json, e isso é conserto, não estilo.
+
+    O array `navbar.links` existia desde o primeiro dia e ninguém o lia: os
+    links eram escritos à mão aqui, com rótulos que nem estavam na copy. O
+    arquivo declarava quatro ("Destaques", "Cardápio", "Combos", "Onde
+    estamos") e a tela mostrava três, um deles inexistente na copy ("Nosso
+    hambúrguer"). Dado morto divergindo da tela é uma armadilha esperando quem
+    for editar a copy achando que edita a página.
+
+    A LISTA FOI RECONCILIADA PARA O QUE ESTÁ NO AR, e não o contrário. Os três
+    links de hoje são os que couberam medidos na navbar; entrar com "Cardápio"
+    e "Combos" levaria a barra a ~739px de conteúdo numa faixa que começa em
+    640px. Quem quiser os dois de volta precisa decidir o que sai — e agora
+    esse debate acontece num arquivo só.
+
+    O botão do menu vem ANTES do `<nav>` no DOM porque a ordem de tabulação
+    precisa ser botão → painel. Na tela ele é o último item, por `order` na
+    media query do celular; no desktop ele não existe.
+  -->
   <header class="nav" data-nav>
     <a class="nav__logo" href="/">{marca.nome}</a>
-    <nav aria-label="Principal">
-      <a class="nav__link" href="#mais-pedidos">Destaques</a>
-      <a class="nav__link" href="#explode">Nosso hambúrguer</a>
-      <a class="nav__link" href="#onde-estamos">Onde estamos</a>
+    <button
+      class="nav__botao"
+      type="button"
+      hidden
+      aria-expanded="false"
+      aria-controls="nav-principal"
+      aria-label="Abrir menu"
+      data-nav-botao
+    >
+      <span class="nav__botao-traco" aria-hidden="true"></span>
+    </button>
+    <nav id="nav-principal" aria-label="Principal" data-nav-lista>
+      {copy.navbar.links.map((link) => (
+        <a class="nav__link" href={link.ancora}>{link.rotulo}</a>
+      ))}
     </nav>
     <a class="cta nav__cta" href={marca.cardapioUrl} data-evento="cardapio-navbar">
       {copy.navbar.ctaPrimario}
@@ -222,10 +253,37 @@ const combos = menu.combos.map((combo) => ({
       <div class="claro__wrap">
         <h2 id="dif-titulo" class="secao__titulo">{diferenciais.titulo}</h2>
         <p class="secao__texto">{diferenciais.texto}</p>
-        <ul class="pilares" role="list" data-reveal>
+        {/*
+          `data-reveal="80"` — o passo da cascata vem do HTML.
+
+          O motion.js usava 90ms fixo para todo grupo. Aqui o cliente pediu
+          0,08s, e o número não vale uma segunda função no script: vira valor do
+          atributo que já existia. Sem valor, continua 90ms como antes.
+
+          `data-trilho` é o que o motion.js procura para decidir se esta lista
+          vira parada de teclado — ver initTrilhoPilares.
+        */}
+        <ul
+          class="pilares"
+          role="list"
+          aria-label={diferenciais.titulo}
+          data-reveal="80"
+          data-trilho
+        >
           {
-            diferenciais.pilares.map((pilar) => (
+            diferenciais.pilares.map((pilar, i) => (
               <li class="pilar">
+                {/*
+                  O número fantasma é DECORAÇÃO e sai do fluxo de leitura.
+
+                  aria-hidden porque "01" lido em voz alta antes do título não
+                  informa nada — a ordem já é a da lista. Fica no DOM e não no
+                  ::before por um motivo só: pseudo-elemento não aceita
+                  animation-timeline em Safari, e é ele que faz o parallax.
+                */}
+                <span class="pilar__numero" aria-hidden="true">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
                 <span class="pilar__icone">
                   <Icone nome={pilar.icone as any} />
                 </span>
@@ -532,6 +590,18 @@ const combos = menu.combos.map((combo) => ({
     import '../scripts/motion.js';
   </script>
 
+  {/*
+    O menu do celular. Bloco próprio, sem dependência de ordem: o módulo lê o
+    header, troca atributos e volta. Se ele não rodar, os links continuam na
+    tela — o CSS de painel está todo atrás de `data-menu`, que só ele escreve.
+  */}
+  <script>
+    import { initNavMenu } from '../scripts/nav-menu.mjs';
+    import { initNavSecaoAtiva } from '../scripts/nav-secao-ativa.mjs';
+    initNavMenu();
+    initNavSecaoAtiva();
+  </script>
+
   <script>
     import { initCarrossel } from '../scripts/carrossel.js';
     initCarrossel();
@@ -625,21 +695,167 @@ const combos = menu.combos.map((combo) => ({
   .nav__link:hover { color: var(--color-brasa); }
 
   /**
-   * Abaixo de 640px os links saem da navbar.
+   * A SEÇÃO QUE ESTÁ SENDO LIDA — marcada por `aria-current`, não por classe.
    *
-   * Em 390px de largura eles empilhavam por cima do CTA e o proprio logo
-   * quebrava em duas linhas. A pagina e uma coluna unica de rolagem — os links
-   * sao atalho, nao navegacao essencial. O que nao pode sumir e o CTA, porque e
-   * ele que leva ao cardapio, que e o objetivo inteiro da pagina.
+   * O atributo é o que o leitor de tela anuncia como item atual; a cor e a
+   * régua são a versão visual da mesma informação, e não uma segunda fonte de
+   * verdade. Quem escreve o atributo é nav-secao-ativa.mjs.
+   *
+   * A régua é `box-shadow` e não `border-bottom`: borda mudaria a altura da
+   * caixa do link, e a caixa aqui é o alvo de toque de 44px que já foi medido e
+   * ajustado uma vez. Sombra pinta sem empurrar nada.
+   */
+  .nav__link[aria-current='true'] {
+    color: var(--color-brasa);
+    box-shadow: inset 0 -2px 0 0 var(--color-brasa);
+  }
+
+  /**
+   * O BOTÃO DO MENU — três traços feitos de um elemento só.
+   *
+   * O `<span>` é o traço do meio; `::before` e `::after` são os de cima e de
+   * baixo, deslocados 7px. Um elemento em vez de três porque a animação de
+   * virar "X" precisa girar dois traços em torno do MESMO centro, e três
+   * irmãos num flex não compartilham centro sem posicionamento absoluto de
+   * qualquer jeito.
+   *
+   * Fora do celular ele não é escondido por `hidden` no HTML e sim por
+   * `display: none` aqui: o atributo é o estado inicial, antes do JS, e some
+   * assim que o script revela o botão. Quem manda no desktop é a media query.
+   */
+  .nav__botao {
+    display: none;
+    position: relative;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-creme);
+    cursor: pointer;
+  }
+  .nav__botao-traco,
+  .nav__botao-traco::before,
+  .nav__botao-traco::after {
+    position: absolute;
+    left: 50%;
+    width: 22px;
+    height: 2px;
+    margin-left: -11px;
+    background-color: currentColor;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+  }
+  .nav__botao-traco { top: 50%; margin-top: -1px; }
+  .nav__botao-traco::before,
+  .nav__botao-traco::after {
+    content: '';
+    left: 0;
+    margin-left: 0;
+  }
+  .nav__botao-traco::before { top: -7px; }
+  .nav__botao-traco::after { top: 7px; }
+
+  /**
+   * Aberto: o traço do meio some e os outros dois viram X sobre o centro.
+   *
+   * O traço do meio some por `background-color: transparent`, NÃO por
+   * `opacity: 0`. Os outros dois traços são `::before` e `::after` DELE — são
+   * filhos — e opacity no pai multiplica a dos filhos: o `opacity: 1` que
+   * estava escrito neles não resgatava nada e o botão inteiro desaparecia no
+   * exato momento em que vira o botão de fechar. Pego em print, não em código.
+   */
+  .nav[data-menu-aberto] .nav__botao-traco { background-color: transparent; }
+  .nav[data-menu-aberto] .nav__botao-traco::before { transform: translateY(7px) rotate(45deg); }
+  .nav[data-menu-aberto] .nav__botao-traco::after { transform: translateY(-7px) rotate(-45deg); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav__botao-traco,
+    .nav__botao-traco::before,
+    .nav__botao-traco::after { transition: none; }
+  }
+
+  /**
+   * Abaixo de 640px a navegação vira menu — e NÃO some.
+   *
+   * Aqui existia `.nav nav { display: none }`. O motivo escrito era real: em
+   * 390px os três links empilhavam por cima do CTA e o logo quebrava em duas
+   * linhas. Mas a página é vista principalmente no celular, e a conclusão de
+   * "os links são atalho, não navegação essencial" escondia da maioria a única
+   * forma de pular para o cardápio, para a Cena 2 ou para o endereço sem rolar
+   * a página inteira com o polegar.
+   *
+   * SÃO DOIS ESTADOS, e o segundo depende do JS:
+   *
+   *   1. `.nav` sozinha — os links caem numa segunda linha por `flex-wrap`.
+   *      É o layout feio que motivou o `display: none`, e é de propósito: sem
+   *      JavaScript, feio e alcançável ganha de bonito e ausente.
+   *   2. `.nav[data-menu]` — o atributo que só nav-menu.mjs escreve. Os links
+   *      saem do fluxo, viram painel abaixo da barra, e o botão aparece. A
+   *      navbar volta a ter uma linha só.
+   *
+   * O FUNDO SÓLIDO É FORÇADO COM O PAINEL ABERTO. A navbar só ganha cor com
+   * `data-scrolled`, e no topo da página ela é transparente — um painel opaco
+   * pendurado numa barra transparente deixaria os links do menu flutuando
+   * sobre o hero sem nada os prendendo à barra.
    */
   @media (max-width: 639px) {
-    .nav nav { display: none; }
     .nav {
+      flex-wrap: wrap;
       padding-left: calc(1rem + env(safe-area-inset-left));
       padding-right: calc(1rem + env(safe-area-inset-right));
     }
     .nav__logo { font-size: 1.05rem; white-space: nowrap; }
-    .nav__cta { padding-inline: 1.1rem; font-size: 0.9rem; }
+    .nav__cta { padding-inline: 1.1rem; font-size: 0.9rem; order: 2; }
+    .nav__botao:not([hidden]) { display: block; order: 3; margin-left: 0.25rem; }
+
+    /* Estado 1 — sem JS: segunda linha, largura inteira, sem sobrepor nada. */
+    .nav nav {
+      order: 4;
+      flex-basis: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 0.5rem;
+    }
+    .nav nav .nav__link { margin-inline: 0; }
+
+    /* Estado 2 — com JS: painel. */
+    .nav[data-menu] nav {
+      position: absolute;
+      top: 100%;
+      inset-inline: 0;
+      display: none;
+      flex-direction: column;
+      gap: 0;
+      box-sizing: border-box;
+      padding: 0.25rem calc(1rem + env(safe-area-inset-left)) 0.75rem
+        calc(1rem + env(safe-area-inset-right));
+      background-color: var(--color-carvao);
+      box-shadow: 0 12px 24px rgb(0 0 0 / 0.35);
+    }
+    .nav[data-menu][data-menu-aberto] nav { display: flex; }
+    .nav[data-menu-aberto] { background-color: var(--color-carvao); }
+
+    /**
+     * 48px e não 44px: o painel é uma pilha de alvos vizinhos, e alvo colado em
+     * alvo erra mais que alvo isolado. A régua de brasa entre um e outro é a
+     * mesma linguagem das seções, e dá ao dedo uma fronteira visível.
+     */
+    .nav[data-menu] .nav__link {
+      min-height: 48px;
+      font-size: 1rem;
+      border-bottom: 1px solid rgb(255 255 255 / 0.08);
+    }
+    .nav[data-menu] .nav__link:last-child { border-bottom: 0; }
+
+    /**
+     * No painel a régua vira barra à esquerda. Sublinhado num item de lista
+     * empilhada se confunde com o separador do item de cima — e aqui já existe
+     * um separador em cada linha.
+     */
+    .nav[data-menu] .nav__link[aria-current='true'] {
+      box-shadow: inset 3px 0 0 0 var(--color-brasa);
+      padding-left: 0.75rem;
+    }
   }
 
   /**
@@ -903,10 +1119,53 @@ const combos = menu.combos.map((combo) => ({
        da direita é legível. Medido em 1440: 68rem deixa 176px por lado (30% da
        foto, a placa vira "VEM" e um Y); 62rem deixa 224px. Os cartões não
        sentem — a grade já quebrava em 3+1 nas duas larguras. */
-    grid-template-columns: minmax(0, 1fr) minmax(0, 62rem) minmax(0, 1fr);
+    /**
+     * A LATERAL TEM PISO; QUEM CEDE É O MIOLO.
+     *
+     * Com `minmax(0, 1fr)` nas pontas, a coluna da foto era só o que sobrava
+     * depois dos 62rem do miolo — e entre 901px e ~1270px de viewport não
+     * sobrava quase nada. Medido: 992px de tela dá 0px de foto, 1024 dá 16px,
+     * 1100 dá 54px. A imagem continua sendo baixada inteira e entregue como um
+     * filete de carvão: paga-se o peso e não se vê a pessoa.
+     *
+     * `minmax(9rem, 1fr)` inverte quem cede. A lateral nunca desce de 144px, o
+     * miolo encolhe dos 62rem só quando precisa, e a seção nunca mais tem uma
+     * coluna que existe no layout e não existe no olho. Abaixo de 900px isto
+     * não vale: lá a grade já vira duas colunas e as figuras fecham a seção
+     * lado a lado, com largura de verdade.
+     */
+    grid-template-columns: minmax(9rem, 1fr) minmax(0, 62rem) minmax(9rem, 1fr);
     grid-template-areas: 'esq miolo dir';
   }
-  .diferenciais > .claro__wrap { grid-area: miolo; }
+  /**
+   * `margin-inline: 0` ANULA O `auto` DO `.claro__wrap`, E ISSO É O QUE IMPEDE
+   * A SEÇÃO INTEIRA DE ALARGAR.
+   *
+   * Item de grade com margem inline `auto` NÃO estica: a margem automática o faz
+   * ser dimensionado por fit-content e depois o centraliza. E fit-content nunca
+   * é menor que o MIN-CONTENT do conteúdo — então o min-content do trilho
+   * horizontal dos pilares (580px, medido) virava a largura do miolo, e o
+   * documento cresceu com ele.
+   *
+   * MEDIDO em 390x844: `.diferenciais` continuava com 390px enquanto o
+   * `.claro__wrap` dentro dela tinha 628, e o `documentElement.scrollWidth` ia
+   * junto — 238px de vazamento horizontal. Só o par (esta linha + o
+   * `minmax(0, 1fr)` do celular) fecha: a margem faz o item esticar, o minmax
+   * impede a faixa de crescer atrás dele.
+   *
+   * O `auto` era inofensivo e também inútil aqui: quem centraliza este miolo são
+   * as duas colunas `1fr` das pontas, não a margem. Nas outras seções, onde o
+   * wrap é filho direto de uma `<section>` em fluxo normal, o `auto` continua
+   * valendo e não foi tocado.
+   *
+   * Detalhe que quase escondeu tudo: `overflow: hidden` nos dois eixos do
+   * trilho NÃO zera a contribuição intrínseca dele no Chrome (medido: o miolo
+   * seguiu com 628). Contêiner de rolagem não é blindagem de largura.
+   */
+  .diferenciais > .claro__wrap {
+    grid-area: miolo;
+    margin-inline: 0;
+  }
 
   /**
    * O BLOCO SANGRA ATÉ A BORDA, O CONTEÚDO DA FOTO NÃO.
@@ -926,6 +1185,9 @@ const combos = menu.combos.map((combo) => ({
   .dif__gente {
     margin: 0;
     overflow: hidden;
+    /* Âncora do véu de revelação (::after). Sem isto ele se posicionaria pela
+       seção inteira e cobriria os cartões. */
+    position: relative;
     background-color: var(--color-carvao);
     /* O fundo da foto é o mesmo carvão, então onde a imagem não alcança a
        emenda não aparece — a coluna continua sendo um bloco só. */
@@ -985,6 +1247,86 @@ const combos = menu.combos.map((combo) => ({
   }
 
   /**
+   * AS DUAS PESSOAS GANHARAM PARALLAX E REVELAÇÃO — sem uma linha de JS.
+   *
+   * `animation-timeline: view()` roda no compositor e já é o instrumento que
+   * esta página usa para parallax fora da Cena 2 (ver tokens.css). GSAP aqui
+   * não se justifica: ele existe no projeto para pin + scrub de sete camadas, e
+   * um elemento que anda mais devagar que a rolagem é exatamente o que a
+   * primitiva nativa faz. Onde ela não existe, o @supports não aplica nada e as
+   * fotos ficam paradas — nunca quebradas.
+   *
+   * O PEDIDO ERA yPercent -12 COM scale 1.15 -> 1, E ISSO DESCOBRE A MOLDURA.
+   * A imagem é `object-fit: cover` numa figura com `overflow: hidden`: em
+   * scale 1.0 ela cobre exatamente a caixa e QUALQUER deslocamento vertical
+   * abre uma faixa de carvão numa das pontas. A sobra de cobertura é (escala-1)
+   * dividida por 2 — em 1,08 são 4% por ponta, então ±3% de deslocamento passa
+   * com 1% de folga. Medido em `.tmp-medir-dif.mjs` nas cinco viewports: zero
+   * pixel de moldura aparecendo em qualquer ponto do trilho.
+   */
+  .dif__gente::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: var(--color-carvao);
+    pointer-events: none;
+    /**
+     * ESTADO DE REPOUSO É REVELADO, e é isso que faz reduced-motion funcionar.
+     *
+     * O véu nasce FORA do caminho. Quem recusa movimento, quem está num browser
+     * sem scroll-driven animation e quem tem JS desligado veem a foto inteira,
+     * porque nada precisa rodar para tirar o véu — ele já saiu. O inverso
+     * (nascer cobrindo e depender da animação) deixaria a foto preta nesses
+     * três casos, que é o defeito clássico de revelação por scroll.
+     */
+    transform: translateY(101%);
+  }
+
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .dif__gente img {
+        animation: dif-gente-parallax linear both;
+        animation-timeline: view();
+        animation-range: entry 0% exit 100%;
+      }
+      .dif__gente::after {
+        animation: dif-gente-veu linear both;
+        animation-timeline: view();
+        /**
+         * `cover` e não `entry`, e o motivo é aritmético: no desktop a figura
+         * tem a altura da seção (876px medidos em 1440x900) e `entry 100%` só
+         * existe quando o elemento CABE inteiro na viewport. Numa janela mais
+         * baixa que a figura esse ponto nunca chega, a animação nunca completa
+         * e o véu ficaria parado no meio da foto — preto sobre metade da
+         * pessoa. `cover` mede a travessia inteira e 18% dela sempre acontece.
+         */
+        animation-range: cover 0% cover 18%;
+      }
+    }
+  }
+
+  @keyframes dif-gente-parallax {
+    from {
+      transform: translate3d(0, -3%, 0) scale(1.16);
+    }
+    to {
+      transform: translate3d(0, 3%, 0) scale(1.08);
+    }
+  }
+
+  /* O véu desce e descobre a foto de cima para baixo — a mesma direção em que
+     a figura entra na tela quando a pessoa rola. Subir revelaria pelo pé, que
+     é contra o movimento e lê como falha de carregamento. */
+  @keyframes dif-gente-veu {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(101%);
+    }
+  }
+
+  /**
    * CELULAR — as duas descem, e continuam sendo duas.
    *
    * Nada de `display: none`: o público desta landing é celular, e esconder no
@@ -996,8 +1338,23 @@ const combos = menu.combos.map((combo) => ({
    * a altura sai da proporção, então não há número para envelhecer.
    */
   @media (max-width: 900px) {
+    /**
+     * `minmax(0, 1fr)` E NÃO `1fr` — a mesma precaução que a regra de desktop já
+     * tomava, e que aqui ninguém tinha tomado porque nada exigia.
+     *
+     * `1fr` é `minmax(auto, 1fr)`, ou seja, o mínimo da faixa é o min-content do
+     * que está dentro. Com o trilho horizontal no miolo esse min-content passou
+     * a ser 580px, e a faixa cresceria atrás do item. Anda em par com o
+     * `margin-inline: 0` do wrap: sem os dois, o vazamento volta.
+     *
+     * ARMADILHA DE MEDIÇÃO que quase deixou isto passar: quando o documento
+     * transborda, o Chrome em emulação móvel alarga o bloco contenedor inicial,
+     * e `window.innerWidth` cresce junto — 628 contra 628. Quem compara
+     * `scrollWidth` com `innerWidth` lê ZERO de vazamento com 238px vazando. A
+     * comparação honesta é `scrollWidth` contra `clientWidth`.
+     */
     .diferenciais {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       grid-template-areas:
         'miolo miolo'
         'esq   dir';
@@ -1022,21 +1379,147 @@ const combos = menu.combos.map((combo) => ({
   }
   .secao__texto { margin-top: 0.75rem; max-width: 38rem; line-height: 1.6; }
 
-  .pilares, .cards {
-    display: grid;
+  /**
+   * OS QUATRO PILARES: QUATRO COLUNAS NO DESKTOP, TRILHO HORIZONTAL NO CELULAR.
+   *
+   * Era `repeat(auto-fit, minmax(15rem, 1fr))`, e com quatro cartões isso nunca
+   * fechava uma linha: medido em 1440x900 dava 3 + 1 órfão, e em celular
+   * deitado (844x390) o mesmo 3 + 1. O quarto argumento da casa aparecia
+   * sozinho embaixo, parecendo sobra. Com quatro colunas iguais o miolo de
+   * 944px dá 218px por cartão — cabe, e a linha fecha.
+   *
+   * Flex e não grid porque é a MESMA declaração que vira trilho no celular
+   * trocando a base do item: nenhum cartão é escondido por breakpoint, todos os
+   * quatro continuam no DOM e alcançáveis nas duas larguras. O que muda é se a
+   * pessoa lê os quatro de uma vez ou deslizando.
+   */
+  .pilares {
+    display: flex;
     gap: 1.5rem;
     list-style: none;
     padding: 0;
     margin-top: 2.5rem;
-    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+
+    /* A cascata desta seção: 50px de subida em 400ms, o que o cliente pediu.
+       O passo entre cartões vem do `data-reveal="80"` no HTML. */
+    --reveal-dist: 50px;
+    --reveal-dur: 0.4s;
   }
+  .pilares > .pilar {
+    flex: 1 1 0;
+    /* Item flex tem `min-width: auto`: sem zerar, uma palavra longa do título
+       empurra a coluna e desiguala as quatro. */
+    min-width: 0;
+  }
+
+  /**
+   * CELULAR — O PIN HORIZONTAL QUE NÃO É UM PIN.
+   *
+   * O pedido era travar a seção e passar os cartões na horizontal. A página já
+   * gasta seu único pin na Cena 2, e um segundo trilho disputando a rolagem com
+   * o primeiro é exatamente o que trava no celular. `scroll-snap` nativo entrega
+   * o movimento horizontal com ZERO javascript, sem sequestrar a rolagem
+   * vertical e sem competir com nada: quem quiser continuar descendo, desce.
+   *
+   * A mesma consulta do motion.js e do VideoScene: "é aparelho pequeno?" se
+   * pergunta pelo LADO CURTO. Um iPhone deitado tem 844px de largura e passaria
+   * por desktop — e é justamente deitado que o 3 + 1 órfão aparecia.
+   *
+   * `min(78%, 20rem)`: a porcentagem sozinha dava cartão de 620px no celular
+   * deitado, largo demais para ser cartão. O teto em rem trava isso e mantém a
+   * espiada do próximo, que é a única pista de que existe mais coisa à direita.
+   */
+  @media (max-width: 900px), (max-height: 500px) {
+    .pilares {
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scroll-snap-type: x mandatory;
+      /* A barra nativa é overlay no celular e não aparece; escondê-la evita a
+         faixa cinza fixa que os browsers de desktop desenham quando alguém
+         estreita a janela. A espiada do cartão seguinte é a pista. */
+      scrollbar-width: none;
+      /* Sobra para a sombra do foco não ser recortada pelo próprio scroller. */
+      padding-block-end: 0.5rem;
+    }
+    .pilares::-webkit-scrollbar {
+      display: none;
+    }
+    .pilares > .pilar {
+      flex: 0 0 min(78%, 20rem);
+      scroll-snap-align: start;
+    }
+  }
+
   /* Cartao com regua: o icone ganha area propria e a linha de brasa separa
      simbolo de texto. Sem isso o bloco lia como documento, nao como pagina. */
   .pilar {
+    position: relative;
+    /* Recorta o número fantasma na borda do cartão. Sem isto ele vaza para o
+       areia da seção e, no celular, vira rolagem horizontal do documento. */
+    overflow: hidden;
+    /* Cria o contexto de empilhamento do cartão: sem isto o `z-index: -1` do
+       número o joga para trás do FUNDO do cartão e ele desaparece. */
+    isolation: isolate;
     padding: 1.6rem 1.4rem;
     border-radius: 1rem;
     background-color: var(--color-creme);
     border: 1px solid rgb(139 74 43 / 0.14);
+  }
+
+  /**
+   * O NÚMERO FANTASMA — 01 a 04 em contorno, atrás do conteúdo.
+   *
+   * Contorno e não preenchimento: preenchido, mesmo a 14%, ele vira um bloco de
+   * cor atrás do parágrafo e disputa a leitura. O contorno de 1,5px deixa
+   * passar o creme do cartão entre as linhas do texto.
+   *
+   * Fica no canto inferior direito porque é onde as linhas do parágrafo
+   * terminam mais curtas — o corpo do texto passa por cima do vazio do número,
+   * não por cima do traço.
+   */
+  .pilar__numero {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.6rem;
+    z-index: -1;
+    font-family: var(--font-display);
+    font-size: 7rem;
+    line-height: 0.85;
+    color: transparent;
+    -webkit-text-stroke: 1.5px rgb(139 74 43 / 0.16);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .pilar__numero {
+        animation: dif-numero linear both;
+        animation-timeline: view();
+        animation-range: entry 0% exit 100%;
+      }
+    }
+  }
+
+  /**
+   * "Mais lento que o cartão" tem um sinal, e ele é fácil de inverter.
+   *
+   * O cartão sobe junto com a rolagem. Para o número parecer mais LENTO ele
+   * precisa ficar para trás, ou seja, descer em relação ao cartão enquanto a
+   * seção atravessa a tela: de -10% para +10%. O contrário (de +10% para -10%)
+   * o faz correr na frente do cartão, que é a leitura oposta.
+   *
+   * 10% de uma linha de 7rem são ~9,5px, e o número está a 0,6rem da borda —
+   * então ele nunca encosta no recorte do cartão. Se ele saísse e voltasse, o
+   * pedaço cortado mudaria de tamanho durante a rolagem e leria como defeito.
+   */
+  @keyframes dif-numero {
+    from {
+      transform: translate3d(0, -10%, 0);
+    }
+    to {
+      transform: translate3d(0, 10%, 0);
+    }
   }
   .pilar__icone {
     display: inline-flex;

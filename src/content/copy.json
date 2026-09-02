@@ -48,10 +48,9 @@
   },
   "navbar": {
     "links": [
-      "Destaques",
-      "Cardápio",
-      "Combos",
-      "Onde estamos"
+      { "rotulo": "Destaques", "ancora": "#mais-pedidos" },
+      { "rotulo": "Nosso hambúrguer", "ancora": "#explode" },
+      { "rotulo": "Onde estamos", "ancora": "#onde-estamos" }
     ],
     "ctaSecundario": "Nosso Instagram",
     "ctaPrimario": "Ver Cardápio"
