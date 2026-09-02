@@ -160,13 +160,54 @@ async function auditar() {
   await cdp.send('Network.emulateNetworkConditions', REDE_4G_LENTA);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
 
+  /**
+   * O PESO É LIDO DO CDP, NÃO DO `content-length`. E ISSO NÃO É PREFERÊNCIA.
+   *
+   * A versão anterior somava o cabeçalho `content-length` de cada resposta. O
+   * `astro preview` — e qualquer servidor que comprima na hora — responde com
+   * `Transfer-Encoding: chunked` quando o Chromium pede gzip, e resposta
+   * chunked NÃO TEM `content-length`. O `?? 0` transformava isso em zero, e o
+   * gate somava **0 byte** para todo script, todo CSS e o próprio HTML.
+   *
+   * O estrago medido em 2026-09-02: o relatório dizia 1,217 MB contra teto de
+   * 1,5 MB, com "224 kB de folga". O peso real era 1,480 MB — a folga era de
+   * 20 kB, 1,3%. Um gate com poder de veto passou meses afirmando uma margem
+   * que não existia, sem nunca acusar erro: recurso não medido não aparece
+   * como falha, aparece como leveza.
+   *
+   * `Network.loadingFinished.encodedDataLength` é o byte que de fato passou
+   * pela rede, JÁ COMPRIMIDO, informado pelo próprio navegador quando o
+   * download termina. Não depende de cabeçalho nenhum.
+   *
+   * O PLANO B ÓBVIO ESTÁ ERRADO: `response.body()` devolve o corpo
+   * DESCOMPRIMIDO. Quem tentou isso mediu 1,646 MB na mesma página — infla
+   * tudo que é texto e reprova build que passa. Não voltar a esse caminho.
+   */
   const recursos = [];
-  mobile.on('response', async (resp) => {
-    try {
-      const tam = Number((await resp.allHeaders())['content-length'] ?? 0);
-      recursos.push({ url: resp.url(), status: resp.status(), bytes: tam, tipo: resp.request().resourceType() });
-    } catch {}
+  const emVoo = new Map();
+
+  cdp.on('Network.responseReceived', (e) => {
+    emVoo.set(e.requestId, {
+      url: e.response.url,
+      status: e.response.status,
+      // O CDP usa 'Document'/'Stylesheet'/'Media'; o resto do relatório sempre
+      // falou minúsculo, herdado do resourceType() do Playwright.
+      tipo: String(e.type ?? 'Other').toLowerCase(),
+      bytes: 0,
+    });
   });
+
+  cdp.on('Network.loadingFinished', (e) => {
+    const recurso = emVoo.get(e.requestId);
+    if (!recurso) return;
+    recurso.bytes = e.encodedDataLength;
+    recursos.push(recurso);
+    emVoo.delete(e.requestId);
+  });
+
+  // Requisição que falhou não entrega byte e não pode entrar na conta — nem
+  // ficar pendurada no mapa até o fim da execução.
+  cdp.on('Network.loadingFailed', (e) => emVoo.delete(e.requestId));
 
   const erros = [];
   mobile.on('pageerror', (e) => erros.push(e.message));
