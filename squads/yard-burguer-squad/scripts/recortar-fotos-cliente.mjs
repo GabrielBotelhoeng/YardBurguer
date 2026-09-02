@@ -34,31 +34,57 @@ const LARGURA = 800;
 const ALTURA = 1000;
 const QUALIDADE = 58;
 
-/** id do cardápio → [arquivo de origem, deslocamento vertical do corte]. */
+/**
+ * id do cardápio → recorte.
+ *
+ * `top` é o deslocamento vertical. `left` e `largura` são opcionais: sem eles a
+ * janela usa a foto inteira na horizontal, que é o caso da maioria.
+ *
+ * O SUPREMO PRECISOU DE JANELA FECHADA, e o motivo é a foto, não o código. Ela
+ * é um take de bastidor: mão de luva preta segurando o pão, bancada e coifa de
+ * aço inox ao fundo. Com a largura inteira, o cinza frio do aço tomava metade
+ * do card e brigava com a paleta da casa — carvão, terracota e brasa — enquanto
+ * o hambúrguer ficava pequeno no meio. Fechando em 680px de largura a partir de
+ * x=190, o aço sai de quadro, a madeira quente da tábua vira o fundo, o produto
+ * cresce e a luva deixa de ser o assunto para virar um detalhe de cozinha.
+ *
+ * Isto é enquadramento, não conserto: a foto continua sendo a que é. Trocá-la
+ * por uma de produto depende do cliente.
+ */
 const RECORTES = {
-  'tapera-do-sertao': ['ChatGPT Image 31 de ago. de 2026, 14_51_11.png', 258],
-  supremo: ['ChatGPT Image 31 de ago. de 2026, 14_51_33.png', 218],
-  'yard-king': ['ChatGPT Image 31 de ago. de 2026, 15_01_47.png', 90],
-  'open-crysp': ['ChatGPT Image 31 de ago. de 2026, 14_51_28.png', 258],
+  'tapera-do-sertao': { arquivo: 'ChatGPT Image 31 de ago. de 2026, 14_51_11.png', top: 258 },
+  supremo: {
+    arquivo: 'ChatGPT Image 31 de ago. de 2026, 14_51_33.png',
+    top: 620,
+    left: 190,
+    largura: 680,
+  },
+  'yard-king': { arquivo: 'ChatGPT Image 31 de ago. de 2026, 15_01_47.png', top: 90 },
+  'open-crysp': { arquivo: 'ChatGPT Image 31 de ago. de 2026, 14_51_28.png', top: 258 },
 };
 
-async function recortar([id, [arquivo, topPedido]]) {
-  const src = join(origem, arquivo);
+async function recortar([id, recorte]) {
+  const src = join(origem, recorte.arquivo);
   const meta = await sharp(src).metadata();
 
-  // A altura do corte sai da largura da foto, para o quadro nascer em 4/5.
-  const alturaCorte = Math.round((meta.width * 5) / 4);
-  // `top` nunca pode passar do que a foto tem — se passar, encosta no fundo.
-  const top = Math.max(0, Math.min(topPedido, meta.height - alturaCorte));
+  // Sem `largura` declarada, a janela usa a foto inteira na horizontal.
+  const largura = Math.min(recorte.largura ?? meta.width, meta.width);
+  // A altura do corte sai da largura da JANELA, para o quadro nascer em 4/5.
+  const alturaCorte = Math.round((largura * 5) / 4);
+  // Nem `top` nem `left` podem passar do que a foto tem — se passarem, encostam
+  // na borda. Sem isto, mexer num número aqui quebra com erro do sharp em vez
+  // de degradar para o corte possível.
+  const top = Math.max(0, Math.min(recorte.top, meta.height - alturaCorte));
+  const left = Math.max(0, Math.min(recorte.left ?? 0, meta.width - largura));
 
   const buffer = await sharp(src)
-    .extract({ left: 0, top, width: meta.width, height: alturaCorte })
+    .extract({ left, top, width: largura, height: alturaCorte })
     .resize(LARGURA, ALTURA, { kernel: 'lanczos3' })
     .webp({ quality: QUALIDADE, effort: 6 })
     .toBuffer();
 
   await writeFile(join(destino, `${id}.webp`), buffer);
-  return { id, kb: +(buffer.length / 1024).toFixed(1), corte: `${meta.width}x${alturaCorte}+0+${top}` };
+  return { id, kb: +(buffer.length / 1024).toFixed(1), corte: `${largura}x${alturaCorte}+${left}+${top}` };
 }
 
 async function main() {

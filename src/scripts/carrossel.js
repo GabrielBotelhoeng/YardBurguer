@@ -63,7 +63,69 @@ export function initCarrossel() {
     // Um dos dois existe, nunca os dois: o componente troca a fila de pontos
     // por um contador quando o cardápio não cabe em bolinhas de 44px.
     if (contadorAtual) contadorAtual.textContent = String(centro + 1);
+
+    prepararVizinhos();
   };
+
+  /**
+   * O CARD SEGUINTE ENTRAVA EM CENA SEM FOTO.
+   *
+   * As imagens nascem `loading="lazy"`, e com onze cards isso é obrigatório —
+   * carregar as onze de saída jogaria ~250 kB no orçamento por uma foto que a
+   * pessoa talvez nunca veja. Mas o lazy do navegador decide pela POSIÇÃO NA
+   * VIEWPORT, e num coverflow todos os cards estão empilhados no mesmo ponto,
+   * escondidos por `opacity: 0` e `scale(0.4)`. O navegador não tem como saber
+   * que o próximo da fila está a um toque de distância.
+   *
+   * O resultado, medido: com o Tápera no centro, os cards em ±2 vinham com
+   * `naturalWidth: 0` — sem pixel nenhum. Ao avançar, o card entrava vazio e a
+   * foto aparecia depois, de repente. É o "bugado e feio" que o dono viu.
+   *
+   * A correção é uma vizinhança de precarga um passo MAIOR que a de exibição: o
+   * CSS mostra até ±2, então aqui se prepara até ±3. Assim, quando um card
+   * chega a ±2 e passa a ser desenhado, o pixel dele já está em memória.
+   *
+   * `img.loading = 'eager'` E NÃO um `new Image()` de aquecimento. Os cards
+   * vivem dentro de um `<picture>` com `<source type="image/avif">`, e um
+   * `Image()` avulso baixaria o `src` do `<img>` — o webp. O navegador, ao
+   * desenhar o card, escolheria o avif e baixaria de novo: dois arquivos pagos
+   * para exibir um. Trocar o atributo mantém a escolha de formato com quem sabe
+   * fazê-la, e a spec do HTML é explícita: sair de `lazy` para `eager` inicia o
+   * carregamento se ele ainda não começou.
+   */
+  /**
+   * A PRECARGA SÓ COMEÇA QUANDO O CARROSSEL CHEGA À TELA.
+   *
+   * Sem esta trava, o primeiro `pintar()` — que roda no load — promoveria sete
+   * fotos a `eager` de uma vez, e elas disputariam banda com o hero enquanto a
+   * pessoa ainda está na primeira dobra. Seria trocar um defeito visível por um
+   * LCP pior, em 4G do interior.
+   *
+   * A seção fica a mais de uma tela de distância na rolagem, e o `rootMargin`
+   * de uma tela dá o tempo de chegada.
+   */
+  let carrosselJaApareceu = false;
+
+  function prepararVizinhos() {
+    if (!carrosselJaApareceu) return;
+
+    slides.forEach((slide, i) => {
+      if (Math.abs(distancia(i, centro, total)) > 3) return;
+
+      const img = slide.querySelector('img');
+      if (img && img.loading === 'lazy') img.loading = 'eager';
+    });
+  }
+
+  new IntersectionObserver(
+    (entradas, observador) => {
+      if (!entradas.some((e) => e.isIntersecting)) return;
+      observador.disconnect();
+      carrosselJaApareceu = true;
+      prepararVizinhos();
+    },
+    { rootMargin: '100% 0px' }
+  ).observe(raiz);
 
   const irPara = (i) => {
     centro = ((i % total) + total) % total;
