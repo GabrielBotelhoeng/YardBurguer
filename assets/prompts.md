@@ -751,3 +751,56 @@ qualidade ~78 e substituir `public/assets/hero-vertical.webp`. **Medir o peso
 antes de trocar** — o recorte atual custa 23.876 bytes e a folga do orçamento é
 de 17,9 kB. Um take nativo maior pode não caber; nesse caso, ou ele nasce menor,
 ou algo sai para pagar.
+
+---
+
+## 2026-09-02 — hero vertical 9:16 GERADO pelo dono ★ (em produção)
+
+- **Gerado por:** o dono, fora deste ambiente, com o prompt da entrada anterior
+- **Custo para o projeto:** 0 crédito (as contas seguem zeradas — ver `CLAUDE.md`)
+- **Entrada:** 941×1672 PNG, 9:16 exato · **Saída:** `public/assets/hero-vertical.avif`
+  (800×1421, **48.070 bytes**) + `.webp` de fallback (67.122)
+- **Nota:** 5/5 — o prompt entregou o que pedia
+
+**O que veio.** Duas variantes. A escolhida tem o burger em primeiro plano na
+metade de baixo sobre a bandeja de cobre, molho escorrendo, gergelim solto; a
+grelha com as carnes atrás e fora de foco; brasa acesa visível; fumaça âmbar
+subindo; pôr do sol e árvores do cerrado em silhueta na borda; pano encardido e
+madeira gasta no canto. Os sete blocos do prompt aparecem no quadro.
+
+A variante descartada (572×1024) tinha o topo mais escuro — melhor para o texto
+— mas resolução baixa demais: 572px de fonte para 1170px de tela.
+
+**AVIF e não webp, e a ordem do `<source>` importa.** 48.070 contra 63.798
+bytes na mesma imagem (75%). Ganha aqui porque é foto escura com fumaça e
+gradiente de céu, exatamente onde o webp gasta bits em banding. O `<source>`
+avif vem ANTES do webp: o navegador pega o primeiro que casa e sabe decodificar.
+
+**Medido depois de aplicar,** em 360×640, 390×844 e 430×932, com a foto isolada
+do texto:
+
+| | recorte anterior | take nativo |
+|---|---|---|
+| fonte para 1170px de tela (DPR3) | 432px → **2,7×** | 800px → **1,46×** |
+| contraste do título | 9,8–10,0:1 | **9,5–9,6:1** (AA grande exige 3,0) |
+| pico de brilho do produto | rgb(213,188,175) | **rgb(232,228,226)** |
+| peso | 23.876 B | **48.070 B** |
+
+**A conta do peso foi paga, não ignorada.** Os ~24 kB a mais saíram das quatro
+fotos próprias do carrossel, que desceram de 800×1000 para 760×950 — lá a
+ampliação era 1,07×, folga que a tela não usa, e virou 1,13×. Aqui os 2,7×
+eram visíveis. Total da rota medido por CDP com a página rolada inteira:
+**1.497.233 bytes**, folga de 2.767 contra o teto de 1,5 MB.
+
+**A folga agora é de 0,2%.** Qualquer imagem nova precisa vir com o que sai
+junto — não há mais espaço para acrescentar sem tirar. O maior alvo continua
+sendo o vídeo da Cena 2: 784 kB, 52% da rota.
+
+O arquivo bruto de 941×1672 está em `assets/hero/take-vertical-b.png`, que é
+ignorado pelo git de propósito. Para regerar as saídas:
+
+```
+node -e "const s=require('sharp');(async()=>{const src='assets/hero/take-vertical-b.png';
+s(src).resize({width:800,kernel:'lanczos3'}).avif({quality:44,effort:6}).toFile('public/assets/hero-vertical.avif');
+s(src).resize({width:800,kernel:'lanczos3'}).webp({quality:58,effort:6}).toFile('public/assets/hero-vertical.webp');})()"
+```

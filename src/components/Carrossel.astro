@@ -30,7 +30,7 @@
  *    mecanismo de pausa (WCAG 2.2.2). Aqui ele para no hover, no foco do
  *    teclado, quando a aba sai de vista, e nem começa sob reduced-motion.
  *
- * A FOTO NASCE NA PROPORÇÃO DO CARD (800x1000 = 4/5). Antes era o quadrado
+ * A FOTO NASCE NA PROPORÇÃO DO CARD (760x950 = 4/5). Antes era o quadrado
  * de 480x480 do CDN do Brendi, e o card cortava 20% dela no `object-fit`, sem
  * ninguém escolher o quê. O material próprio do cliente chegou em retrato
  * (~1023x1537), então o corte virou decisão: cada foto foi recortada em 4/5 com
@@ -39,10 +39,15 @@
  * A referência usava 2:3, que cortaria 34% da largura da foto; 4/5 lê como card
  * e é a razão que as fotos agora têm de nascença.
  *
- * 800x1000 e não os 640x800 do primeiro corte: medido em DPR3, o card central
+ * 760x950 e não os 640x800 do primeiro corte: medido em DPR3, o card central
  * ocupa 287 CSS px e pede 860 pixels físicos. Com fonte de 640 isso era
  * ampliação de 1,35x a 1,49x, e aparecia como suavização nas bordas do pão.
- * Agora é 1,07x. Ver squads/.../scripts/recortar-fotos-cliente.mjs.
+ * Agora é 1,13x.
+ *
+ * Passou por 800x1000 (1,07x) por algumas horas em 02/09 e desceu para 760: os
+ * ~24 kB da diferença foram pagar o take vertical nativo do hero, onde a
+ * ampliação era de 2,7x e VISÍVEL. Aqui a folga entre 1,07x e 1,13x é folga que
+ * a tela não usa. Ver squads/.../scripts/recortar-fotos-cliente.mjs.
  */
 import copy from '../content/copy.json';
 import { existsSync } from 'node:fs';
@@ -127,8 +132,8 @@ const LIMITE_PONTOS = 5;
                   class="cart__foto"
                   src={item.foto}
                   alt={`${item.nome} do YARD Burguer`}
-                  width="800"
-                  height="1000"
+                  width="760"
+                  height="950"
                   loading="lazy"
                   decoding="async"
                 />
