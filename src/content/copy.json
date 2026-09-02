@@ -48,9 +48,18 @@
   },
   "navbar": {
     "links": [
-      { "rotulo": "Destaques", "ancora": "#mais-pedidos" },
-      { "rotulo": "Nosso hambúrguer", "ancora": "#explode" },
-      { "rotulo": "Onde estamos", "ancora": "#onde-estamos" }
+      {
+        "rotulo": "Destaques",
+        "ancora": "#mais-pedidos"
+      },
+      {
+        "rotulo": "Nosso hambúrguer",
+        "ancora": "#explode"
+      },
+      {
+        "rotulo": "Onde estamos",
+        "ancora": "#onde-estamos"
+      }
     ],
     "ctaSecundario": "Nosso Instagram",
     "ctaPrimario": "Ver Cardápio"
@@ -135,17 +144,18 @@
         "texto": "Nada fica pronto esperando cliente. O pedido entra, e só então a montagem começa — é o que separa um hambúrguer que chega quente de um que chega morno de bancada."
       }
     ],
-    "_gente": "As duas fotos de estúdio do cliente que ladeiam a seção. Entram COM o fundo preto de propósito: recortar era impossível — a foto da placa tem manto preto sobre fundo preto, e qualquer recorte por luminância comeria o manto e o bordado dourado. O preto do estúdio é o mesmo carvão da marca, então o fundo virou moldura em vez de defeito. O alt descreve o que está no quadro, sem supor quem são as pessoas.",
+    "_gente": "As duas fotos de estúdio do cliente que ladeiam a seção. Entram COM o fundo preto de propósito: recortar era impossível e desnecessário — o preto do estúdio é o mesmo carvão da marca, então o fundo virou moldura em vez de defeito. O alt descreve o que está no quadro, sem supor quem são as pessoas. Material trocado em 02/09 por um par novo, mais nítido e com o produto visível nas duas.",
     "gente": {
       "esquerda": {
-        "arquivo": "pessoa-cocacola",
-        "alt": "Pessoa em traje árabe branco e óculos escuros, com um hambúrguer numa das mãos e uma lata de Coca-Cola na outra."
+        "arquivo": "pessoa-placa",
+        "alt": "Pessoa em traje árabe branco segurando um hambúrguer numa das mãos e, na outra, uma placa escrita Vem para a YARD."
       },
       "direita": {
-        "arquivo": "pessoa-placa",
-        "alt": "Pessoa em traje árabe com manto preto e dourado, segurando um hambúrguer e uma placa escrita Vem para a YARD."
+        "arquivo": "pessoa-convite",
+        "alt": "Pessoa em traje árabe branco e óculos escuros, com um hambúrguer numa das mãos e a outra estendida em gesto de convite."
       }
-    }
+    },
+    "_gentePosicao": "O LADO DE CADA FOTO E COMPOSICAO, nao ordem de arquivo. As duas tem direcao: na foto da placa o cartaz fica a direita do homem; na foto do convite a mao estendida aponta para a esquerda dele. Com a placa a ESQUERDA e o convite a DIREITA, os dois gestos apontam para o miolo da secao — para o texto. Invertidas, apontariam para fora da tela e empurrariam o olho para longe da leitura. Quem trocar o par de fotos precisa refazer essa leitura antes de escolher os lados."
   },
   "maisPedidos": {
     "titulo": "Todos os hambúrgueres",

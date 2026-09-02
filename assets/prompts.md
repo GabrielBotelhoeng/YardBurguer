@@ -804,3 +804,43 @@ node -e "const s=require('sharp');(async()=>{const src='assets/hero/take-vertica
 s(src).resize({width:800,kernel:'lanczos3'}).avif({quality:44,effort:6}).toFile('public/assets/hero-vertical.avif');
 s(src).resize({width:800,kernel:'lanczos3'}).webp({quality:58,effort:6}).toFile('public/assets/hero-vertical.webp');})()"
 ```
+
+---
+
+## 2026-09-02 — par novo de fotos das pessoas (material do cliente)
+
+- **Gerado por:** ninguém — material entregue pelo dono
+- **Custo:** 0 crédito
+- **Origem:** `referencia/pessoas/placa.png` (1023×1537) e `convite.png` (1024×1536)
+- **Saída:** `public/assets/pessoas/pessoa-{placa,convite}-{420,620,840}.webp`
+
+Substituem o par anterior (`pessoa-cocacola` e `pessoa-placa`), que era mais
+escuro e tinha o produto pequeno. As duas novas mostram o hambúrguer com
+nitidez e têm o mesmo fundo preto de estúdio — o mesmo carvão da marca.
+
+**O lado de cada uma é composição, não ordem de arquivo.** As duas têm direção:
+na `placa` o cartaz fica à direita do homem; na `convite` a mão estendida aponta
+para a esquerda dele. Com a placa à ESQUERDA e o convite à DIREITA, os dois
+gestos apontam para o miolo da seção — para o texto. Invertidas, apontariam para
+fora da tela.
+
+**Qualidade 68 e não 80, e o número saiu do orçamento.** A folga da rota era de
+~1 kB, então o par novo precisava caber no peso do par que substituía. Medido no
+par de 620 (o que um DPR3 baixa):
+
+| qualidade | par de 620 |
+|---|---:|
+| 80 | 103.576 |
+| 74 | 86.652 |
+| **68** | **81.330** |
+| anterior no ar | 86.806 |
+
+Ou seja: **5,4 kB devolvidos** ao orçamento, não gastos. Foto de estúdio com
+fundo preto liso é o caso em que o webp mais rende — quase metade do quadro é
+uma cor só. Peso total da rota depois da troca: 1.493.375 bytes, folga de 6.625.
+
+Reproduzir: `node squads/yard-burguer-squad/scripts/preparar-fotos-pessoas.mjs`
+
+**O script não recorta, só reamostra.** A proporção nativa é 2:3 e o CSS do
+celular usa exatamente essa, então o `cover` não tem o que cortar. Recortar aqui
+reintroduziria o defeito consertado hoje de manhã — produto decepado na borda.

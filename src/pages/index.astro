@@ -1216,17 +1216,26 @@ const combos = menu.combos.map((combo) => ({
   }
   /**
    * A HORIZONTAL É DIFERENTE EM CADA FOTO, porque o que importa está em lugares
-   * diferentes do quadro. Centrar as duas é o que estava comendo a lata de um
-   * lado e a placa do outro.
+   * diferentes do quadro — e a coluna é MUITO mais estreita que a foto.
    *
-   *   esquerda  a lata de Coca-Cola está na borda esquerda do quadro -> 38%
-   *   direita   a placa "VEM PARA A YARD" ocupa a metade direita     -> 60%
+   * Medido em 1440x900: a figura fica 224x777, razão 0,29, contra 0,667 da
+   * foto. Sobram 43% da largura do quadro; os outros 57% o `cover` descarta.
+   * Escolher esses 43% é a decisão que estas duas linhas tomam.
    *
-   * Só no desktop. No celular a figura é quase tão larga quanto a foto e não há
-   * o que escolher — as duas aparecem praticamente inteiras.
+   *   esquerda (placa)    hambúrguer em x 14-31%, rosto em 37-57%, placa em
+   *                       50-95%. 44% pega hambúrguer inteiro, rosto e a
+   *                       entrada da placa. Com os 38% que a foto anterior
+   *                       pedia, o hambúrguer saía cortado ao meio na borda.
+   *   direita (convite)   mão estendida em x 5-25%, hambúrguer em 33-52%,
+   *                       rosto em 40-65%. 50% pega hambúrguer e rosto
+   *                       inteiros; ir além perdia o hambúrguer.
+   *
+   * Só no desktop. No celular a figura tem a MESMA proporção da foto (2:3) e o
+   * `cover` não tem o que cortar — as duas aparecem inteiras, que é o conserto
+   * de 02/09.
    */
-  .dif__gente--esq img { object-position: 38% 22%; }
-  .dif__gente--dir img { object-position: 60% 22%; }
+  .dif__gente--esq img { object-position: 44% 20%; }
+  .dif__gente--dir img { object-position: 50% 20%; }
 
   /**
    * O PRETO DA FOTO NÃO É O PRETO DA MARCA — medido, e a diferença aparece.
