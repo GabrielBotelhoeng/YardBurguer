@@ -42,9 +42,18 @@ const destaques = maisPedidos.itens.map((item) => ({
   foto: fotoPorId.get(item.id) ?? null,
 }));
 
+/**
+ * O AVIF das fotos de combo — mesma regra do carrossel: existe no disco só
+ * onde ele ganha, e quem responde é o disco, não uma lista aqui. As quatro
+ * fotos de combo vêm do CDN do Brendi (reamostragem de 240px), que é
+ * exatamente o caso em que o AVIF fica em ~64% do webp.
+ */
 const combos = menu.combos.map((combo) => ({
   ...combo,
   foto: fotoPorId.get(combo.id) ?? null,
+  fotoAvif: existsSync(new URL(`../../public/assets/produtos/${combo.id}.avif`, import.meta.url))
+    ? `/assets/produtos/${combo.id}.avif`
+    : null,
 }));
 ---
 
@@ -102,34 +111,67 @@ const combos = menu.combos.map((combo) => ({
     -->
     <section class="hero textura-brasa" aria-labelledby="hero-titulo" data-esconde-barra>
       {/*
-        DUAS FOTOS, UMA BAIXADA POR VEZ — e o celular baixa a MENOR.
+        DUAS FOTOS, UMA BAIXADA POR VEZ — cada aparelho leva a que foi feita
+        para ele.
 
-        O arquivo aprovado é 1376x768, deitado, e a composição foi desenhada
+        O arquivo 16:9 é o take aprovado de 25/08, e a composição foi desenhada
         para ele: grelha à esquerda, burger à direita, vazio escuro no centro
         para receber o texto. Num aparelho em pé, o `cover` mostra 25,8% da
         largura — o centro — e joga fora as duas pontas, que é onde está tudo o
         que interessa. A página abria com grelha e mesa.
 
-        `hero-vertical.webp` é um RECORTE do mesmo arquivo (x de 910 a 1342,
-        altura inteira), não uma imagem nova: mesma luz, mesmo grão, mesma
-        composição aprovada, sem gastar um crédito de geração e sem o risco de
-        um take novo sair com outra cara.
+        `hero-vertical` é um TAKE PRÓPRIO em 9:16, gerado pelo dono em 02/09 com
+        o prompt registrado em `assets/prompts.md`: mesma fórmula do 16:9 com
+        mudança isolada no enquadramento — o burger em primeiro plano na metade
+        de baixo, a grelha atrás e fora de foco, o terço superior escuro para a
+        headline. Antes dele, o celular recebia um recorte do arquivo deitado;
+        o recorte resolvia o enquadramento e o peso, mas não a resolução.
 
-        E ELE É MAIS LEVE QUE O QUE JÁ SE BAIXAVA. `<source media>` SUBSTITUI,
-        não soma: o celular passa a baixar ~23 kB no lugar de 80 kB. O orçamento
-        de peso, que estava com 21 kB de folga contra o teto de 1,5 MB, ganha
-        ~57 kB.
+        `<source media>` SUBSTITUI, não soma: o celular baixa este e nunca o
+        16:9. O desktop, o contrário.
 
-        A nitidez também melhora, ao contrário do que parece. Hoje o celular já
-        estica 355px do original (os 25,8%) para 1170px físicos num aparelho
-        DPR3 — 3,3x. Com o recorte são 432px para os mesmos 1170: 2,7x. Menos
-        upscale, não mais.
+        RESOLUÇÃO — o motivo de o take existir. O recorte tinha 432px de fonte
+        para os 1170px físicos de um DPR3: ampliação de 2,7x. Este tem 800px
+        para os mesmos 1170: 1,46x.
+
+        PESO — ele custa mais, e a conta foi paga. 48.070 bytes contra os 23.876
+        do recorte. Os ~24 kB de diferença saíram das quatro fotos próprias do
+        carrossel, que desceram de 800x1000 para 760x950 (ver
+        `recortar-fotos-cliente.mjs`): lá a ampliação era de 1,07x, folga que a
+        tela não usava, e virou 1,13x — invisível. Aqui os 2,7x eram visíveis.
       */}
       {
         temFotoHero && (
           <picture>
             {temHeroVertical && (
-              <source media="(max-width: 639px)" srcset="/assets/hero-vertical.webp" width="432" height="768" />
+              <>
+                {/*
+                  AVIF PRIMEIRO, WEBP LOGO ABAIXO — a ordem é a decisão.
+
+                  O navegador pega o primeiro `<source>` que casa com a media
+                  query E cujo `type` ele sabe decodificar. Invertendo a ordem,
+                  todo mundo levaria o webp e o avif nunca seria pedido.
+
+                  Aqui o avif ganha muito: 48.070 contra 63.798 bytes na mesma
+                  imagem, 75%. Ganha porque este take é uma foto escura, com
+                  fumaça e gradiente de céu — exatamente onde o webp gasta bits
+                  em banding. Não vale para as fotos do carrossel vindas do CDN,
+                  que são outra história e estão medidas em `Carrossel.astro`.
+                */}
+                <source
+                  media="(max-width: 639px)"
+                  type="image/avif"
+                  srcset="/assets/hero-vertical.avif"
+                  width="800"
+                  height="1421"
+                />
+                <source
+                  media="(max-width: 639px)"
+                  srcset="/assets/hero-vertical.webp"
+                  width="800"
+                  height="1421"
+                />
+              </>
             )}
             <img
               class="hero__foto"
@@ -310,15 +352,18 @@ const combos = menu.combos.map((combo) => ({
             combos.map((combo) => (
               <li class="combo">
                 {combo.foto && (
-                  <img
-                    class="combo__foto"
-                    src={combo.foto}
-                    alt={`${combo.nome}: ${combo.composicao}`}
-                    width="240"
-                    height="240"
-                    loading="lazy"
-                    decoding="async"
-                  />
+                  <picture>
+                    {combo.fotoAvif && <source type="image/avif" srcset={combo.fotoAvif} />}
+                    <img
+                      class="combo__foto"
+                      src={combo.foto}
+                      alt={`${combo.nome}: ${combo.composicao}`}
+                      width="240"
+                      height="240"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </picture>
                 )}
                 <div>
                   <h3 class="combo__nome">{combo.nome}</h3>

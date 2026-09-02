@@ -627,3 +627,180 @@ para 1170px físicos num DPR3: 3,3×. Com o recorte são 432px para os mesmos
 upscale. Resolver de vez exige um take vertical em resolução maior — decisão do
 dono, porque custa crédito e a regra de composição única manda regerar a peça
 inteira.
+
+---
+
+## 2026-09-02 — o carrossel passa a mostrar o cardápio inteiro
+
+- **Modelo:** nenhum · **Custo:** 0 crédito
+- **Saída:** 11 fotos de hambúrguer + 4 de combo em `public/assets/produtos/`
+
+**O pedido do dono:** "pode adicionar todos os hambúrgueres, pois são fotos
+provisórias — assim que eu mandar pra eles vou falar sobre as imagens". O
+carrossel mostrava 3 de 11 itens do cardápio.
+
+**De onde veio cada foto:**
+
+| Origem | Itens | Formato |
+|---|---|---|
+| Material próprio do cliente (PNG de 31/08) | tapera-do-sertao, supremo, yard-king, **open-crysp** | webp 800×1000 q58 |
+| CDN do Brendi (`fetch-menu-images.mjs`) | apolo, yard-tropical, yard-moda, burguer-salad, american-smash, cheese-burger, burguer-kids | avif + webp 400px |
+| CDN do Brendi | os 4 combos | avif + webp 280px |
+
+**`open-crysp` é o achado.** O `imageId` dele responde **404** no CDN desde
+hoje — o Brendi trocou o id. A foto veio da quinta PNG do material do cliente,
+que estava sobrando: a mesma que o log de 31/08 identificou como "Open Crysp" e
+deixou de fora por não haver card para ela. Crop `1023:1279:0:258`.
+
+**Por que AVIF só em algumas.** Medido na mesma imagem: nas fotos do CDN
+(reamostragem de um original de 240px, pouco detalhe fino) o AVIF fica em 64%
+do webp — 9.049 contra 14.060 bytes. Nas fotos próprias, que nascem grandes, ele
+empata ou perde: 101% a 104%. Então o par `.avif` só existe para as do CDN, e o
+componente pergunta ao disco em vez de guardar uma lista.
+
+**Por que cada tamanho.** Medido em 390×844 DPR3, o aparelho do público:
+
+- card do carrossel: 287 CSS px → 860px físicos. Fonte 800 = ampliação **1,07×**
+  (era 1,35× a 1,49× com as fotos de 640, e aparecia nas bordas do pão).
+- foto de combo: 76–88 CSS px → no máximo 264px físicos. 280 cobre com 6% de
+  folga; os 400 anteriores eram 51% de área paga para jogar fora.
+- burgers do CDN: 400 e não mais, porque a **fonte** tem 240px. Nenhum número
+  alcança a tela quando o teto é o original.
+
+**Peso — passou de 3 para 11 cards sem estourar.** Medido por CDP com a página
+rolada inteira: **1.482.098 bytes** contra teto de 1,5 MB, folga de 17.902. O
+`main` com 3 cards media 1.479.042. Onze fotos, resolução maior nas próprias, e
+3 kB de diferença.
+
+Reproduzir:
+
+```
+node squads/yard-burguer-squad/scripts/fetch-menu-images.mjs
+node squads/yard-burguer-squad/scripts/recortar-fotos-cliente.mjs
+```
+
+**Continua valendo o que o log de 31/08 registrou:** a foto do `supremo` mostra
+o produto do Yard King, e a do `yard-king` traz jalapeño e cebola crispy, que
+não estão na descrição de nenhum item. São fotos provisórias por decisão do
+dono, que vai tratar disso com o cliente.
+
+---
+
+## 2026-09-02 — hero vertical 9:16: prompt PRONTO, geração BLOQUEADA por crédito
+
+- **Modelo pretendido:** `gemini-3-pro-image` (resolve, de quebra, o item aberto
+  desde 25/08: saída em 1376px, ampliada em tela retina)
+- **Status:** **não gerado.** A API respondeu
+  `429 RESOURCE_EXHAUSTED — Your prepayment credits are depleted`. Higgsfield
+  também está em `credits: 0`. Ver `CLAUDE.md`.
+- **Saída pretendida:** `assets/hero/hero-vertical-take.png` → substituiria
+  `public/assets/hero-vertical.webp` (hoje um recorte do take 16:9)
+
+**Por que existir.** O celular hoje recebe um recorte do take deitado (x de 910
+a 1342): 432px de fonte para 1170px de tela num DPR3 — ampliação de 2,7×. O
+recorte resolveu o enquadramento e o peso, não a resolução. Só um take nascido
+vertical resolve.
+
+**O prompt é a fórmula aprovada 5/5 de 25/08, com mudança isolada no
+enquadramento.** Os blocos de lente, luz, emulsão e paleta ficaram idênticos
+palavra por palavra — se o resultado divergir, a diferença é atribuível à
+composição e a mais nada. O que mudou: o burger sobe para primeiro plano na
+metade de baixo, a grelha vai para trás e para cima fora de foco, e o terço
+SUPERIOR fica vazio para a headline (no 16:9 quem recebia o texto era o centro).
+
+```
+One finished burger on a hammered copper tray in the LOWER HALF of a tall
+vertical frame, close to camera and slightly off-kilter: the bun pressed
+unevenly to one side, sauce escaping and running down the edge, a few sesame
+seeds fallen loose on the tray, deep dark sear crust and char marks on the
+patty, cheese melted irregular and matte, meat spilling past the edge of the
+bun. Behind it and higher up the frame, well out of focus, beef patties sear on
+a battered cast iron grill grate, fat rendering and spitting. No hands, no
+people. Shot on 50mm at f/2.8, camera at chest height, slight low angle looking
+up the length of the grill so the scene stacks vertically. Focus on the near
+burger, natural falloff toward the grill behind. Last light of dusk raking in
+from the left, low sun behind silhouetted cerrado trees on the horizon. The
+glowing embers under the grate are the second light source and are visible in
+frame. Long warm shadows, no frontal fill. Kodak Portra 400 pushed half a stop.
+Visible grain in the shadows, soft orange halation bleeding from the embers and
+highlights, slight sharpness falloff in the corners. Natural surface
+imperfection: visible fibre and irregular sear on the meat, no smooth or plastic
+surfaces. Charcoal brown #140C06 dominant, terracotta #8B4A2B in the wood and
+copper, ember amber #C87A2E as accent on less than 10% of the frame. No cool
+blue, no blown-out white. Warm amber smoke lit from below by the embers curling
+upward into the dark empty space at the top, no grey or blue tint in the smoke.
+Suspended dust and ash catching the side light. Grease spatter, char crumbs and
+a stained cloth on the worn wood — the mess of a grill actually in use. 9:16
+vertical portrait orientation, tall frame. The UPPER THIRD of the frame stays
+dark, empty and uncluttered for large headline text. Asymmetric composition,
+subject off-centre and low. No centred symmetry, no HDR, no lens flare, no text,
+no logos, no hands.
+```
+
+**Para rodar quando houver crédito:** copie o bloco acima para um arquivo
+temporário — `assets/hero/` é ignorado pelo git de propósito, é saída bruta — e
+
+```
+node squads/yard-burguer-squad/scripts/gemini-image.mjs \
+  --prompt "$(cat /tmp/prompt-hero-vertical.txt)" \
+  --out assets/hero/hero-vertical-take.png
+```
+
+Depois: recortar em 9:16 exato se a saída divergir, converter para webp com
+qualidade ~78 e substituir `public/assets/hero-vertical.webp`. **Medir o peso
+antes de trocar** — o recorte atual custa 23.876 bytes e a folga do orçamento é
+de 17,9 kB. Um take nativo maior pode não caber; nesse caso, ou ele nasce menor,
+ou algo sai para pagar.
+
+---
+
+## 2026-09-02 — hero vertical 9:16 GERADO pelo dono ★ (em produção)
+
+- **Gerado por:** o dono, fora deste ambiente, com o prompt da entrada anterior
+- **Custo para o projeto:** 0 crédito (as contas seguem zeradas — ver `CLAUDE.md`)
+- **Entrada:** 941×1672 PNG, 9:16 exato · **Saída:** `public/assets/hero-vertical.avif`
+  (800×1421, **48.070 bytes**) + `.webp` de fallback (67.122)
+- **Nota:** 5/5 — o prompt entregou o que pedia
+
+**O que veio.** Duas variantes. A escolhida tem o burger em primeiro plano na
+metade de baixo sobre a bandeja de cobre, molho escorrendo, gergelim solto; a
+grelha com as carnes atrás e fora de foco; brasa acesa visível; fumaça âmbar
+subindo; pôr do sol e árvores do cerrado em silhueta na borda; pano encardido e
+madeira gasta no canto. Os sete blocos do prompt aparecem no quadro.
+
+A variante descartada (572×1024) tinha o topo mais escuro — melhor para o texto
+— mas resolução baixa demais: 572px de fonte para 1170px de tela.
+
+**AVIF e não webp, e a ordem do `<source>` importa.** 48.070 contra 63.798
+bytes na mesma imagem (75%). Ganha aqui porque é foto escura com fumaça e
+gradiente de céu, exatamente onde o webp gasta bits em banding. O `<source>`
+avif vem ANTES do webp: o navegador pega o primeiro que casa e sabe decodificar.
+
+**Medido depois de aplicar,** em 360×640, 390×844 e 430×932, com a foto isolada
+do texto:
+
+| | recorte anterior | take nativo |
+|---|---|---|
+| fonte para 1170px de tela (DPR3) | 432px → **2,7×** | 800px → **1,46×** |
+| contraste do título | 9,8–10,0:1 | **9,5–9,6:1** (AA grande exige 3,0) |
+| pico de brilho do produto | rgb(213,188,175) | **rgb(232,228,226)** |
+| peso | 23.876 B | **48.070 B** |
+
+**A conta do peso foi paga, não ignorada.** Os ~24 kB a mais saíram das quatro
+fotos próprias do carrossel, que desceram de 800×1000 para 760×950 — lá a
+ampliação era 1,07×, folga que a tela não usa, e virou 1,13×. Aqui os 2,7×
+eram visíveis. Total da rota medido por CDP com a página rolada inteira:
+**1.497.233 bytes**, folga de 2.767 contra o teto de 1,5 MB.
+
+**A folga agora é de 0,2%.** Qualquer imagem nova precisa vir com o que sai
+junto — não há mais espaço para acrescentar sem tirar. O maior alvo continua
+sendo o vídeo da Cena 2: 784 kB, 52% da rota.
+
+O arquivo bruto de 941×1672 está em `assets/hero/take-vertical-b.png`, que é
+ignorado pelo git de propósito. Para regerar as saídas:
+
+```
+node -e "const s=require('sharp');(async()=>{const src='assets/hero/take-vertical-b.png';
+s(src).resize({width:800,kernel:'lanczos3'}).avif({quality:44,effort:6}).toFile('public/assets/hero-vertical.avif');
+s(src).resize({width:800,kernel:'lanczos3'}).webp({quality:58,effort:6}).toFile('public/assets/hero-vertical.webp');})()"
+```

@@ -148,8 +148,8 @@
     }
   },
   "maisPedidos": {
-    "titulo": "Comece por estes",
-    "texto": "Se é sua primeira vez no YARD, qualquer um dos três resolve.",
+    "titulo": "Todos os hambúrgueres",
+    "texto": "Onze opções, do carro-chefe da casa ao smash de 90g. O pedido é no cardápio.",
     "itens": [
       {
         "id": "tapera-do-sertao",
@@ -167,8 +167,50 @@
         "id": "yard-king",
         "nome": "Yard King",
         "texto": "Duas carnes de 160g, cheddar em dobro e o molho Santiago por cima. Pra quem chegou com fome de verdade."
+      },
+      {
+        "id": "open-crysp",
+        "nome": "Open Crysp",
+        "texto": "Blend de 160g, cheddar derretido, Catupiry, costela desfiada e muita cebola crispy. O crocante que não desiste no meio do lanche."
+      },
+      {
+        "id": "apolo",
+        "nome": "Apólo",
+        "texto": "Dois smash de 90g prensados na chapa, cheddar em duas fatias, Catupiry, bacon, cebola roxa e o molho Santiago fechando."
+      },
+      {
+        "id": "yard-tropical",
+        "nome": "Yard Tropical",
+        "texto": "Hambúrguer de 150g, cheddar e bacon com abacaxi grelhado no mel picante, finalizado com cream cheese. Doce e picante no mesmo pão."
+      },
+      {
+        "id": "yard-moda",
+        "nome": "Yard Moda",
+        "texto": "Cebola caramelizada no ponto, bacon crocante e pão brioche artesanal. Três coisas bem feitas, sem firula."
+      },
+      {
+        "id": "burguer-salad",
+        "nome": "Burguer Salad",
+        "texto": "Blend de 160g e cheddar derretido com alface fresca, tomate e cebola roxa. O molho da casa amarra tudo."
+      },
+      {
+        "id": "american-smash",
+        "nome": "American Smash",
+        "texto": "Cheddar em dobro e muita cebola no brioche fresco. Direto ao ponto."
+      },
+      {
+        "id": "cheese-burger",
+        "nome": "Cheese Burger",
+        "texto": "Blend de 160g grelhado e cheddar cremoso derretendo sobre a carne quente. O clássico que mede a casa."
+      },
+      {
+        "id": "burguer-kids",
+        "nome": "Burguer Kids",
+        "texto": "O menor da casa: smash de 90g, cheddar derretido e molho da casa. Simples de propósito."
       }
-    ]
+    ],
+    "_fonte": "Ingrediente, peso e técnica de cada item saem de menu.json (cardápio real do Brendi) — Constitution, Artigo IV. A copy reescreve o tom, nunca o fato. Ordem: os três destaques primeiro (é o que menu.json chama de destaques), depois os oito burgers na ordem do cardápio.",
+    "_ordem": "O carro-chefe abre a lista porque é ele que tem selo. O carrossel começa no índice 0, então o Tápera nasce no card central."
   },
   "cardapio": {
     "titulo": "Cardápio completo",

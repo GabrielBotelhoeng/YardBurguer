@@ -25,8 +25,56 @@ const raiz = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const CDN = 'https://images.brendi.com.br/optimized';
 const destino = join(raiz, 'public', 'assets', 'produtos');
 
-/** Só as seções que a landing realmente renderiza. Bebida não vira foto na página. */
-const SECOES_USADAS = ['destaques', 'combos'];
+/**
+ * Só as seções que a landing realmente renderiza. Bebida não vira foto na
+ * página.
+ *
+ * `burgers` entrou em 2026-09-02, quando o carrossel deixou de mostrar três
+ * itens e passou a mostrar o cardápio de hambúrguer inteiro. São 8 fotos a
+ * mais — o peso disso está medido em `docs/mobile-audit.md`, e é a razão de
+ * cada uma nascer em 480px e não maior.
+ */
+const SECOES_USADAS = ['destaques', 'combos', 'burgers'];
+
+/**
+ * QUEM JÁ TEM FOTO PRÓPRIA NÃO É TOCADO POR ESTE SCRIPT.
+ *
+ * Os três destaques receberam material do cliente em 31/08 (640x800, recortado
+ * em 4/5 — ver `assets/prompts.md`). Sem esta guarda, rodar o coletor
+ * SOBRESCREVE essas fotos pela miniatura de 240px do delivery, silenciosamente
+ * e com nome de arquivo idêntico. O commit `a18923a` existe exatamente para
+ * tirar a miniatura do delivery desses três cards; recolocá-la por descuido de
+ * script seria desfazer trabalho aprovado.
+ *
+ * `open-crysp` entrou nesta lista por um segundo motivo, e ele é útil saber: o
+ * `imageId` dele em `menu.json` responde **404** no CDN desde 2026-09-02 (o
+ * Brendi trocou o id). A foto dele veio da quinta PNG do material do cliente,
+ * que estava sobrando — a mesma que o log de 31/08 identificou como "Open
+ * Crysp" e deixou de fora por não haver card para ela.
+ *
+ * Se um dia a foto própria de um deles for descartada, tire o id daqui — a
+ * decisão é de quem apaga o arquivo, não deste script.
+ */
+const COM_FOTO_PROPRIA = new Set(['tapera-do-sertao', 'supremo', 'yard-king', 'open-crysp']);
+
+/**
+ * CADA SEÇÃO PEDE UM TAMANHO, E O TAMANHO SAI DA TELA — NÃO DO GOSTO.
+ *
+ * Medido em 390x844 com DPR3, que é o aparelho do público desta página:
+ *
+ *   - card do carrossel: 287 CSS px de largura → 861px físicos;
+ *   - foto de combo: 76 a 88 CSS px → no máximo 264px físicos.
+ *
+ * Servir 400px para uma foto que a tela exibe em 264 é pagar 51% de área a
+ * mais para jogar fora na hora do desenho. 280 cobre o pior caso com folga de
+ * 6% e devolve ~30 kB ao orçamento — que, com onze cards no carrossel, virou o
+ * recurso escasso desta página.
+ *
+ * Os burgers do carrossel ficam em 400 e não em 861 por um motivo diferente: a
+ * FONTE do CDN tem 240px. Nenhum número aqui alcança a tela, porque o teto é o
+ * original — 400 já é ampliação, e ampliar mais só engorda o arquivo.
+ */
+const LARGURA_POR_SECAO = { destaques: 400, burgers: 400, combos: 280 };
 
 async function baixar(item) {
   const url = `${CDN}/${item.imageId}`;
@@ -44,33 +92,48 @@ async function baixar(item) {
   const bytes = Buffer.from(await resposta.arrayBuffer());
 
   /**
-   * Reamostragem para 480px.
+   * Reamostragem para 400px, e EM DOIS FORMATOS.
    *
    * O CDN so entrega 240x240, e a 240 os cards ficavam com foto minuscula ou
-   * borrada — a secao inteira lia como lista de delivery. Dobrar com lanczos3 e
-   * uma leve mascara de nitidez nao INVENTA detalhe (isso seria trabalho de
-   * modelo generativo, e a regra do brand-art-director e clara: foto de produto
-   * e do burger real). O que ganha e a transicao entre pixels: a foto para de
-   * parecer pixelada quando exibida maior.
+   * borrada — a secao inteira lia como lista de delivery. Reamostrar com
+   * lanczos3 e uma leve mascara de nitidez nao INVENTA detalhe (isso seria
+   * trabalho de modelo generativo, e a regra do brand-art-director e clara:
+   * foto de produto e do burger real). O que ganha e a transicao entre pixels.
    *
-   * O limite continua sendo o original. Se um dia houver foto em alta do dono,
-   * isto some e a foto real entra direto.
+   * ERA 480px E VIROU 400. O card pede 865-954px fisicos num aparelho DPR3, e a
+   * FONTE tem 240: nenhum numero aqui alcanca a tela, porque o teto e o
+   * original. Entre 480 e 400 a diferenca visivel e nula — os dois sao
+   * ampliacao da mesma imagem — e 400 devolve peso ao orcamento, que com onze
+   * cards no carrossel passou a ser o recurso escasso.
+   *
+   * O AVIF sai junto porque nestas fotos ele ganha feio: medido, 9.049 bytes
+   * contra 14.060 do webp na mesma imagem (64%). Ganha justamente por serem
+   * reamostragens suaves, com pouco detalhe fino. Nas fotos proprias do cliente,
+   * que nascem grandes, o AVIF empata ou perde — por isso ELAS continuam so em
+   * webp, e o componente serve `<picture>` com o avif apenas onde ele existe.
    */
-  const tratada = await sharp(bytes)
-    .resize({ width: 480, kernel: 'lanczos3' })
-    .sharpen({ sigma: 0.6 })
-    .webp({ quality: 84, effort: 6 })
-    .toBuffer();
+  const base = sharp(bytes).resize({ width: LARGURA_POR_SECAO[item._secao], kernel: 'lanczos3' }).sharpen({ sigma: 0.6 });
 
-  const arquivo = join(destino, `${item.id}.webp`);
-  await writeFile(arquivo, tratada);
+  const webp = await base.clone().webp({ quality: 82, effort: 6 }).toBuffer();
+  const avif = await base.clone().avif({ quality: 56, effort: 5 }).toBuffer();
 
-  return { id: item.id, kb: +(tratada.length / 1024).toFixed(1) };
+  await writeFile(join(destino, `${item.id}.webp`), webp);
+  await writeFile(join(destino, `${item.id}.avif`), avif);
+
+  return { id: item.id, kb: +(avif.length / 1024).toFixed(1), webpKb: +(webp.length / 1024).toFixed(1) };
 }
 
 async function main() {
   const menu = JSON.parse(await readFile(join(raiz, 'src', 'content', 'menu.json'), 'utf8'));
-  const itens = SECOES_USADAS.flatMap((secao) => menu[secao] ?? []);
+  const itens = SECOES_USADAS.flatMap((secao) =>
+    (menu[secao] ?? []).map((item) => ({ ...item, _secao: secao }))
+  ).filter((item) => {
+    if (COM_FOTO_PROPRIA.has(item.id)) {
+      console.log(`  pula ${item.id.padEnd(20)} foto própria do cliente, não sobrescrever`);
+      return false;
+    }
+    return true;
+  });
 
   await mkdir(destino, { recursive: true });
 
@@ -82,7 +145,9 @@ async function main() {
   resultados.forEach((resultado, i) => {
     if (resultado.status === 'fulfilled') {
       total += resultado.value.kb;
-      console.log(`  ok   ${resultado.value.id.padEnd(20)} ${resultado.value.kb} kb`);
+      console.log(
+        `  ok   ${resultado.value.id.padEnd(20)} avif ${resultado.value.kb} kb  (webp ${resultado.value.webpKb} kb)`
+      );
     } else {
       falhas.push(itens[i].id);
       console.error(`  FALHA ${itens[i].id}: ${resultado.reason.message}`);

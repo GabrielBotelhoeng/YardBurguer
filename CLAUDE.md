@@ -26,9 +26,15 @@ clique.
 | Vídeo barato / movimento simples | `wan-2.5` (fal) | **indisponível** | ~$0,05/s |
 | Vídeo hero, take único aprovado | Kling / Veo | **indisponível** | caro — só com autorização explícita |
 
-**Estado real das contas** (verificado em 2026-08-25): Higgsfield em
-`credits: 0`, plano free, `unlim.available: false`. Não há MCP da fal
-configurado. O Gemini tem crédito e é o único caminho funcional.
+**Estado real das contas** (verificado em 2026-09-02): **nenhum gerador tem
+crédito hoje.** Gemini responde `429 RESOURCE_EXHAUSTED — prepayment credits
+are depleted` em qualquer modelo; Higgsfield segue em `credits: 0`, plano
+free; não há MCP da fal configurado.
+
+Consequência prática: **toda imagem nova precisa sair de recorte, reamostragem
+ou do material que o cliente mandar.** Antes de prometer geração, rodar
+`node squads/yard-burguer-squad/scripts/gemini-image.mjs` com um prompt curto
+e ver se volta 429 — o estado acima envelhece.
 
 Quando fal ou Higgsfield voltarem, trocar de gerador numa composição obriga a
 **regerar a composição inteira** — nunca uma peça avulsa.

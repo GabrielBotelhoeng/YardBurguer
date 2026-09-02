@@ -29,3 +29,12 @@ assets/hero/
 # versionar so pesaria o repo com PNG que envelhece no dia seguinte.
 .tmp-*
 audit.json
+
+# Worktrees de agente. Já foram desregistradas do git, mas o Windows não deixou
+# apagar os diretórios: há processos segurando binários dentro dos node_modules
+# delas. Sem esta linha, um `git add -A` distraído commita 200+ arquivos de
+# cópia do próprio repositório — aconteceu em 02/09.
+.claude/worktrees/
+
+# Material bruto que o cliente manda por fora e ainda não virou decisão.
+referencia/Nova pasta/
