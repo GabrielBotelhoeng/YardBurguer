@@ -776,7 +776,22 @@ const combos = menu.combos.map((combo) => ({
        da direita é legível. Medido em 1440: 68rem deixa 176px por lado (30% da
        foto, a placa vira "VEM" e um Y); 62rem deixa 224px. Os cartões não
        sentem — a grade já quebrava em 3+1 nas duas larguras. */
-    grid-template-columns: minmax(0, 1fr) minmax(0, 62rem) minmax(0, 1fr);
+    /**
+     * A LATERAL TEM PISO; QUEM CEDE É O MIOLO.
+     *
+     * Com `minmax(0, 1fr)` nas pontas, a coluna da foto era só o que sobrava
+     * depois dos 62rem do miolo — e entre 901px e ~1270px de viewport não
+     * sobrava quase nada. Medido: 992px de tela dá 0px de foto, 1024 dá 16px,
+     * 1100 dá 54px. A imagem continua sendo baixada inteira e entregue como um
+     * filete de carvão: paga-se o peso e não se vê a pessoa.
+     *
+     * `minmax(9rem, 1fr)` inverte quem cede. A lateral nunca desce de 144px, o
+     * miolo encolhe dos 62rem só quando precisa, e a seção nunca mais tem uma
+     * coluna que existe no layout e não existe no olho. Abaixo de 900px isto
+     * não vale: lá a grade já vira duas colunas e as figuras fecham a seção
+     * lado a lado, com largura de verdade.
+     */
+    grid-template-columns: minmax(9rem, 1fr) minmax(0, 62rem) minmax(9rem, 1fr);
     grid-template-areas: 'esq miolo dir';
   }
   /**
