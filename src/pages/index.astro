@@ -616,7 +616,7 @@ const combos = menu.combos.map((combo) => ({
     height: 2px;
     margin-left: -11px;
     background-color: currentColor;
-    transition: transform 0.2s ease, opacity 0.2s ease;
+    transition: transform 0.2s ease, background-color 0.2s ease;
   }
   .nav__botao-traco { top: 50%; margin-top: -1px; }
   .nav__botao-traco::before,
@@ -628,10 +628,18 @@ const combos = menu.combos.map((combo) => ({
   .nav__botao-traco::before { top: -7px; }
   .nav__botao-traco::after { top: 7px; }
 
-  /* Aberto: o traço do meio some e os outros dois viram X sobre o centro. */
-  .nav[data-menu-aberto] .nav__botao-traco { opacity: 0; }
-  .nav[data-menu-aberto] .nav__botao-traco::before { transform: translateY(7px) rotate(45deg); opacity: 1; }
-  .nav[data-menu-aberto] .nav__botao-traco::after { transform: translateY(-7px) rotate(-45deg); opacity: 1; }
+  /**
+   * Aberto: o traço do meio some e os outros dois viram X sobre o centro.
+   *
+   * O traço do meio some por `background-color: transparent`, NÃO por
+   * `opacity: 0`. Os outros dois traços são `::before` e `::after` DELE — são
+   * filhos — e opacity no pai multiplica a dos filhos: o `opacity: 1` que
+   * estava escrito neles não resgatava nada e o botão inteiro desaparecia no
+   * exato momento em que vira o botão de fechar. Pego em print, não em código.
+   */
+  .nav[data-menu-aberto] .nav__botao-traco { background-color: transparent; }
+  .nav[data-menu-aberto] .nav__botao-traco::before { transform: translateY(7px) rotate(45deg); }
+  .nav[data-menu-aberto] .nav__botao-traco::after { transform: translateY(-7px) rotate(-45deg); }
 
   @media (prefers-reduced-motion: reduce) {
     .nav__botao-traco,
