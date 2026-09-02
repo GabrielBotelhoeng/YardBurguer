@@ -488,7 +488,9 @@ const combos = menu.combos.map((combo) => ({
   */}
   <script>
     import { initNavMenu } from '../scripts/nav-menu.mjs';
+    import { initNavSecaoAtiva } from '../scripts/nav-secao-ativa.mjs';
     initNavMenu();
+    initNavSecaoAtiva();
   </script>
 
   <script>
@@ -582,6 +584,22 @@ const combos = menu.combos.map((combo) => ({
     min-height: 44px;
   }
   .nav__link:hover { color: var(--color-brasa); }
+
+  /**
+   * A SEÇÃO QUE ESTÁ SENDO LIDA — marcada por `aria-current`, não por classe.
+   *
+   * O atributo é o que o leitor de tela anuncia como item atual; a cor e a
+   * régua são a versão visual da mesma informação, e não uma segunda fonte de
+   * verdade. Quem escreve o atributo é nav-secao-ativa.mjs.
+   *
+   * A régua é `box-shadow` e não `border-bottom`: borda mudaria a altura da
+   * caixa do link, e a caixa aqui é o alvo de toque de 44px que já foi medido e
+   * ajustado uma vez. Sombra pinta sem empurrar nada.
+   */
+  .nav__link[aria-current='true'] {
+    color: var(--color-brasa);
+    box-shadow: inset 0 -2px 0 0 var(--color-brasa);
+  }
 
   /**
    * O BOTÃO DO MENU — três traços feitos de um elemento só.
@@ -719,6 +737,16 @@ const combos = menu.combos.map((combo) => ({
       border-bottom: 1px solid rgb(255 255 255 / 0.08);
     }
     .nav[data-menu] .nav__link:last-child { border-bottom: 0; }
+
+    /**
+     * No painel a régua vira barra à esquerda. Sublinhado num item de lista
+     * empilhada se confunde com o separador do item de cima — e aqui já existe
+     * um separador em cada linha.
+     */
+    .nav[data-menu] .nav__link[aria-current='true'] {
+      box-shadow: inset 3px 0 0 0 var(--color-brasa);
+      padding-left: 0.75rem;
+    }
   }
 
   /**
