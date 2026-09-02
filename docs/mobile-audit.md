@@ -152,6 +152,43 @@ Ressalva de método: `media`, `image` e `font` vêm da medição nova do
 auditoria anterior, porque naquela corrida o Playwright os serviu de cache e
 reportou zero. Nenhum dos três foi tocado por esta mudança.
 
+> ### Correção de 2026-09-02 — a ressalva acima estava com o diagnóstico errado
+>
+> Os zeros de `script`, `stylesheet` e `document` **não eram cache**. O gate
+> somava o cabeçalho `content-length`, e o `astro preview` responde
+> `Transfer-Encoding: chunked` quando o Chromium pede gzip — resposta chunked
+> não tem `content-length`, e o `?? 0` do script transformava os três em zero,
+> em toda corrida. Reaproveitar números de uma auditoria anterior tratou o
+> sintoma como acidente e deixou o defeito de pé.
+>
+> **Peso real, remedido com o gate corrigido** (`encodedDataLength` do CDP, byte
+> comprimido que de fato passou pela rede), contra build local em porta própria:
+>
+> | Tipo | bytes | % |
+> |---|---:|---:|
+> | media | 784.010 | 53,0% |
+> | image | 549.988 | 37,2% |
+> | font | 67.508 | 4,6% |
+> | script | 49.837 | 3,4% |
+> | stylesheet | 15.184 | 1,0% |
+> | document | 12.515 | 0,8% |
+> | **total** | **1.479.042** | 19 requisições |
+>
+> **Passa, com ~21 kB de folga — 1,4% do teto, não os 99 kB (6,5%) que esta
+> seção afirmava.** Uma medição independente por CDP na mesma árvore deu
+> 1.480.111; a diferença é ruído de captura.
+>
+> Duas coisas que a tabela velha errava e que valem para quem for encolher a
+> página: `image` não é 339 kB, é **550 kB** — as fotos próprias dos cards
+> entraram depois. E **o celular baixa mais que o desktop**:
+> `burger-stack-vertical.mp4` tem 783.668 bytes contra 706.635 do
+> `burger-stack-16x9.mp4`. Os "582 kB / 1102 kB" que ainda circulam em documentos
+> deste repositório são de um encode anterior a 26/08.
+>
+> Não usar `response.body()` como plano B para o `content-length` ausente: ele
+> devolve o corpo **descomprimido** e mediu 1,646 MB na mesma página — reprovaria
+> um build que passa.
+
 Unidade importa aqui, e a primeira versão desta seção errou: os 1.640.127 bytes
 medidos são 1.601 KiB na base 1024, e reportá-los como "1.600 kB" contra um teto
 de "1,5 MB" comparava base binária com rótulo decimal — o estouro parecia 4%
