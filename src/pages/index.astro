@@ -43,12 +43,43 @@ const combos = menu.combos.map((combo) => ({
 
 <Base>
   <!-- Cena 0 — Navbar -->
+  <!--
+    OS LINKS SAEM DO copy.json, e isso é conserto, não estilo.
+
+    O array `navbar.links` existia desde o primeiro dia e ninguém o lia: os
+    links eram escritos à mão aqui, com rótulos que nem estavam na copy. O
+    arquivo declarava quatro ("Destaques", "Cardápio", "Combos", "Onde
+    estamos") e a tela mostrava três, um deles inexistente na copy ("Nosso
+    hambúrguer"). Dado morto divergindo da tela é uma armadilha esperando quem
+    for editar a copy achando que edita a página.
+
+    A LISTA FOI RECONCILIADA PARA O QUE ESTÁ NO AR, e não o contrário. Os três
+    links de hoje são os que couberam medidos na navbar; entrar com "Cardápio"
+    e "Combos" levaria a barra a ~739px de conteúdo numa faixa que começa em
+    640px. Quem quiser os dois de volta precisa decidir o que sai — e agora
+    esse debate acontece num arquivo só.
+
+    O botão do menu vem ANTES do `<nav>` no DOM porque a ordem de tabulação
+    precisa ser botão → painel. Na tela ele é o último item, por `order` na
+    media query do celular; no desktop ele não existe.
+  -->
   <header class="nav" data-nav>
     <a class="nav__logo" href="/">{marca.nome}</a>
-    <nav aria-label="Principal">
-      <a class="nav__link" href="#mais-pedidos">Destaques</a>
-      <a class="nav__link" href="#explode">Nosso hambúrguer</a>
-      <a class="nav__link" href="#onde-estamos">Onde estamos</a>
+    <button
+      class="nav__botao"
+      type="button"
+      hidden
+      aria-expanded="false"
+      aria-controls="nav-principal"
+      aria-label="Abrir menu"
+      data-nav-botao
+    >
+      <span class="nav__botao-traco" aria-hidden="true"></span>
+    </button>
+    <nav id="nav-principal" aria-label="Principal" data-nav-lista>
+      {copy.navbar.links.map((link) => (
+        <a class="nav__link" href={link.ancora}>{link.rotulo}</a>
+      ))}
     </nav>
     <a class="cta nav__cta" href={marca.cardapioUrl} data-evento="cardapio-navbar">
       {copy.navbar.ctaPrimario}
@@ -450,6 +481,16 @@ const combos = menu.combos.map((combo) => ({
     import '../scripts/motion.js';
   </script>
 
+  {/*
+    O menu do celular. Bloco próprio, sem dependência de ordem: o módulo lê o
+    header, troca atributos e volta. Se ele não rodar, os links continuam na
+    tela — o CSS de painel está todo atrás de `data-menu`, que só ele escreve.
+  */}
+  <script>
+    import { initNavMenu } from '../scripts/nav-menu.mjs';
+    initNavMenu();
+  </script>
+
   <script>
     import { initCarrossel } from '../scripts/carrossel.js';
     initCarrossel();
@@ -543,21 +584,133 @@ const combos = menu.combos.map((combo) => ({
   .nav__link:hover { color: var(--color-brasa); }
 
   /**
-   * Abaixo de 640px os links saem da navbar.
+   * O BOTÃO DO MENU — três traços feitos de um elemento só.
    *
-   * Em 390px de largura eles empilhavam por cima do CTA e o proprio logo
-   * quebrava em duas linhas. A pagina e uma coluna unica de rolagem — os links
-   * sao atalho, nao navegacao essencial. O que nao pode sumir e o CTA, porque e
-   * ele que leva ao cardapio, que e o objetivo inteiro da pagina.
+   * O `<span>` é o traço do meio; `::before` e `::after` são os de cima e de
+   * baixo, deslocados 7px. Um elemento em vez de três porque a animação de
+   * virar "X" precisa girar dois traços em torno do MESMO centro, e três
+   * irmãos num flex não compartilham centro sem posicionamento absoluto de
+   * qualquer jeito.
+   *
+   * Fora do celular ele não é escondido por `hidden` no HTML e sim por
+   * `display: none` aqui: o atributo é o estado inicial, antes do JS, e some
+   * assim que o script revela o botão. Quem manda no desktop é a media query.
+   */
+  .nav__botao {
+    display: none;
+    position: relative;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-creme);
+    cursor: pointer;
+  }
+  .nav__botao-traco,
+  .nav__botao-traco::before,
+  .nav__botao-traco::after {
+    position: absolute;
+    left: 50%;
+    width: 22px;
+    height: 2px;
+    margin-left: -11px;
+    background-color: currentColor;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+  .nav__botao-traco { top: 50%; margin-top: -1px; }
+  .nav__botao-traco::before,
+  .nav__botao-traco::after {
+    content: '';
+    left: 0;
+    margin-left: 0;
+  }
+  .nav__botao-traco::before { top: -7px; }
+  .nav__botao-traco::after { top: 7px; }
+
+  /* Aberto: o traço do meio some e os outros dois viram X sobre o centro. */
+  .nav[data-menu-aberto] .nav__botao-traco { opacity: 0; }
+  .nav[data-menu-aberto] .nav__botao-traco::before { transform: translateY(7px) rotate(45deg); opacity: 1; }
+  .nav[data-menu-aberto] .nav__botao-traco::after { transform: translateY(-7px) rotate(-45deg); opacity: 1; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav__botao-traco,
+    .nav__botao-traco::before,
+    .nav__botao-traco::after { transition: none; }
+  }
+
+  /**
+   * Abaixo de 640px a navegação vira menu — e NÃO some.
+   *
+   * Aqui existia `.nav nav { display: none }`. O motivo escrito era real: em
+   * 390px os três links empilhavam por cima do CTA e o logo quebrava em duas
+   * linhas. Mas a página é vista principalmente no celular, e a conclusão de
+   * "os links são atalho, não navegação essencial" escondia da maioria a única
+   * forma de pular para o cardápio, para a Cena 2 ou para o endereço sem rolar
+   * a página inteira com o polegar.
+   *
+   * SÃO DOIS ESTADOS, e o segundo depende do JS:
+   *
+   *   1. `.nav` sozinha — os links caem numa segunda linha por `flex-wrap`.
+   *      É o layout feio que motivou o `display: none`, e é de propósito: sem
+   *      JavaScript, feio e alcançável ganha de bonito e ausente.
+   *   2. `.nav[data-menu]` — o atributo que só nav-menu.mjs escreve. Os links
+   *      saem do fluxo, viram painel abaixo da barra, e o botão aparece. A
+   *      navbar volta a ter uma linha só.
+   *
+   * O FUNDO SÓLIDO É FORÇADO COM O PAINEL ABERTO. A navbar só ganha cor com
+   * `data-scrolled`, e no topo da página ela é transparente — um painel opaco
+   * pendurado numa barra transparente deixaria os links do menu flutuando
+   * sobre o hero sem nada os prendendo à barra.
    */
   @media (max-width: 639px) {
-    .nav nav { display: none; }
     .nav {
+      flex-wrap: wrap;
       padding-left: calc(1rem + env(safe-area-inset-left));
       padding-right: calc(1rem + env(safe-area-inset-right));
     }
     .nav__logo { font-size: 1.05rem; white-space: nowrap; }
-    .nav__cta { padding-inline: 1.1rem; font-size: 0.9rem; }
+    .nav__cta { padding-inline: 1.1rem; font-size: 0.9rem; order: 2; }
+    .nav__botao:not([hidden]) { display: block; order: 3; margin-left: 0.25rem; }
+
+    /* Estado 1 — sem JS: segunda linha, largura inteira, sem sobrepor nada. */
+    .nav nav {
+      order: 4;
+      flex-basis: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 0.5rem;
+    }
+    .nav nav .nav__link { margin-inline: 0; }
+
+    /* Estado 2 — com JS: painel. */
+    .nav[data-menu] nav {
+      position: absolute;
+      top: 100%;
+      inset-inline: 0;
+      display: none;
+      flex-direction: column;
+      gap: 0;
+      box-sizing: border-box;
+      padding: 0.25rem calc(1rem + env(safe-area-inset-left)) 0.75rem
+        calc(1rem + env(safe-area-inset-right));
+      background-color: var(--color-carvao);
+      box-shadow: 0 12px 24px rgb(0 0 0 / 0.35);
+    }
+    .nav[data-menu][data-menu-aberto] nav { display: flex; }
+    .nav[data-menu-aberto] { background-color: var(--color-carvao); }
+
+    /**
+     * 48px e não 44px: o painel é uma pilha de alvos vizinhos, e alvo colado em
+     * alvo erra mais que alvo isolado. A régua de brasa entre um e outro é a
+     * mesma linguagem das seções, e dá ao dedo uma fronteira visível.
+     */
+    .nav[data-menu] .nav__link {
+      min-height: 48px;
+      font-size: 1rem;
+      border-bottom: 1px solid rgb(255 255 255 / 0.08);
+    }
+    .nav[data-menu] .nav__link:last-child { border-bottom: 0; }
   }
 
   /**
