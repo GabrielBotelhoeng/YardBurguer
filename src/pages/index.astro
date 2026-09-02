@@ -1360,8 +1360,112 @@ const combos = menu.combos.map((combo) => ({
         'esq   dir';
     }
     .diferenciais > .claro__wrap { padding-bottom: 2.5rem; }
-    .dif__gente { aspect-ratio: 3 / 4; }
-    .dif__gente img { object-position: 50% 18%; }
+
+    /**
+     * DUAS PEÇAS, NÃO UMA FOTO PARTIDA AO MEIO.
+     *
+     * O dono viu no aparelho dele e resumiu: "muito feio, um pouco estranho".
+     * Estava, e a causa era o recorte. As fotos são 2:3 (840x1260) e esta regra
+     * as forçava em 3/4 — o `cover` então comia as laterais, que é justamente
+     * onde estão a lata de Coca-Cola e o hambúrguer na mão. Somando a isso os
+     * 195px de largura de cada figura numa tela de 390, as pessoas encolhiam e
+     * as duas coladas, sem respiro nem moldura, liam como UMA imagem cortada ao
+     * meio em vez de duas.
+     *
+     * `2 / 3` é a proporção nativa do arquivo: o `cover` para de ter o que
+     * cortar e as duas pessoas aparecem inteiras, com a placa "VEM PARA A YARD"
+     * legível.
+     *
+     * O DESENCONTRO VERTICAL É O QUE MATA A EMENDA. Uma sobe, a outra desce, com
+     * uma sobreposição pequena e sombra própria: a linha dura do meio vira
+     * composição deliberada. É a diferença entre parecer defeito de corte e
+     * parecer escolha de quem montou.
+     *
+     * `margin-right` negativo e não `position: absolute`: as duas continuam
+     * ocupando as células de grade que já tinham, então nada precisa saber a
+     * altura de nada. Em 320px a sobreposição encolhe junto, porque é `rem`.
+     */
+    .dif__gente {
+      aspect-ratio: 2 / 3;
+      border-radius: 12px;
+      box-shadow: 0 18px 40px rgb(0 0 0 / 0.45);
+    }
+    .dif__gente img { object-position: 50% 12%; }
+
+    /**
+     * As figuras deixam de sangrar até a borda física.
+     *
+     * Elas nasceram como moldura lateral do desktop, onde encostar na borda é o
+     * ponto — a seção inteira é um cartaz. Como cartão arredondado e com sombra,
+     * encostar vira defeito: o canto de baixo fica cortado ao meio pela borda da
+     * tela e a sombra não tem onde cair. O `env()` continua somando, porque em
+     * paisagem com notch é ele que impede o recorte de comer a mão e a lata.
+     */
+    .diferenciais {
+      column-gap: 0;
+      padding-left: calc(0.75rem + env(safe-area-inset-left));
+      padding-right: calc(0.75rem + env(safe-area-inset-right));
+    }
+    .dif__gente--esq {
+      transform: translateY(-0.9rem);
+      margin-right: -1.1rem;
+      z-index: 2;
+    }
+    .dif__gente--dir {
+      transform: translateY(1.4rem);
+      z-index: 1;
+    }
+    /* O deslocamento para baixo da figura da direita precisa de chão, senão ela
+       encosta na seção seguinte. */
+    .diferenciais { padding-bottom: 2.4rem; }
+
+    /**
+     * O RESPIRO — a alternativa ao vídeo, e ela custa ZERO byte.
+     *
+     * O pedido era animar estas fotos em vídeo. Um clipe de 3s custaria de 120 a
+     * 300 kB (o vídeo da Cena 2 gasta 98 kB por segundo) contra uma folga de
+     * orçamento de 1,3 kB — e, pior, image-to-video erra exatamente no que está
+     * aqui: o xadrez do keffiyeh vira onda e o rosto escorre entre quadros.
+     * Rosto de pessoa real da marca derretendo não passa por estilo, passa por
+     * defeito.
+     *
+     * Um `scale` lento de 16s dá o que o vídeo daria: a sensação de que a foto
+     * está viva enquanto a pessoa rola.
+     *
+     * A ANIMAÇÃO USA `scale`, A PROPRIEDADE INDIVIDUAL — não `transform`. O
+     * parallax de rolagem já ocupa o `transform` desta mesma imagem, e as duas
+     * COMPÕEM: o navegador aplica `scale` antes de `transform`, então o respiro
+     * multiplica a escala do parallax em vez de brigar com ela. Usar `transform`
+     * nas duas faria a última declaração vencer e o parallax sumiria.
+     */
+    @media (prefers-reduced-motion: no-preference) {
+      .dif__gente img {
+        animation: dif-gente-respiro 16s ease-in-out infinite alternate;
+      }
+
+      /* Onde há scroll-driven animation, o respiro entra como SEGUNDA animação
+         e o parallax continua na primeira. `animation-timeline` aceita lista:
+         a primeira lê a rolagem, a segunda usa o relógio. */
+      @supports (animation-timeline: view()) {
+        .dif__gente img {
+          animation:
+            dif-gente-parallax linear both,
+            dif-gente-respiro 16s ease-in-out infinite alternate;
+          animation-timeline: view(), auto;
+          animation-range: entry 0% exit 100%, normal;
+        }
+      }
+    }
+  }
+
+  /**
+   * 1,05 e não mais: acima disso o movimento deixa de ser respiro e vira zoom,
+   * e a foto passa a chamar atenção para si em vez de para a seção. Em 16s o
+   * olho não vê a animação acontecer — vê que a imagem não está morta.
+   */
+  @keyframes dif-gente-respiro {
+    from { scale: 1; }
+    to { scale: 1.05; }
   }
   /* O wrap so encosta na borda em tela estreita (abaixo dos 68rem de max-width),
      que e justamente onde ha notch. Os env() valem 0 no resto. */
