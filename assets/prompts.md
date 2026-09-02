@@ -683,3 +683,71 @@ node squads/yard-burguer-squad/scripts/recortar-fotos-cliente.mjs
 o produto do Yard King, e a do `yard-king` traz jalapeño e cebola crispy, que
 não estão na descrição de nenhum item. São fotos provisórias por decisão do
 dono, que vai tratar disso com o cliente.
+
+---
+
+## 2026-09-02 — hero vertical 9:16: prompt PRONTO, geração BLOQUEADA por crédito
+
+- **Modelo pretendido:** `gemini-3-pro-image` (resolve, de quebra, o item aberto
+  desde 25/08: saída em 1376px, ampliada em tela retina)
+- **Status:** **não gerado.** A API respondeu
+  `429 RESOURCE_EXHAUSTED — Your prepayment credits are depleted`. Higgsfield
+  também está em `credits: 0`. Ver `CLAUDE.md`.
+- **Saída pretendida:** `assets/hero/hero-vertical-take.png` → substituiria
+  `public/assets/hero-vertical.webp` (hoje um recorte do take 16:9)
+
+**Por que existir.** O celular hoje recebe um recorte do take deitado (x de 910
+a 1342): 432px de fonte para 1170px de tela num DPR3 — ampliação de 2,7×. O
+recorte resolveu o enquadramento e o peso, não a resolução. Só um take nascido
+vertical resolve.
+
+**O prompt é a fórmula aprovada 5/5 de 25/08, com mudança isolada no
+enquadramento.** Os blocos de lente, luz, emulsão e paleta ficaram idênticos
+palavra por palavra — se o resultado divergir, a diferença é atribuível à
+composição e a mais nada. O que mudou: o burger sobe para primeiro plano na
+metade de baixo, a grelha vai para trás e para cima fora de foco, e o terço
+SUPERIOR fica vazio para a headline (no 16:9 quem recebia o texto era o centro).
+
+```
+One finished burger on a hammered copper tray in the LOWER HALF of a tall
+vertical frame, close to camera and slightly off-kilter: the bun pressed
+unevenly to one side, sauce escaping and running down the edge, a few sesame
+seeds fallen loose on the tray, deep dark sear crust and char marks on the
+patty, cheese melted irregular and matte, meat spilling past the edge of the
+bun. Behind it and higher up the frame, well out of focus, beef patties sear on
+a battered cast iron grill grate, fat rendering and spitting. No hands, no
+people. Shot on 50mm at f/2.8, camera at chest height, slight low angle looking
+up the length of the grill so the scene stacks vertically. Focus on the near
+burger, natural falloff toward the grill behind. Last light of dusk raking in
+from the left, low sun behind silhouetted cerrado trees on the horizon. The
+glowing embers under the grate are the second light source and are visible in
+frame. Long warm shadows, no frontal fill. Kodak Portra 400 pushed half a stop.
+Visible grain in the shadows, soft orange halation bleeding from the embers and
+highlights, slight sharpness falloff in the corners. Natural surface
+imperfection: visible fibre and irregular sear on the meat, no smooth or plastic
+surfaces. Charcoal brown #140C06 dominant, terracotta #8B4A2B in the wood and
+copper, ember amber #C87A2E as accent on less than 10% of the frame. No cool
+blue, no blown-out white. Warm amber smoke lit from below by the embers curling
+upward into the dark empty space at the top, no grey or blue tint in the smoke.
+Suspended dust and ash catching the side light. Grease spatter, char crumbs and
+a stained cloth on the worn wood — the mess of a grill actually in use. 9:16
+vertical portrait orientation, tall frame. The UPPER THIRD of the frame stays
+dark, empty and uncluttered for large headline text. Asymmetric composition,
+subject off-centre and low. No centred symmetry, no HDR, no lens flare, no text,
+no logos, no hands.
+```
+
+**Para rodar quando houver crédito:** copie o bloco acima para um arquivo
+temporário — `assets/hero/` é ignorado pelo git de propósito, é saída bruta — e
+
+```
+node squads/yard-burguer-squad/scripts/gemini-image.mjs \
+  --prompt "$(cat /tmp/prompt-hero-vertical.txt)" \
+  --out assets/hero/hero-vertical-take.png
+```
+
+Depois: recortar em 9:16 exato se a saída divergir, converter para webp com
+qualidade ~78 e substituir `public/assets/hero-vertical.webp`. **Medir o peso
+antes de trocar** — o recorte atual custa 23.876 bytes e a folga do orçamento é
+de 17,9 kB. Um take nativo maior pode não caber; nesse caso, ou ele nasce menor,
+ou algo sai para pagar.
