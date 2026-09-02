@@ -18,6 +18,13 @@ import menu from '../content/menu.json';
  */
 const temFotoHero = existsSync(new URL('../../public/assets/hero.webp', import.meta.url));
 
+/**
+ * O recorte vertical do hero, para o celular. Ver o bloco `<picture>` abaixo.
+ * Checado igual ao 16:9: se o arquivo não estiver lá, a página serve o deitado
+ * e o CSS assume o enquadramento de emergência por `object-position`.
+ */
+const temHeroVertical = existsSync(new URL('../../public/assets/hero-vertical.webp', import.meta.url));
+
 const { marca, hero, diferenciais, maisPedidos, ctaFinal, footer } = copy;
 const anoAtual = new Date().getFullYear();
 
@@ -94,18 +101,48 @@ const combos = menu.combos.map((combo) => ({
       segunda pílula vermelha na mesma dobra só divide o clique em dois.
     -->
     <section class="hero textura-brasa" aria-labelledby="hero-titulo" data-esconde-barra>
+      {/*
+        DUAS FOTOS, UMA BAIXADA POR VEZ — e o celular baixa a MENOR.
+
+        O arquivo aprovado é 1376x768, deitado, e a composição foi desenhada
+        para ele: grelha à esquerda, burger à direita, vazio escuro no centro
+        para receber o texto. Num aparelho em pé, o `cover` mostra 25,8% da
+        largura — o centro — e joga fora as duas pontas, que é onde está tudo o
+        que interessa. A página abria com grelha e mesa.
+
+        `hero-vertical.webp` é um RECORTE do mesmo arquivo (x de 910 a 1342,
+        altura inteira), não uma imagem nova: mesma luz, mesmo grão, mesma
+        composição aprovada, sem gastar um crédito de geração e sem o risco de
+        um take novo sair com outra cara.
+
+        E ELE É MAIS LEVE QUE O QUE JÁ SE BAIXAVA. `<source media>` SUBSTITUI,
+        não soma: o celular passa a baixar ~23 kB no lugar de 80 kB. O orçamento
+        de peso, que estava com 21 kB de folga contra o teto de 1,5 MB, ganha
+        ~57 kB.
+
+        A nitidez também melhora, ao contrário do que parece. Hoje o celular já
+        estica 355px do original (os 25,8%) para 1170px físicos num aparelho
+        DPR3 — 3,3x. Com o recorte são 432px para os mesmos 1170: 2,7x. Menos
+        upscale, não mais.
+      */}
       {
         temFotoHero && (
-          <img
-            class="hero__foto"
-            src="/assets/hero.webp"
-            alt=""
-            aria-hidden="true"
-            width="1376"
-            height="768"
-            fetchpriority="high"
-            data-ken-burns
-          />
+          <picture>
+            {temHeroVertical && (
+              <source media="(max-width: 639px)" srcset="/assets/hero-vertical.webp" width="432" height="768" />
+            )}
+            <img
+              class="hero__foto"
+              src="/assets/hero.webp"
+              alt=""
+              aria-hidden="true"
+              width="1376"
+              height="768"
+              fetchpriority="high"
+              data-ken-burns
+              data-hero-vertical={temHeroVertical ? '' : undefined}
+            />
+          </picture>
         )
       }
       <div class="hero__conteudo" data-parallax-rapido>
@@ -919,6 +956,78 @@ const combos = menu.combos.map((combo) => ({
     object-fit: cover;
     opacity: 0.45;
     will-change: transform;
+  }
+
+  /**
+   * NO CELULAR, O HERO MOSTRAVA GRELHA E MESA — E MAIS NADA.
+   *
+   * O arquivo é 1376x768, deitado. Num aparelho em pé o `cover` escala pela
+   * ALTURA (844/768 = 1,10), a imagem vira 1513px de largura e a tela de 390px
+   * mostra **25,8% dela**, centrada. Medido. E o que mora nesses 25,8% do
+   * centro é a chaminé preta e a grelha: o hambúrguer montado está a ~75% da
+   * largura, na bandeja de cobre à direita, e caía inteiro fora do quadro.
+   *
+   * O segundo fator é a opacidade. Os 0,45 do desktop funcionam porque lá a
+   * cena inteira aparece — sobra pôr do sol, fumaça âmbar e o produto. No
+   * recorte do celular, 45% de uma faixa que já é quase preta dá preto.
+   *
+   * As duas correções são de CSS e custam ZERO byte de imagem — a alternativa,
+   * um recorte 9:16 próprio, não existe neste material: o original só tem 768px
+   * de altura, então um crop 9:16 sairia com 432px de largura e seria upscale
+   * de 2,7x num aparelho DPR3. Take vertical de verdade exigiria gerar de novo,
+   * e a regra deste projeto é fechar a composição inteira num modelo só.
+   *
+   * `object-position: 86%` traz a bandeja e o hambúrguer para o quadro. O `46%`
+   * vertical sobe um pouco o corte, para o produto não encostar na borda de
+   * baixo. E o texto sai do centro: ele vai para o alto, onde a foto é escura
+   * de origem, e devolve a metade de baixo ao produto.
+   */
+  @media (max-width: 639px) {
+    .hero {
+      place-content: start center;
+      padding-top: 7.5rem;
+      padding-bottom: 3rem;
+    }
+    /**
+     * O DESLOCAMENTO SÓ VALE PARA QUEM RECEBEU O ARQUIVO DEITADO.
+     *
+     * Com `hero-vertical.webp` no ar, o recorte já vem pronto do arquivo e
+     * mover o `object-position` jogaria o hambúrguer para fora de novo. O
+     * atributo é escrito pelo Astro quando o recorte existe, então o CSS
+     * pergunta a mesma coisa que o `<picture>` decidiu — e não um segundo
+     * palpite sobre qual arquivo chegou.
+     */
+    .hero__foto:not([data-hero-vertical]) {
+      object-position: 86% 46%;
+    }
+    .hero__foto {
+      opacity: 0.92;
+    }
+
+    /**
+     * O VÉU DE LEITURA VIRA GRADIENTE, e não uma cortina uniforme.
+     *
+     * Escurecer tudo por igual foi o que apagou o hambúrguer. Aqui o carvão é
+     * denso em cima, onde está a headline e a foto já é escura, e quase se
+     * dissolve embaixo, onde está o produto. O texto continua com fundo para
+     * vencer o contraste; o hambúrguer, com luz para existir.
+     *
+     * `z-index: 1` — entre a foto (0) e o conteúdo (2).
+     */
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background: linear-gradient(
+        to bottom,
+        rgb(20 12 6 / 0.92) 0%,
+        rgb(20 12 6 / 0.82) 34%,
+        rgb(20 12 6 / 0.45) 58%,
+        rgb(20 12 6 / 0.2) 100%
+      );
+    }
   }
   .hero__sobretitulo {
     color: var(--color-brasa);
