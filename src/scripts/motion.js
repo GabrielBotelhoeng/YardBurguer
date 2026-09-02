@@ -61,9 +61,13 @@ function initScrollReveal() {
   if (prefereMenosMovimento) return;
 
   grupos.forEach((grupo) => {
+    // O passo da cascata vem do valor do atributo: `data-reveal="80"` escalona
+    // de 80 em 80ms. Sem valor, continua nos 90ms que a página inteira usava —
+    // o padrão não muda para quem não pediu.
+    const passo = Number(grupo.dataset.reveal) || 90;
     const filhos = grupo.children.length ? Array.from(grupo.children) : [grupo];
     filhos.forEach((filho, i) => {
-      filho.style.setProperty('--reveal-delay', `${i * 90}ms`);
+      filho.style.setProperty('--reveal-delay', `${i * passo}ms`);
       filho.classList.add('reveal-armado');
     });
   });
@@ -125,6 +129,44 @@ function initBarraPedido() {
   });
 
   zonas.forEach((zona) => observador.observe(zona));
+}
+
+/**
+ * O trilho horizontal dos pilares só vira parada de teclado quando ele rola.
+ *
+ * Um contêiner com `overflow-x: auto` é alcançável pelo dedo e pela roda, mas
+ * NÃO pelo teclado, a menos que seja focável — e no celular, onde o trilho
+ * existe, ainda há quem use teclado externo ou navegação por switch. O Chromium
+ * recente foca scrollers sozinho; Safari e Firefox não, então a garantia fica
+ * aqui.
+ *
+ * Só quando rola de verdade: no desktop os quatro cartões cabem na linha, o
+ * elemento não tem overflow nenhum, e uma parada de tabulação que não leva a
+ * lugar nenhum é ruído para quem navega por teclado. A comparação é medida no
+ * próprio elemento, não deduzida de largura de tela.
+ *
+ * Custa nada e é a única linha de JS que este trabalho acrescentou: a coreografia
+ * inteira da seção é CSS. GSAP não entra aqui nem estando disponível — a seção
+ * vem DEPOIS da Cena 2, então o chunk já teria sido baixado e o argumento do LCP
+ * não valeria; o que barra é o outro lado da regra: parallax de um elemento é
+ * exatamente o que `animation-timeline: view()` faz nativamente, no compositor.
+ */
+function initTrilhoPilares() {
+  const trilho = document.querySelector('[data-trilho]');
+  if (!trilho) return;
+
+  const aplicar = () => {
+    if (trilho.scrollWidth - trilho.clientWidth > 1) {
+      trilho.setAttribute('tabindex', '0');
+    } else {
+      trilho.removeAttribute('tabindex');
+    }
+  };
+
+  aplicar();
+  // Girar o aparelho troca o trilho de lugar (retrato e paisagem têm larguras
+  // diferentes) e pode fazer os quatro cartões passarem a caber.
+  window.addEventListener('resize', aplicar, { passive: true });
 }
 
 /**
@@ -200,6 +242,7 @@ function init() {
   initNavbar();
   initScrollReveal();
   initBarraPedido();
+  initTrilhoPilares();
   initExplodeQuandoPerto();
 
   // Publicado como promessa, não como valor: o explode.js pode chegar antes do
