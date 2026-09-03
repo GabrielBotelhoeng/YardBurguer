@@ -1294,7 +1294,31 @@ const combos = menu.combos.map((combo) => ({
        BORDA — os dois valem o MESMO número de propósito (ver a regra do wrap
        mais abaixo e o comentário grande acima).
 
-    --gente-avanco: 3rem;
+       O TERMO `max()` É O QUE FAZ O PISO DE 120px PARAR DE COMER TEXTO. Medido
+       em 1024x768: com o avanço fixo em 3rem, `--gente-larg-segura` valia
+       0 + 48 + 22,4 = 70,4px, o piso de 120px vencia o `min()` e a figura
+       entrava 49,6px cartão adentro. O comentário antigo chamava isso de "uns
+       50px cobrindo o ícone e o começo do título" e aceitava — mas a medição
+       com o par novo mostra a figura indo de 0 a 120px contra um cartão que
+       começa em 48px: são 72px sobre TEXTO CORRIDO, não sobre o ícone. Foto
+       tampando palavra não é exceção aceitável, é defeito de leitura. (O
+       defeito é anterior a esta rodada e independe da âncora vertical: com a
+       foto centrada ele comia o corpo do pilar 01, plantada come o do 03.)
+
+       Em vez de baixar o piso — que reabriria a degeneração da Rodada 2, a
+       pessoa virando lasca de 24px na borda — quem cede é o MIOLO: onde não há
+       margem sobrando fora do wrap, o avanço cresce até o exato ponto em que
+       `--gente-larg-segura` alcança os 120px do piso, e o wrap recua junto
+       (é a regra logo abaixo, e é o motivo de o avanço existir). A conta é a de
+       `--gente-larg-segura` resolvida para o avanço: 120px - 1,4rem - margem.
+
+       É CONTÍNUO, NÃO UM DEGRAU DE BREAKPOINT. Onde a margem do wrap já paga a
+       conta sozinha (acima de ~1187px) o `max()` devolve os 3rem originais e
+       nada muda; abaixo disso o avanço sobe suavemente até 97,6px em 1088px e
+       segura ali. Nenhuma faixa fica sem foto e nenhuma fica com foto sobre
+       texto. Verificado em 768, 1024, 1280, 1440 e 1920 — ver a tabela no
+       comentário do `srcset`. */
+    --gente-avanco: max(3rem, calc(120px - 1.4rem - var(--gente-margem-wrap)));
 
     /* A margem que sobra FORA do `.claro__wrap` (68rem) em cada lado, medida
        contra a largura REAL do próprio `.diferenciais` (`100%`, não `100vw`
