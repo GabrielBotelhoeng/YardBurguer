@@ -1204,38 +1204,43 @@ const combos = menu.combos.map((combo) => ({
   .dif__gente--esq { grid-area: esq; }
   .dif__gente--dir { grid-area: dir; }
 
+  /**
+   * `contain` E NÃO `cover` — a foto inteira, e o dono foi direto ao ponto:
+   * "tampou metade das imagens, quero que mostre a imagem toda".
+   *
+   * A conta explica o estrago. A coluna lateral mede 224x777 (razão 0,29) e a
+   * foto é 2:3 (0,667). Com `cover`, o navegador preenche a caixa pela largura
+   * e joga fora 57% do quadro — não havia `object-position` que salvasse, só
+   * escolhia QUAL metade seria perdida. Foi o que fizemos duas vezes hoje, e
+   * era escolher entre o hambúrguer e a placa.
+   *
+   * `contain` cabe a foto inteira e sobra espaço em cima e embaixo. Isso não
+   * abre buraco porque a figura JÁ TEM `background-color: var(--color-carvao)`
+   * e o fundo da foto é preto de estúdio: a emenda cai entre dois pretos
+   * praticamente iguais. Era o mesmo motivo pelo qual estas fotos entraram sem
+   * recorte — o fundo delas pertence à paleta.
+   *
+   * No celular isto não muda nada: lá a figura tem a MESMA proporção da foto,
+   * então `contain` e `cover` desenham o mesmo quadro.
+   */
   .dif__gente img {
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    /* 22% na vertical e não `center`: a coluna do desktop é estreita e alta, e
-       centrar cortaria a cabeça. Ancorando perto do topo, rosto e produto ficam
-       no quadro e o corte cai na barra do traje, que não carrega informação. */
-    object-position: 50% 22%;
+    object-fit: contain;
+    object-position: 50% 50%;
   }
   /**
-   * A HORIZONTAL É DIFERENTE EM CADA FOTO, porque o que importa está em lugares
-   * diferentes do quadro — e a coluna é MUITO mais estreita que a foto.
+   * NÃO HÁ MAIS `object-position` POR LADO, e a ausência é o conserto.
    *
-   * Medido em 1440x900: a figura fica 224x777, razão 0,29, contra 0,667 da
-   * foto. Sobram 43% da largura do quadro; os outros 57% o `cover` descarta.
-   * Escolher esses 43% é a decisão que estas duas linhas tomam.
+   * Enquanto o desktop usava `cover`, cada foto precisava de um número próprio
+   * dizendo qual pedaço sobreviveria ao corte — 44% de um lado, 50% do outro,
+   * e ainda assim o hambúrguer da esquerda saía pela metade. Com `contain` a
+   * pergunta deixa de existir: aparece tudo, e não há o que ancorar.
    *
-   *   esquerda (placa)    hambúrguer em x 14-31%, rosto em 37-57%, placa em
-   *                       50-95%. 44% pega hambúrguer inteiro, rosto e a
-   *                       entrada da placa. Com os 38% que a foto anterior
-   *                       pedia, o hambúrguer saía cortado ao meio na borda.
-   *   direita (convite)   mão estendida em x 5-25%, hambúrguer em 33-52%,
-   *                       rosto em 40-65%. 50% pega hambúrguer e rosto
-   *                       inteiros; ir além perdia o hambúrguer.
-   *
-   * Só no desktop. No celular a figura tem a MESMA proporção da foto (2:3) e o
-   * `cover` não tem o que cortar — as duas aparecem inteiras, que é o conserto
-   * de 02/09.
-   */
-  .dif__gente--esq img { object-position: 44% 20%; }
-  .dif__gente--dir img { object-position: 50% 20%; }
+   * Se algum dia o desktop voltar a `cover`, estes números precisam voltar
+   * JUNTOS e recalculados para as fotos da vez — eles descreviam onde estava o
+   * assunto em cada quadro, e quadro novo muda tudo.
 
   /**
    * O PRETO DA FOTO NÃO É O PRETO DA MARCA — medido, e a diferença aparece.
@@ -1293,8 +1298,16 @@ const combos = menu.combos.map((combo) => ({
 
   @supports (animation-timeline: view()) {
     @media (prefers-reduced-motion: no-preference) {
+      /**
+       * O DESKTOP USA O PARALLAX SEM ESCALA. Com `contain`, qualquer `scale`
+       * acima de 1 faz a foto crescer além da coluna e volta a cortar — seria
+       * desfazer, na animação, o que o `object-fit` acabou de consertar. A
+       * folga vertical do `contain` é grande (220px de cada lado, medidos em
+       * 1440x900), então translação sozinha entrega o mesmo deslocamento
+       * relativo sem tocar em nenhuma borda.
+       */
       .dif__gente img {
-        animation: dif-gente-parallax linear both;
+        animation: dif-gente-parallax-inteira linear both;
         animation-timeline: view();
         animation-range: entry 0% exit 100%;
       }
@@ -1311,6 +1324,17 @@ const combos = menu.combos.map((combo) => ({
          */
         animation-range: cover 0% cover 18%;
       }
+    }
+  }
+
+  /* Sem `scale`: ver a regra do desktop acima. ±6% de 777px são ±47px, dentro
+     dos 220px de folga que o `contain` deixa em cada ponta. */
+  @keyframes dif-gente-parallax-inteira {
+    from {
+      transform: translate3d(0, -6%, 0);
+    }
+    to {
+      transform: translate3d(0, 6%, 0);
     }
   }
 
