@@ -222,7 +222,7 @@ const combos = menu.combos.map((combo) => ({
       ícone no topo e uma régua de brasa separando ícone de título.
     -->
     <!--
-      AS DUAS PESSOAS DEIXARAM DE LADEAR E VIRARAM O PALCO DA SEÇÃO.
+      AS DUAS PESSOAS LADEIAM A SEÇÃO E PASSAM POR CIMA DELA.
 
       Recortar era impossível: a foto da placa tem manto PRETO sobre fundo preto,
       e qualquer recorte por luminância comeria o manto e o bordado dourado (a do
@@ -230,21 +230,27 @@ const combos = menu.combos.map((combo) => ({
       colagem). O preto do estúdio é o mesmo carvão da marca, então ele entra
       inteiro — é por isso que a foto pode aparecer sem máscara nenhuma.
 
-      COMO COLUNA LATERAL A FOTO NÃO TINHA COMO CRESCER, e a aritmética é curta:
-      o miolo precisa de 52rem (832px) para os quatro cartões de pilar caberem
-      com 178px cada. Em 1440 sobram 304px por lado, e a foto 2:3 desenhada
-      dentro deles mede 304x457 — 51% da altura da janela. Para a foto INTEIRA
-      chegar a 745px de altura a lateral teria de ter 497px, e as duas comeriam
-      994 dos 1440: o miolo cairia para 446px, os cartões para menos de 100px, e
-      o título de cada pilar quebraria em três linhas. Coluna lateral e foto
-      grande não cabem na mesma linha — foi preciso trocar a linha.
+      A PLACA À ESQUERDA E O CONVITE À DIREITA, e a ordem não é arrumação: os
+      dois gestos apontam para o miolo (o motivo está anotado em
+      `_gentePosicao`, no copy.json). Trocar os lados vira duas pessoas de costas
+      uma para a outra.
 
-      A ORDEM NO DOM AGORA É CONTEÚDO → ESQUERDA → DIREITA, e ela virou a mesma
-      em todas as larguras: título e pilares em cima, o par de fotos numa faixa
-      própria embaixo. Antes a figura da esquerda vinha antes do <h2> — o leitor
-      de tela anunciava uma foto antes de dizer do que era a seção. Agora a
-      ordem de leitura e a ordem visual são a mesma, e nenhuma delas depende de
-      `order` no CSS.
+      ENQUANTO A FOTO COUBE DENTRO DA COLUNA, ELA FOI O QUE SOBRAVA DA TELA —
+      144x216 em 1024, 304x457 em 1440. Aqui ela deixa de caber de propósito: a
+      largura vem da ALTURA da janela e a caixa transborda 72px por cima do
+      miolo de cada lado. É o pedido do dono, "colocar eles sobrepondo a parte
+      do site", e é o que tira o tamanho da mão da coluna.
+
+      O QUE A SOBREPOSIÇÃO NÃO FAZ É CRIAR ESPAÇO. Texto sob a foto é texto
+      escondido, então o miolo devolve os 72px em padding (ver `.claro__wrap`) e
+      a largura útil do texto continua sendo `100vw` menos as duas fotos. O que
+      a sobreposição muda é a leitura da peça: de "foto encaixada numa coluna"
+      para "foto à frente da página".
+
+      A ORDEM NO DOM É CONTEÚDO → ESQUERDA → DIREITA. Antes a figura da esquerda
+      vinha antes do <h2> e o leitor de tela anunciava uma foto antes de dizer do
+      que era a seção. De quebra, quem vem depois pinta por cima — que é
+      exatamente o que a sobreposição precisa, sem depender de `order` no CSS.
     -->
     <section class="claro diferenciais" aria-labelledby="dif-titulo">
       <div class="claro__wrap">
@@ -1127,54 +1133,71 @@ const combos = menu.combos.map((combo) => ({
   .claro { background-color: var(--color-areia); color: var(--color-carvao); }
 
   /**
-   * A SEÇÃO DOS DIFERENCIAIS DEIXOU DE SER TRÊS COLUNAS E VIROU DUAS LINHAS.
+   * AS DUAS PESSOAS VOLTARAM A LADEAR, MAS DEIXARAM DE CABER NA COLUNA — ELAS
+   * PASSAM POR CIMA DO MIOLO.
    *
-   * O desenho antigo punha as pessoas nas pontas e o conteúdo no meio. Ele
-   * morreu por aritmética, não por gosto: com o miolo consumindo os 52rem de
-   * que os quatro cartões de pilar precisam, a lateral nunca passava de 304px
-   * em 1440 — e como a foto é 2:3 e aparece INTEIRA, é a largura da lateral que
-   * decide o tamanho da pessoa. Medido no arranjo antigo:
+   * Três arranjos foram medidos nesta seção, nesta ordem:
    *
-   *   1024x768  → lateral 144px, foto 144x216   (28% da altura da janela)
-   *   1280x800  → lateral 224px, foto 224x336   (42%)
-   *   1440x900  → lateral 304px, foto 304x457   (51%)
-   *   1920x1080 → lateral 544px, foto 544x817   (76%)
+   *   1. Coluna lateral pura (`minmax(9rem,1fr) minmax(0,52rem) …`). A foto
+   *      cabia dentro da lateral e por isso era o que sobrava da tela: 144x216
+   *      em 1024, 304x457 em 1440. Pequena demais.
+   *   2. Faixa embaixo (título e pilares em cima, o par numa linha própria).
+   *      Resolvia o tamanho — 497x745 em 1440 — mas o dono achou o par embaixo
+   *      estranho e pediu o lateral de volta.
+   *   3. Este. Lateral outra vez, só que a foto é dimensionada pela ALTURA da
+   *      janela e TRANSBORDA por cima do miolo. A largura da coluna deixa de
+   *      ser o teto do tamanho, que era o gargalo dos outros dois.
    *
-   * Em tudo abaixo de 1900px de largura a pessoa era um selo. O dono pediu a
-   * foto "quase do tamanho da página", e não havia sobra horizontal de onde
-   * tirar: crescer a lateral só é possível tirando do miolo, e abaixo de 52rem
-   * os cartões passam a quebrar o título em três linhas.
+   * A ARITMÉTICA QUE NENHUM ARRANJO LATERAL ESCAPA: a página tem 100vw, as
+   * duas fotos comem 2x a largura de cada uma, e o que sobra é o texto. Em
+   * 1440, com foto de 486px, sobram 428px de texto — e não há sobreposição que
+   * mude isso, porque o texto que ficasse sob a foto seria texto escondido. A
+   * sobreposição não cria espaço; ela muda a LEITURA da peça, de "foto encaixada
+   * numa coluna" para "foto à frente da página".
    *
-   * ARRANJO NOVO: conteúdo em cima ocupando as duas colunas, o par de fotos
-   * embaixo numa faixa própria. A largura deixa de ser o gargalo — quem passa a
-   * limitar a foto é a ALTURA DA JANELA, que é justamente a medida que o pedido
-   * usa. Ver `.dif__gente` para o cálculo.
+   * `--gente-larg` tem dois tetos e obedece ao menor:
+   *   · a altura da janela (`--gente-caixa`), que é a medida do pedido;
+   *   · `(100vw - 25.5rem) / 2`, que reserva 23rem de texto + 2,5rem de calha.
+   * Sem o segundo teto, 1024x768 pediria 415px de foto por lado e sobrariam
+   * 194px de texto — os cartões de pilar viravam uma coluna de tiras.
    *
-   * É A MESMA GRADE DO CELULAR. Antes eram dois desenhos diferentes; agora só
-   * muda o tamanho das peças, e a regra do projeto ("o que existe no desktop
-   * existe no celular") deixa de ser algo a vigiar e passa a ser estrutural.
-   *
-   * `minmax(0, 1fr)` nas duas e não `1fr`: `1fr` é `minmax(auto, 1fr)`, e o
-   * mínimo `auto` é o min-content do que está dentro. O trilho horizontal dos
-   * pilares mede 580px de min-content (medido) e faria a faixa crescer atrás do
-   * item, vazando a página em 390px de largura.
+   * As colunas laterais valem `--gente-larg - --gente-avanco`: é a parte da
+   * foto que a coluna PAGA. Os 4,5rem restantes de cada foto ficam por conta do
+   * miolo, que os devolve como padding (ver `.claro__wrap` abaixo).
    */
   .diferenciais {
     position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas:
-      'miolo miolo'
-      'esq   dir';
-    /* O par de fotos não encosta nos pilares: 3rem medidos contra a régua de
-       brasa do último cartão, que é a linha mais baixa do miolo. */
-    row-gap: 3rem;
-    /* A folga entre as duas pessoas. No celular ela vira sobreposição negativa
-       (ver o bloco de 900px), porque lá as duas são grandes demais para o
-       espaço e a emenda precisa virar composição. */
-    column-gap: 1.5rem;
+
+    /* Altura da caixa. 88vh e não 100vh porque a caixa inteira tem de caber na
+       janela: passando disso ninguém vê a pessoa inteira de uma vez, e "mostrar
+       tudo" volta a falhar — por rolagem em vez de recorte. O teto de 56rem é
+       para monitores altos, onde 88vh pediria uma foto de 1000px e a seção
+       viraria só rolagem. */
+    --gente-caixa: min(88vh, 56rem);
+
+    /* 0,92 é a folga do parallax: a caixa fica 8% mais alta do que a proporção
+       2:3 pede, o `contain` encaixa pela largura e sobram 4% de altura em cada
+       ponta — exatamente o que o deslocamento de ±3% consome sem descobrir
+       moldura. Ver `dif-gente-parallax-inteira`. */
+    --gente-larg: min(
+      calc(var(--gente-caixa) * 0.92 * 2 / 3),
+      calc((100vw - 25.5rem) / 2)
+    );
+
+    /* QUANTO A FOTO AVANÇA SOBRE O MIOLO: 72px de cada lado, medidos.
+       Não é número de gosto — ele é o que o miolo devolve em padding logo
+       abaixo, e é o que faz a foto cruzar a borda do bloco de conteúdo em vez
+       de encostar nela. Crescer isto sem crescer o padding do miolo põe texto
+       debaixo da foto, que é o defeito que esta seção não pode ter. */
+    --gente-avanco: 4.5rem;
+
+    grid-template-columns:
+      max(0px, calc(var(--gente-larg) - var(--gente-avanco)))
+      minmax(0, 1fr)
+      max(0px, calc(var(--gente-larg) - var(--gente-avanco)));
+    grid-template-areas: 'esq miolo dir';
   }
-  /**
    * `margin-inline: 0` ANULA O `auto` DO `.claro__wrap`, E ISSO É O QUE IMPEDE
    * A SEÇÃO INTEIRA DE ALARGAR.
    *
@@ -1194,18 +1217,17 @@ const combos = menu.combos.map((combo) => ({
    * trilho NÃO zera a contribuição intrínseca dele no Chrome (medido: o miolo
    * seguiu com 628). Contêiner de rolagem não é blindagem de largura.
    *
-   * O QUE MUDOU COM O ARRANJO NOVO: o miolo passou a atravessar as DUAS colunas
-   * ('miolo miolo'), então não há mais duas faixas laterais para centralizá-lo —
-   * ele precisa se centralizar sozinho, e voltar a `margin-inline: auto` traria
-   * de volta exatamente o vazamento de 238px descrito acima.
+   * `width: 100%` + `min-width: 0` continuam por precaução: com uma largura
+   * EXPLÍCITA o item deixa de ser dimensionado por fit-content (a causa acima),
+   * e `min-width: 0` desarma o mínimo automático de item de grade, que é o
+   * min-content — os mesmos 580px do trilho.
    *
-   * A saída é `width: 100%`. Com uma largura EXPLÍCITA o item deixa de ser
-   * dimensionado por fit-content, que era a causa: a largura vira 100% da faixa,
-   * o `max-width: 68rem` corta, e o `justify-self: center` centraliza a caixa
-   * já dimensionada. `min-width: 0` desarma o mínimo automático de item de
-   * grade (que é o min-content, os mesmos 580px do trilho) — sem ele o
-   * `width: 100%` seria ignorado no celular e o vazamento voltaria por outra
-   * porta.
+   * O `padding-inline` É O QUE IMPEDE TEXTO DEBAIXO DA FOTO, e o número não é
+   * escolhido: ele é `--gente-avanco` (o quanto a foto entra no miolo) mais
+   * 1,25rem de calha. Medido em 1440x900: a foto avança 72px sobre a faixa do
+   * miolo e o texto começa em 92px — 20px de ar entre a borda da foto e a
+   * primeira letra. Os dois números andam JUNTOS: mexer no avanço sem mexer
+   * aqui põe o parágrafo debaixo da pessoa.
    */
   .diferenciais > .claro__wrap {
     grid-area: miolo;
@@ -1213,6 +1235,7 @@ const combos = menu.combos.map((combo) => ({
     width: 100%;
     min-width: 0;
     justify-self: center;
+    padding-inline: calc(var(--gente-avanco) + 1.25rem);
   }
 
   /**
@@ -1231,52 +1254,50 @@ const combos = menu.combos.map((combo) => ({
    * ali não existe notch.
    */
   /**
-   * O TAMANHO DA FOTO PASSOU A SER MEDIDO EM ALTURA DE JANELA, NÃO EM SOBRA DE
-   * LARGURA — e é isso que atende ao "quase do tamanho da página".
+   * O TAMANHO DA FOTO É MEDIDO EM ALTURA DE JANELA, E A CAIXA TRANSBORDA A
+   * COLUNA — as duas coisas juntas são o que faz a pessoa ficar grande.
    *
-   * `--gente-caixa` é a altura da CAIXA. 90vh e não 100vh porque a caixa
-   * inteira tem de caber na janela: se ela passar da altura da tela, ninguém vê
-   * a pessoa inteira de uma vez, e "mostrar tudo" volta a falhar — só que por
-   * rolagem em vez de recorte. O teto de 60rem (960px) existe para monitores
-   * altos: sem ele, uma janela de 1440px de altura pediria uma foto de 1300px e
-   * a seção viraria só rolagem.
+   * A caixa tem `--gente-larg` de largura, que é MAIOR do que a coluna lateral
+   * em exatamente `--gente-avanco` (72px). Item de grade transborda a própria
+   * área sem recorte nenhum, então a sobra cai por cima do miolo — que é o
+   * pedido do dono, "colocar eles sobrepondo a parte do site".
    *
-   * A LARGURA É 92% DA CAIXA CONVERTIDOS PELA PROPORÇÃO 2:3, e os 8% que faltam
-   * são o combustível do parallax. Como a caixa fica mais ESTREITA do que a
-   * proporção da foto pede, o `contain` encaixa pela largura e sobra 4% de
-   * altura em cada ponta — exatamente o espaço que o deslocamento de ±3% da
-   * animação consome sem descobrir moldura. Sem essa folga o parallax abriria
-   * uma faixa de carvão no topo ou no pé.
+   * `justify-self: start` na esquerda e `end` na direita: cada uma encosta na
+   * borda EXTERNA da página e cresce para dentro. É por isso que a
+   * sobreposição não vira vazamento horizontal — nenhuma das duas tem para
+   * onde crescer em direção à borda.
    *
-   * `min(100%, ...)` porque entre 901px e ~1100px de janela larga-e-alta a
-   * conta pela altura pediria mais largura do que a metade da tela tem. Aí quem
-   * manda é a célula, o `contain` encaixa pela altura, e a folga passa a ser
-   * horizontal — o parallax é vertical e continua cabendo.
+   * Resultado medido, contra os dois arranjos anteriores:
    *
-   * Resultado medido, contra o arranjo de coluna lateral que ele substitui:
+   *                  coluna pura     faixa embaixo    este
+   *   1024x768        144x216         424x635         308x462
+   *   1280x800        224x336         441x662         432x648
+   *   1440x900        304x457         497x745         486x729
+   *   1920x1080       544x817         589x883         550x825
    *
-   *                     antes            depois
-   *   1024x768      144x216          424x635    (2,9x em cada eixo)
-   *   1280x800      224x336          441x662    (1,97x)
-   *   1440x900      304x457          497x745    (1,63x, área 2,7x)
-   *   1920x1080     544x817          589x883    (1,08x)
+   * Em 1024 este arranjo perde para a faixa e não há como não perder: 2x415 de
+   * foto numa página de 1024 deixaria 194px de texto. O teto de largura em
+   * `--gente-larg` corta a foto ali para 308px, e ainda assim ela é 2,1x a da
+   * coluna pura.
    */
   .dif__gente {
-    --gente-caixa: min(90vh, 60rem);
     height: var(--gente-caixa);
-    width: min(100%, calc(var(--gente-caixa) * 0.92 * 2 / 3));
+    width: var(--gente-larg);
 
     /* O `stretch` padrão do grid ignoraria a altura acima e esticaria a caixa
-       até a linha inteira — que é o que a versão de coluna lateral fazia, e é
-       de onde vinham os 905px de figura para uma foto de 457px. */
+       até a linha inteira — era o que a versão de coluna lateral fazia, e é de
+       onde vinham os 905px de figura para uma foto de 457px. */
     align-self: center;
 
-    /* O mesmo tratamento do celular. Antes o desktop sangrava até a borda
-       (a lateral era um bloco de carvão de 905px de altura, e sangrar era o
-       ponto); como peça solta sobre o areia, canto vivo e sem sombra lê como
-       imagem colada. */
-    border-radius: 14px;
-    box-shadow: 0 22px 50px rgb(0 0 0 / 0.35);
+    /* A FOTO PASSA POR CIMA DOS CARTÕES, ENTÃO NÃO PODE COMER CLIQUE.
+       A figura não tem link nem alvo de toque; sem isto o canto do primeiro e
+       do último cartão de pilar ficariam sob uma área que engole o ponteiro,
+       e o trilho de teclado dos pilares perderia o clique de foco. */
+    pointer-events: none;
+    /* Acima do miolo. A ordem no DOM (miolo → esq → dir) já pintaria por cima,
+       mas o cartão de pilar cria contexto de empilhamento próprio
+       (`isolation: isolate`) e a garantia tem de ser explícita. */
+    z-index: 3;
 
     margin: 0;
     overflow: hidden;
@@ -1284,21 +1305,17 @@ const combos = menu.combos.map((combo) => ({
        seção inteira e cobriria os cartões. */
     position: relative;
     /**
-     * #020202 E NÃO O CARVÃO DA MARCA — e a troca só passou a importar agora.
+     * FUNDO TRANSPARENTE NO DESKTOP, e é isso que faz a máscara funcionar.
      *
-     * Enquanto a figura era a coluna lateral inteira (905px de altura para uma
-     * foto de 457px), a sobra de fundo era enorme e ficava LONGE da foto, no
-     * meio de um bloco escuro que o olho lia como faixa da seção. Na caixa nova
-     * a sobra é de 32px em cada ponta, colada na foto — e ali o carvão (#140c06,
-     * marrom quente) encosta no preto de estúdio da foto (#020202, neutro). Nos
-     * prints em 1440x900 isso aparece como uma tira marrom no topo e no pé de
-     * cada cartão, exatamente o tipo de emenda que denuncia montagem.
+     * A caixa é 8% mais alta do que a foto (a folga do parallax). Com fundo
+     * pintado, essa sobra desenha uma tira sólida acima e abaixo da pessoa e a
+     * peça volta a ter cara de retângulo colado. Transparente, a sobra é areia
+     * e a foto termina onde a pessoa termina.
      *
-     * Dentro do recorte de um cartão de foto quem manda é o preto da foto. O
-     * carvão da marca continua no `::after` (o véu de revelação), onde ele cobre
-     * o cartão inteiro e a temperatura não tem com o que ser comparada.
+     * No celular o fundo continua pintado (ver o bloco de 900px): lá a figura
+     * tem a proporção EXATA da foto, não há sobra, e o preto é o cartão.
      */
-    background-color: #020202;
+    background-color: transparent;
 
     /* Declarado AQUI e não herdado: este projeto não tem reset global de
        box-sizing (conferido — `box-sizing` não aparece em nenhum lugar de
@@ -1309,11 +1326,51 @@ const combos = menu.combos.map((combo) => ({
   }
   .dif__gente--esq { padding-left: env(safe-area-inset-left); }
   .dif__gente--dir { padding-right: env(safe-area-inset-right); }
-  /* `end` e `start` empurram as duas para o centro da faixa; o `column-gap` de
-     1,5rem da grade é a única coisa entre elas. Com `center` em cada célula
-     sobrariam ~110px de areia no meio em 1440 e o par se desmancharia. */
-  .dif__gente--esq { grid-area: esq; justify-self: end; }
-  .dif__gente--dir { grid-area: dir; justify-self: start; }
+  /* Cada uma encosta na borda EXTERNA da página e transborda para dentro.
+     Invertido (`end` na esquerda), o excedente cresceria para FORA da tela e
+     viraria vazamento horizontal — o defeito mais provável desta sobreposição. */
+  .dif__gente--esq { grid-area: esq; justify-self: start; }
+  .dif__gente--dir { grid-area: dir; justify-self: end; }
+
+  /**
+   * A EMENDA ENTRE O PRETO DA FOTO E O AREIA DA PÁGINA VIRA DEGRADÊ — foi assim
+   * que a peça deixou de parecer adesivo colado.
+   *
+   * O dono pediu "uma box-shadow combinando as cores para não parecer que foi
+   * sobreposto". Testei os dois caminhos e ficou a máscara, não a sombra:
+   *
+   *   · SOMBRA (cartão arredondado + halo quente). Funciona, mas o retângulo
+   *     continua lá: uma foto de estúdio preta sobre areia com canto definido
+   *     lê como cartão colado por cima, que é exatamente a palavra que o dono
+   *     usou para o que NÃO quer.
+   *   · MÁSCARA. O preto do fundo de estúdio dissolve no areia e a peça deixa
+   *     de ter borda. Não sobra emenda para combinar cor nenhuma.
+   *
+   * A máscara vai na FIGURA e não na imagem: assim ela vale também para o véu
+   * de revelação (`::after`), que senão apareceria como um retângulo duro de
+   * carvão durante os 18% de rolagem em que ele desce.
+   *
+   * OS NÚMEROS SÃO TIRADOS DAS FOTOS, não de gosto — o dono foi explícito em
+   * não esconder nenhum elemento:
+   *
+   *   · topo 5%: 40px em 810. É preto de estúdio puro nas duas fotos; a cabeça
+   *     mais alta começa 120px abaixo do quadro.
+   *   · laterais 3%: 15px em 486. Medido na foto da placa, que é a apertada:
+   *     a borda direita da placa fica a 42px da borda do quadro, e o keffiyeh
+   *     da esquerda a 38px. Os 15px caem em fundo preto nos dois lados.
+   *   · pé: NENHUM. O thobe branco encosta na borda de baixo das duas fotos, e
+   *     um degradê ali comeria a barra da roupa.
+   */
+  .dif__gente {
+    mask-image:
+      linear-gradient(to bottom, transparent 0, #000 5%),
+      linear-gradient(to right, transparent 0, #000 3%, #000 97%, transparent 100%);
+    mask-composite: intersect;
+    -webkit-mask-image:
+      linear-gradient(to bottom, transparent 0, #000 5%),
+      linear-gradient(to right, transparent 0, #000 3%, #000 97%, transparent 100%);
+    -webkit-mask-composite: source-in;
+  }
 
   /**
    * `contain` E NÃO `cover` — a foto inteira, e o dono foi direto ao ponto:
@@ -1505,8 +1562,17 @@ const combos = menu.combos.map((combo) => ({
      * `scrollWidth` com `innerWidth` lê ZERO de vazamento com 238px vazando. A
      * comparação honesta é `scrollWidth` contra `clientWidth`.
      */
-    .diferenciais { row-gap: 0; }
-    .diferenciais > .claro__wrap { padding-bottom: 2.5rem; }
+    .diferenciais {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-areas:
+        'miolo miolo'
+        'esq   dir';
+    }
+    /* O padding que reserva espaço para a sobreposição do desktop não existe
+       aqui: no celular as figuras estão EMBAIXO do texto, não do lado dele. Sem
+       zerar, o parágrafo perderia 184px dos 390 da tela por causa de uma foto
+       que não está ao lado dele. */
+    .diferenciais > .claro__wrap { padding-inline: 0; padding-bottom: 2.5rem; }
 
     /**
      * DUAS PEÇAS, NÃO UMA FOTO PARTIDA AO MEIO.
@@ -1532,16 +1598,33 @@ const combos = menu.combos.map((combo) => ({
      * ocupando as células de grade que já tinham, então nada precisa saber a
      * altura de nada. Em 320px a sobreposição encolhe junto, porque é `rem`.
      */
+    /**
+     * TUDO QUE O DESKTOP FAZ COM ESTAS FIGURAS É DESFEITO AQUI.
+     *
+     * O arranjo do celular está aprovado pelo dono e não muda: par sobreposto,
+     * proporção 2:3 nativa, desencontro vertical, cartão com sombra. O que o
+     * desktop acrescentou (altura por vh, transbordo sobre o miolo, máscara de
+     * borda, fundo transparente) é tudo de lá e nada disso pode vazar para cá.
+     *
+     * `height/width: auto` porque aqui a largura é a metade da tela (195px em
+     * 390) e a altura sai da proporção: travar altura em vh encolheria a foto
+     * em telas baixas, que é a maioria dos celulares em paisagem.
+     *
+     * `mask-image: none` porque o degradê de borda existe para dissolver o
+     * preto no areia quando a foto está POR CIMA do conteúdo. Aqui ela é um
+     * cartão com sombra e borda arredondada, e a máscara comeria justamente o
+     * canto que a sombra desenha.
+     */
     .dif__gente {
-      /* Desfaz o dimensionamento por altura de janela do desktop. Aqui a
-         largura é a metade da tela (195px em 390) e a altura sai da proporção:
-         travar altura em vh faria a foto encolher em telas baixas, que é a
-         maioria dos celulares em paisagem. */
       height: auto;
       width: auto;
       aspect-ratio: 2 / 3;
       align-self: auto;
       justify-self: auto;
+      pointer-events: auto;
+      background-color: #020202;
+      mask-image: none;
+      -webkit-mask-image: none;
       border-radius: 12px;
       box-shadow: 0 18px 40px rgb(0 0 0 / 0.45);
     }
@@ -1561,9 +1644,9 @@ const combos = menu.combos.map((combo) => ({
       padding-left: calc(0.75rem + env(safe-area-inset-left));
       padding-right: calc(0.75rem + env(safe-area-inset-right));
     }
-    /* `stretch` desfaz o `end`/`start` do desktop, que existe para juntar duas
-       peças pequenas no centro de uma faixa larga. Aqui não há faixa larga: as
-       duas ocupam a metade inteira da tela. */
+    /* `stretch` desfaz o `start`/`end` do desktop, que existe para encostar cada
+       foto na borda externa da página. Aqui não há transbordo: as duas ocupam a
+       metade inteira da tela. */
     .dif__gente--esq {
       justify-self: stretch;
       transform: translateY(-0.9rem);
@@ -1674,6 +1757,35 @@ const combos = menu.combos.map((combo) => ({
     /* Item flex tem `min-width: auto`: sem zerar, uma palavra longa do título
        empurra a coluna e desiguala as quatro. */
     min-width: 0;
+  }
+
+  /**
+   * NO DESKTOP OS QUATRO CARTÕES VIRARAM 2x2, e não foi escolha de estilo — foi
+   * a conta da sobreposição.
+   *
+   * As duas fotos comem 2x486px em 1440 e sobram 428px de texto. Quatro cartões
+   * lado a lado ali dão 99px cada: o título de cada pilar quebraria em cinco
+   * linhas. Quatro em linha só voltam a caber com 784px de texto, o que
+   * limitaria a foto a 308px — de volta ao tamanho da coluna espremida que o
+   * dono recusou.
+   *
+   * `calc(50% - 0.75rem)` (metade menos meia calha) e não `auto-fit` com
+   * mínimo: com `auto-fit` existe uma faixa de janelas em que cabem TRÊS por
+   * linha, e quatro cartões em três colunas viram 3+1. Duas colunas fixas dão a
+   * mesma peça em qualquer largura de desktop.
+   *
+   * Medido: 1440x900 → 202px por cartão; 1920x1080 → 378px; 1024x768 → 172px.
+   * Todos acima dos 178px em que o título parava de quebrar no arranjo antigo,
+   * menos o de 1024 — lá o título de dois pilares usa duas linhas, que é o
+   * mesmo que já acontecia antes.
+   *
+   * A consulta é `min-width: 901px` E `min-height: 501px` de propósito: abaixo
+   * de qualquer um dos dois os pilares viram trilho horizontal com rolagem
+   * (ver o bloco logo abaixo), e ali `flex-wrap` desmontaria o trilho.
+   */
+  @media (min-width: 901px) and (min-height: 501px) {
+    .pilares { flex-wrap: wrap; }
+    .pilares > .pilar { flex: 1 1 calc(50% - 0.75rem); }
   }
 
   /**
