@@ -1292,7 +1292,8 @@ const combos = menu.combos.map((combo) => ({
 
     /* QUANTO A FOTO AVANÇA SOBRE O MIOLO E QUANTO O `.claro__wrap` RECUA DA
        BORDA — os dois valem o MESMO número de propósito (ver a regra do wrap
-       mais abaixo e o comentário grande acima). */
+       mais abaixo e o comentário grande acima).
+
     --gente-avanco: 3rem;
 
     /* A margem que sobra FORA do `.claro__wrap` (68rem) em cada lado, medida
@@ -1499,7 +1500,7 @@ const combos = menu.combos.map((combo) => ({
     width: 100%;
     height: 100%;
     object-fit: contain;
-    object-position: 50% 50%;
+    object-position: 50% 100%;
   }
   /**
    * NÃO HÁ MAIS `object-position` POR LADO, e a ausência é o conserto.
@@ -1507,11 +1508,26 @@ const combos = menu.combos.map((combo) => ({
    * Enquanto o desktop usava `cover`, cada foto precisava de um número próprio
    * dizendo qual pedaço sobreviveria ao corte — 44% de um lado, 50% do outro,
    * e ainda assim o hambúrguer da esquerda saía pela metade. Com `contain` a
-   * pergunta deixa de existir: aparece tudo, e não há o que ancorar.
+   * pergunta deixa de existir: aparece tudo, e não há o que ancorar na
+   * HORIZONTAL. Por isso os dois lados usam o mesmo valor.
    *
-   * Se algum dia o desktop voltar a `cover`, estes números precisam voltar
-   * JUNTOS e recalculados para as fotos da vez — eles descreviam onde estava o
-   * assunto em cada quadro, e quadro novo muda tudo.
+   * O 100% VERTICAL É QUE AS DUAS PISEM NO CHÃO DA SEÇÃO. No desktop a caixa é
+   * muito mais alta do que a foto desenhada — ela é limitada pela largura, e em
+   * 1440x900 são 792px de caixa para 295px de figura. Centrada (o `50%`
+   * anterior), a pessoa boiava no meio da seção com o corte do quadril
+   * acontecendo no ar, e corte no ar lê como membro decepado. Encostada no pé
+   * da caixa, o mesmo corte cai na borda da seção e passa a ler como quadro: a
+   * pessoa continua para fora da página, que é a convenção de qualquer foto
+   * sangrada. De quebra o alinhamento deixa de ser com a primeira fileira de
+   * pilares e passa a ser com a seção inteira.
+   *
+   * No celular isto não muda NADA, e por construção: lá a caixa tem o mesmo
+   * `aspect-ratio: 5/6` do arquivo, o `contain` preenche os dois eixos e não
+   * sobra folga para ancorar. O valor é inócuo por lá — não precisa de exceção.
+   *
+   * Se algum dia o desktop voltar a `cover`, os números por lado precisam
+   * voltar JUNTOS e recalculados para as fotos da vez — eles descreviam onde
+   * estava o assunto em cada quadro, e quadro novo muda tudo.
    */
 
   /**
