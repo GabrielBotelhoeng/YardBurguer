@@ -1114,11 +1114,25 @@ const combos = menu.combos.map((combo) => ({
   .diferenciais {
     position: relative;
     display: grid;
-    /* 62rem e não os 68rem das outras seções: cada rem que sai do miolo entra
-       nas duas laterais, e é largura de lateral que decide se a placa da foto
-       da direita é legível. Medido em 1440: 68rem deixa 176px por lado (30% da
-       foto, a placa vira "VEM" e um Y); 62rem deixa 224px. Os cartões não
-       sentem — a grade já quebrava em 3+1 nas duas larguras. */
+    /**
+     * 52rem, E O NÚMERO É O TAMANHO DA PESSOA NA TELA, não a largura do texto.
+     *
+     * Cada rem que sai do miolo entra nas duas laterais. Desde que o desktop
+     * passou a mostrar a foto INTEIRA (`object-fit: contain` — ver
+     * `.dif__gente img`), é a largura da lateral que decide o tamanho da
+     * pessoa: a altura já sobra, com 220px de folga por ponta.
+     *
+     * Medido em 1440x900, coluna de 777px de altura:
+     *
+     *   68rem → 176px por lado, foto 176x264
+     *   62rem → 224px por lado, foto 224x337   (era isto, e ficou pequena)
+     *   52rem → 304px por lado, foto 304x457   ← aqui, 36% maior
+     *   48rem → 336px por lado, foto 336x505, e os cartões caem para 180px
+     *
+     * Em 1920 os mesmos 52rem dão 544px por lado e a foto passa a ocupar a
+     * coluna quase inteira. O piso não é gosto: abaixo de 52rem os quatro
+     * cartões de pilar ficam com menos de 190px e o título de dois deles quebra
+     * em três linhas. */
     /**
      * A LATERAL TEM PISO; QUEM CEDE É O MIOLO.
      *
@@ -1134,7 +1148,7 @@ const combos = menu.combos.map((combo) => ({
      * não vale: lá a grade já vira duas colunas e as figuras fecham a seção
      * lado a lado, com largura de verdade.
      */
-    grid-template-columns: minmax(9rem, 1fr) minmax(0, 62rem) minmax(9rem, 1fr);
+    grid-template-columns: minmax(9rem, 1fr) minmax(0, 52rem) minmax(9rem, 1fr);
     grid-template-areas: 'esq miolo dir';
   }
   /**
