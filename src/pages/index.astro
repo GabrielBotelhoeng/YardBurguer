@@ -259,14 +259,16 @@ const combos = menu.combos.map((combo) => ({
       que sobra fora do `.claro__wrap` (68rem): isso zerava a cobertura sobre
       os cartões, mas essa margem só existe acima de 1088px — abaixo disso a
       foto degenerava para 24px, uma pessoa flutuando como lasca na borda.
-      Essa faixa (768–1088px) não é rara: iPad, Surface, janela não
-      maximizada, celular deitado (844×390) caem todos nela.
+      Essa faixa (901–1088px de largura, sempre com altura acima de 500px —
+      abaixo disso ou de 900px de largura a seção já é o layout mobile, ver o
+      bloco `(max-width: 900px), (max-height: 500px)` mais abaixo) não é rara:
+      iPad em paisagem, Surface, janela de monitor não maximizada caem nela.
 
       A CORREÇÃO: `--gente-larg-desejada` dimensiona a foto só pela JANELA
       (altura × 0,92 × 5/6, com piso de 18vw contra janelas curtas e largas) —
       nunca degenera. `--gente-larg-segura` é onde o ÍCONE do pilar mais
       próximo começa (margem do wrap + avanço + padding do cartão) — a foto
-      usa o menor dos dois, com piso absoluto de 120px. Na faixa 768–1024px
+      usa o menor dos dois, com piso absoluto de 120px. Na faixa 901–1024px
       esse piso ainda toca o ícone (a margem do wrap some ali, sobram uns
       50px de cobertura) — é a única exceção aceita, e fica documentada e
       medida no CSS. `--gente-avanco` subiu de 1,5rem para 3rem, e o padding
@@ -1233,10 +1235,11 @@ const combos = menu.combos.map((combo) => ({
    * `--gente-margem-wrap` só existe acima de 1088px (68rem, o teto do
    * `.claro__wrap`); ABAIXO disso ela é zero e a foto degenerava para só o
    * avanço — 24px, uma pessoa de 24×36px boiando no meio de uma coluna vazia.
-   * E essa faixa (768–1088px) não é rara: iPad retrato, iPad paisagem,
-   * Surface, janela não maximizada em monitor 1080p e o celular deitado
-   * (844×390, medido em 24×343) caem todos nela — celular é o cliente
-   * principal desta landing.
+   * E essa faixa (901–1088px de largura, sempre com altura acima de 500px —
+   * abaixo disso já é o layout mobile, e o par vai para o fim da seção) não é
+   * rara: iPad em paisagem, Surface, janela não maximizada em monitor 1080p
+   * caem nela — celular é o cliente principal desta landing, mas aqui quem
+   * usa este código é o desktop.
    *
    * RODADA 3 — ESTE. Dois mecanismos independentes, não um só:
    *
@@ -1258,7 +1261,7 @@ const combos = menu.combos.map((combo) => ({
    *   `--gente-larg` é o MENOR dos dois — a foto nunca é maior do que o
    *   necessário para não tocar o ícone —, com um piso absoluto de 120px para
    *   nunca repetir a degeneração da Rodada 2. Esse piso é o único caso em que
-   *   a foto ainda toca o ícone (medido: na faixa 768–1024px, onde a margem
+   *   a foto ainda toca o ícone (medido: na faixa 901–1024px, onde a margem
    *   soma zero, `--gente-larg-segura` cai a ~70px e o piso de 120px vence —
    *   sobram uns 50px cobrindo o ícone e o começo do título). É a exceção que
    *   o pedido aceita explicitamente: nunca abaixo de ~120px de largura, ainda
@@ -1316,15 +1319,17 @@ const combos = menu.combos.map((combo) => ({
        conta sozinha (acima de ~1187px) o `max()` devolve os 3rem originais e
        nada muda; abaixo disso o avanço sobe suavemente até 97,6px em 1088px e
        segura ali. Nenhuma faixa fica sem foto e nenhuma fica com foto sobre
-       texto. Verificado em 768, 1024, 1280, 1440 e 1920 — ver a tabela no
-       comentário do `srcset`. */
+       texto. Verificado em 901, 1024, 1280, 1440 e 1920 — abaixo de 901px (ou
+       de 500px de altura) quem manda é o layout mobile, não esta conta — ver
+       a tabela no comentário do `srcset`. */
     --gente-avanco: max(3rem, calc(120px - 1.4rem - var(--gente-margem-wrap)));
 
     /* A margem que sobra FORA do `.claro__wrap` (68rem) em cada lado, medida
        contra a largura REAL do próprio `.diferenciais` (`100%`, não `100vw`
        — ver o comentário grande acima). Zero quando a janela é mais estreita
-       que o próprio wrap — é o caso de 768–1088px, onde só o mecanismo de
-       segurança abaixo (não este) evita a degeneração. */
+       que o próprio wrap — é o caso de 901–1088px (sempre com altura acima de
+       500px), onde só o mecanismo de segurança abaixo (não este) evita a
+       degeneração. */
     --gente-margem-wrap: max(0px, calc((100% - 68rem) / 2));
 
     /* O TAMANHO QUE A FOTO TERIA SÓ PELA JANELA, ignorando onde o conteúdo
@@ -1382,8 +1387,9 @@ const combos = menu.combos.map((combo) => ({
    * que este número inteiro existe para evitar.
    *
    * Só desktop: no celular as figuras saem do fluxo absoluto e vão para o fim
-   * da seção (ver o bloco de 767px), onde este padding extra não tem função —
-   * lá o wrap volta ao padding padrão.
+   * da seção (ver o bloco `(max-width: 900px), (max-height: 500px)` mais
+   * abaixo), onde este padding extra não tem função — lá o wrap volta ao
+   * padding padrão.
    */
   .diferenciais > .claro__wrap {
     padding-left: calc(var(--gente-avanco) + env(safe-area-inset-left));
@@ -1398,8 +1404,9 @@ const combos = menu.combos.map((combo) => ({
    * próximo) — mas no celular elas precisam ser um PAR, lado a lado, dentro do
    * fluxo normal. `display: contents` no desktop remove esta div da árvore de
    * caixas: as figuras continuam ancorando direto em `.diferenciais`, como se
-   * a div nem existisse. No celular ela vira `display: flex` (ver o bloco de
-   * 767px) e passa a ser, de fato, a caixa que alinha o par.
+   * a div nem existisse. No celular ela vira `display: flex` (ver o bloco
+   * `(max-width: 900px), (max-height: 500px)` mais abaixo) e passa a ser, de
+   * fato, a caixa que alinha o par.
    */
   .dif__par {
     display: contents;
@@ -1446,7 +1453,8 @@ const combos = menu.combos.map((combo) => ({
      * pintado, essa sobra desenha uma tira sólida acima e abaixo da pessoa e a
      * peça volta a ter cara de retângulo colado. Transparente, a sobra é areia
      * e a foto termina onde a pessoa termina. Isto agora vale também no
-     * celular — ver o bloco de 767px.
+     * celular — ver o bloco `(max-width: 900px), (max-height: 500px)` mais
+     * abaixo.
      */
     background-color: transparent;
 
@@ -1685,7 +1693,8 @@ const combos = menu.combos.map((combo) => ({
   /* O `dif-gente-parallax` com escala (1,16 → 1,08) foi REMOVIDO daqui. Ele era
      o parallax do celular e existia para a época do `object-fit: cover`, onde a
      escala extra era sobra escondida. Hoje as duas larguras usam
-     `dif-gente-parallax-inteira` — ver o bloco de 767px. */
+     `dif-gente-parallax-inteira` — ver o bloco `(max-width: 900px), (max-height:
+     500px)` mais abaixo. */
 
   /* O véu desce e descobre a foto de cima para baixo — a mesma direção em que
      a figura entra na tela quando a pessoa rola. Subir revelaria pelo pé, que
@@ -1706,6 +1715,22 @@ const combos = menu.combos.map((combo) => ({
    * celular o que existe no desktop é esconder da maioria. O que muda é o papel
    * — de camada sobreposta para um par que fecha a seção, abaixo dos cartões.
    *
+   * "É CELULAR?" ERA `(max-width: 767px)` E DIVERGIA DA PERGUNTA QUE A
+   * `.barra-pedido` E O `motion.js` FAZEM — `(max-width: 900px), (max-height:
+   * 500px)` (ver o comentário grande de `.barra-pedido`, que já avisava: toda
+   * vez que essas duas perguntas divergiram neste projeto, algo quebrou em
+   * silêncio). Aqui quebrou assim: entre 768–900px de largura, e em qualquer
+   * altura ≤500px (844×390 incluso), a seção continuava em modo desktop
+   * (figura `position: absolute`, plantada pelo piso de 120px) enquanto a
+   * `.barra-pedido` já cobria o rodapé por cima — medido 36,95px de
+   * sobreposição em 844×390 (25,7% da foto visível, comendo a mão e a palavra
+   * "YARD" da placa), 8,2px em 900×1000, 4,2px em 768×1024. A mesma divergência
+   * também espremia a faixa 768–900 no piso de 120px, que é largura de coluna
+   * desktop, não de par mobile. Com as duas perguntas iguais, a barra nunca
+   * mais cai por cima da seção nesta faixa, e 768–900 passa a receber o par
+   * embaixo do texto, com 150–260px de altura — o mesmo tratamento de
+   * qualquer celular.
+   *
    * A ordem esquerda/direita se mantém porque a ordem no DOM não muda, só o
    * `display` do wrapper (`.dif__par`). `aspect-ratio: 5/6` é a proporção
    * nativa do arquivo novo — sem cortar nada — e a ALTURA é quem trava
@@ -1714,7 +1739,7 @@ const combos = menu.combos.map((combo) => ({
    * colunas de largura fixa é o que fazia o `cover` cortar a lata de
    * Coca-Cola e o hambúrguer nas versões antigas.
    */
-  @media (max-width: 767px) {
+  @media (max-width: 900px), (max-height: 500px) {
     /* A SEÇÃO NÃO PRECISA MAIS SER ALTA QUANTO A FOTO — aqui a foto está no
        fluxo normal, no fim da seção, não mais centralizada como camada. O
        `min-height: var(--gente-caixa)` do desktop viria de uma variável de
