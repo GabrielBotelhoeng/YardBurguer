@@ -367,8 +367,30 @@ async function escrever(m, cabecasComuns) {
 
   // 2. Escala para o quadro. A altura manda (é ela que iguala as cabeças); a
   //    largura só entra como trava de segurança para nunca cortar mão, lata ou
-  //    placa. Medido, ela sobra por 0,2% na `placa` e por 2% na `coca`.
-  const escala = Math.min(QUADRO.altura / alturaCorte, QUADRO.largura / largura);
+  //    placa. Medido, ela sobra por 0,2% na `placa` e por 2% na `coca` — a
+  //    `placa` encostava quase no pixel exato da borda.
+  //
+  //    `MARGEM_SEGURANCA` NÃO CORRIGE DISTORÇÃO — NÃO HÁ NENHUMA PARA CORRIGIR.
+  //    Antes de mexer aqui, medi as duas pontas: (1) a escala aplicada é um
+  //    ÚNICO escalar em `destLarg` e `destAlt` — matematicamente não existe
+  //    esticar só um eixo com um número que multiplica os dois; (2) as cabeças
+  //    batem em ~330px de saída nas duas fotos (329 na `placa`, 330 na `coca`),
+  //    ou seja, o objetivo de igualar por cabeça funciona. O que É verdade,
+  //    medido em largura-por-cabeça na linha do ombro (1 cabeça abaixo do
+  //    topo do assunto): a `placa` mede 1,47 cabeça de largura ali contra 1,13
+  //    da `coca` — 30% de diferença real, ANTES de qualquer braço se abrir.
+  //    Isso é a foto em si (a `placa` foi batida mais perto da câmera, ou o
+  //    rapaz é fisicamente mais largo de ombro) — não é este script. Forçar as
+  //    duas a medirem igual exigiria encolher só o eixo X da `placa`, e ISSO
+  //    sim seria a distorção que este comentário existe para não introduzir.
+  //
+  //    O que dava para consertar sem inventar proporção: a `placa` encostava
+  //    a 0,2% da borda (2px), sem folga nenhuma para o parallax ou para a
+  //    respiração do celular morderem sem cortar produto. 3% de margem cria a
+  //    mesma folga nas quatro bordas das duas fotos — sobra transparente, não
+  //    escala desigual entre os dois eixos.
+  const MARGEM_SEGURANCA = 0.97;
+  const escala = Math.min(QUADRO.altura / alturaCorte, QUADRO.largura / largura) * MARGEM_SEGURANCA;
   const destLarg = Math.round(largura * escala);
   const destAlt = Math.round(alturaCorte * escala);
   const esquerda = Math.round((QUADRO.largura - destLarg) / 2);

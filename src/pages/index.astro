@@ -280,15 +280,54 @@ const combos = menu.combos.map((combo) => ({
       para o carrossel abaixo — o mesmo efeito que o auto-sizing de linha do
       grid antigo dava de graça.
 
-      NO CELULAR AS DUAS DESCEM PARA O FIM DA SEÇÃO, lado a lado. `.dif__par` é
-      o wrapper que só existe para trocar `display: contents` (desktop — as
-      figuras ancoram em `.diferenciais`, o wrapper nunca aparece na árvore de
-      caixas) por `display: flex` (celular — vira o par lado a lado).
+      NO CELULAR AS DUAS ENTRAM NO PRÓPRIO TRILHO DOS PILARES, uma em cada
+      ponta — e não mais como um par embaixo dos cartões.
 
-      A ORDEM NO DOM É CONTEÚDO → ESQUERDA → DIREITA. Antes a figura da esquerda
-      vinha antes do <h2> e o leitor de tela anunciava uma foto antes de dizer do
-      que era a seção. De quebra, quem vem depois pinta por cima no desktop — que
-      é exatamente o que a sobreposição precisa, sem depender de `order` no CSS.
+      POR QUE MUDOU (04/09, a pedido do dono, depois de medir o defeito do
+      arranjo anterior). O par abaixo dos cartões (`.dif__par` em flex,
+      variante antiga) deixava uma FAIXA MORTA de ~330px no fim da seção — 112px
+      de vão entre a lista e o par, ~172px de foto, mais 40px de sobra —, e essa
+      faixa "empurrava" visualmente o carrossel de mais pedidos para baixo. O
+      dono leu isso como "espaço enorme afetando o carrossel". Trocar a POSIÇÃO
+      das fotos (para dentro do trilho) resolve isso por construção: não sobra
+      seção depois do trilho para a faixa morta existir.
+
+      A TÉCNICA: `.pilares` já é um scroller nativo (`overflow-x: auto` +
+      `scroll-snap`) — o mesmo instrumento que resolveu "o pin horizontal que
+      não é um pin" (ver o comentário dele no CSS). As duas figuras viram os
+      dois `<li>` de PONTA do trilho: um antes do primeiro pilar (NA BRASA...),
+      um depois do último (MONTADO NA HORA...). Arrastar o trilho para a
+      direita afasta a figura da esquerda e aproxima a da direita — é o "troca
+      conforme arrasta" do pedido, e sai de graça do próprio scroll, sem
+      `IntersectionObserver`, sem `scroll-timeline`, sem pin novo. A página já
+      gasta seu único pin na Cena 2; um segundo mecanismo de scroll dirigido
+      aqui (JS ou GSAP) competiria com ele à toa quando o CSS resolve sozinho.
+
+      `role="presentation"` NOS DOIS `<li>` DE PONTA: eles existem para o
+      `<ul>` aceitar a figura como item do trilho (um `<figure>` solto dentro
+      de um `role="list"` quebra a semântica de lista para leitor de tela), mas
+      não são um quinto e um sexto diferencial — são decoração ladeando os
+      quatro de verdade. `role="presentation"` tira o `<li>` da contagem de
+      itens da lista SEM esconder a `<img>` de dentro: o `alt` da foto continua
+      anunciável, só não conta como "item 5 de 6".
+
+      `display: contents` NO `<li>` EM QUALQUER LARGURA. No desktop isso
+      remove o `<li>` da árvore de caixas e a `<figure>` (`.dif__gente`)
+      continua ancorando em `position: absolute` contra `.diferenciais` — o
+      MESMO comportamento de sempre, porque `position: absolute` resolve o
+      container de posicionamento pelo ancestral mais próximo com `position`
+      diferente de `static`, não pela profundidade do DOM. Mover a `<figure>`
+      para dentro do `<ul>` não muda nada no desktop; só no celular, onde
+      `.dif__gente` vira item de flex de verdade (ver o bloco `(max-width:
+      900px), (max-height: 500px)` no CSS).
+
+      A ORDEM NO DOM É CONTEÚDO → ESQUERDA → PILARES → DIREITA. Antes a figura
+      da esquerda vinha antes do <h2> e o leitor de tela anunciava uma foto
+      antes de dizer do que era a seção. De quebra, no desktop quem vem depois
+      pinta por cima — é exatamente o que a sobreposição precisa, sem depender
+      de `order` no CSS. Fica assim mesmo com as figuras agora dentro do
+      `<ul>`: a da esquerda antes do primeiro `<li>` de pilar, a da direita
+      depois do último.
     -->
     <section class="claro diferenciais" aria-labelledby="dif-titulo">
       <div class="claro__wrap">
@@ -311,6 +350,56 @@ const combos = menu.combos.map((combo) => ({
           data-reveal="80"
           data-trilho
         >
+          {/*
+            OS DOIS `<li>` DE PONTA SÃO A FIGURA DO CELULAR, E `role="presentation"`
+            É O QUE OS TIRA DA CONTAGEM DE LISTA sem esconder a foto do leitor de
+            tela: um `<figure>` solto direto dentro de um `role="list"` quebra a
+            semântica ("lista de 6 itens" em vez de 4 diferenciais); com
+            `role="presentation"` no `<li>`, o `<ul>` continua contando 4, e a
+            `<img>` de dentro segue anunciável pelo próprio `alt`. Ver o
+            comentário grande logo acima da seção para o porquê da mudança
+            (a faixa morta que sobrava embaixo dos cartões) e o CSS de
+            `.pilar-figura` / `.dif__gente` para a mecânica.
+
+            `display: contents` no `<li>` (ver CSS) faz isso ser invisível no
+            desktop: a `<figure>` continua ancorando em `position: absolute`
+            contra `.diferenciais`, exatamente como antes de entrar no `<ul>`.
+
+            `sizes` DESCREVE O TAMANHO REAL, senão o navegador escolhe a
+            variante errada e o peso da rota anda sozinho — mesmo valor de
+            antes da mudança, porque a fórmula do celular (altura por `vw`,
+            largura pela proporção 5:6) não depende de ONDE a figura fica na
+            página, só do tamanho em que ela é desenhada:
+
+              (max-width: 520px) → 37vw   (393 CSS px → 433 px de device em
+                                    DPR3 → variante de 480w)
+              (max-width: 900px) → 220px  (teto de 44vw/260px, DPR3 → 660w)
+              (max-height: 500px) → 220px (paisagem curta, ex. 844×390)
+              (max-width: 1088px) → 40px  (901/1024, margem do wrap some)
+              (max-width: 1300px) → 130px (1280)
+              (max-width: 1600px) → 210px (1440)
+              (max-width: 2100px) → 500px (1920)
+              default              → 700px
+
+            Os cinco arquivos do `srcset` saem de
+            `squads/yard-burguer-squad/scripts/preparar-fotos-pessoas.mjs`.
+            `width`/`height` são 840x1008 (5:6) e reservam a caixa antes da
+            imagem chegar.
+          */}
+          <li class="pilar-figura pilar-figura--esq" role="presentation">
+            <figure class="dif__gente dif__gente--esq">
+              <img
+                src={`/assets/pessoas/${diferenciais.gente.esquerda.arquivo}-840.webp`}
+                srcset={`/assets/pessoas/${diferenciais.gente.esquerda.arquivo}-420.webp 420w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-480.webp 480w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-620.webp 620w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-660.webp 660w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-840.webp 840w`}
+                sizes="(max-width: 520px) 37vw, (max-width: 900px) 220px, (max-height: 500px) 220px, (max-width: 1088px) 40px, (max-width: 1300px) 130px, (max-width: 1600px) 210px, (max-width: 2100px) 500px, 700px"
+                alt={diferenciais.gente.esquerda.alt}
+                width="840"
+                height="1008"
+                loading="lazy"
+                decoding="async"
+              />
+            </figure>
+          </li>
           {
             diferenciais.pilares.map((pilar, i) => (
               <li class="pilar">
@@ -333,118 +422,21 @@ const combos = menu.combos.map((combo) => ({
               </li>
             ))
           }
+          <li class="pilar-figura pilar-figura--dir" role="presentation">
+            <figure class="dif__gente dif__gente--dir">
+              <img
+                src={`/assets/pessoas/${diferenciais.gente.direita.arquivo}-840.webp`}
+                srcset={`/assets/pessoas/${diferenciais.gente.direita.arquivo}-420.webp 420w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-480.webp 480w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-620.webp 620w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-660.webp 660w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-840.webp 840w`}
+                sizes="(max-width: 520px) 37vw, (max-width: 900px) 220px, (max-height: 500px) 220px, (max-width: 1088px) 40px, (max-width: 1300px) 130px, (max-width: 1600px) 210px, (max-width: 2100px) 500px, 700px"
+                alt={diferenciais.gente.direita.alt}
+                width="840"
+                height="1008"
+                loading="lazy"
+                decoding="async"
+              />
+            </figure>
+          </li>
         </ul>
-      </div>
-
-      {/*
-        `sizes` DESCREVE O TAMANHO REAL, senão o navegador escolhe a variante
-        errada e o peso da rota anda sozinho. O degrau do celular estava
-        MENTINDO, e o orçamento pagou por isso.
-
-        O valor antigo era `190px` fixo no celular. Ele descrevia o pior caso
-        (a figura chega a ~190px numa janela de 560px para cima), mas o medidor
-        de peso roda num aparelho de 393 CSS px, onde a figura media 133 — e em
-        DPR 2,75 o navegador pedia 522 px de device e baixava a variante de
-        620w para desenhar 366. O par de 620w custa 128,7 kB. O par de 420w, que
-        é o que aquele aparelho de fato precisa, custa 72,4 kB. Eram 56 kB
-        pagos por um degrau mal escrito.
-
-        A CORREÇÃO É DECLARAR EM `vw` ENQUANTO A FIGURA MEDE EM `vw`. No celular
-        a altura é `clamp(150px, 44vw, 260px)` e a largura sai da proporção 5:6
-        do arquivo, ou seja `44vw * 5/6 = 36,7vw` — até a altura bater no teto
-        de 260px, o que acontece por volta de 590px de janela. O corte de
-        `767px` abaixo VIROU `900px`: é a mesma pergunta "é celular?" que
-        `.barra-pedido` e o `motion.js` fazem — `(max-width: 900px),
-        (max-height: 500px)` — e o CSS de `.diferenciais` (ver o bloco no fim
-        da folha) usa exatamente essa consulta. Um valor de largura sozinho não
-        cobre a metade em altura (844×390 deitado tem 844px de largura e cairia
-        no degrau de desktop abaixo), por isso o degrau de `220px` também entra
-        por `max-height`:
-
-          (max-width: 520px) → 37vw   (a figura acompanha a janela; em 393 dá
-                                145 CSS px → 400 px de device em DPR 2,75 →
-                                variante de 420w, com 20px de folga)
-          (max-width: 900px) → 220px  (acima de ~590px a altura trava em 260px
-                                e a largura para em 217px)
-          (max-height: 500px) → 220px (paisagem curta, ex. 844×390: a largura
-                                pode passar de 900px, mas a consulta de altura
-                                pega e devolve o mesmo tamanho mobile)
-
-        NO DESKTOP a figura é limitada por `--gente-larg-segura` em quase toda a
-        faixa, então os degraus medidos continuam valendo (ver o comentário
-        grande em `.diferenciais` no CSS) — só o início da faixa mudou de 768
-        para 901, porque abaixo disso agora é o layout mobile:
-
-          (max-width: 1088px) → 40px  (901/1024, onde a margem do wrap some)
-          (max-width: 1300px) → 130px (1280)
-          (max-width: 1600px) → 210px (1440, com folga para as intermediárias)
-          (max-width: 2100px) → 500px (1920: `--gente-larg` mede 486px)
-          default              → 700px (daí para cima quem limita é
-                                 `--gente-larg-desejada`, que com a proporção
-                                 5:6 chega a ~687px em monitor alto)
-
-        DOIS DEGRAUS NOVOS NO `srcset`, `480w` E `660w`, PARA DPR 3 REAL (o
-        medidor antigo usava 2,75; iPhone 12 em diante é 3 de verdade). Os dois
-        degraus do `sizes` pedem tamanhos de device DIFERENTES, e cada um
-        precisava de um arquivo que não existia:
-
-          · Faixa `37vw` (até 520px de janela): o pedido de device é
-            `3 × 0,37 × largura`. Em 390 CSS px (iPhone 12/13/14 base) isso é
-            433 px — o `420w` antigo (400px de device a 2,75) ficava 33px
-            curto e o navegador pulava para `620w` (par de 128,7 kB). `480w`
-            (par de 88,2 kB) cobre os 433px com folga — 40,5 kB por par
-            economizados. Em 360px o pedido cai para 400px e `420w` já basta
-            (medido: `currentSrc` continua escolhendo `420w` nessa largura).
-
-          · Faixa fixa `220px` (520–900px de janela, OU qualquer altura
-            ≤500px): o pedido de device é sempre `3 × 220 = 660px`, não importa
-            se a janela tem 521 ou 900 — é um valor fixo, não um `vw`. Antes do
-            conserto 1 esta faixa só existia até 767px e ninguém a testava em
-            DPR 3 real; alargar o corte para 900px (a mesma pergunta que
-            `.barra-pedido` faz) trouxe para dentro dela justamente o celular
-            DEITADO, que é onde este projeto testa DPR 3 oficialmente (844×390
-            no `deviceScaleFactor: 3` do auditor). Sem um degrau entre `620w`
-            (620 < 660, insuficiente) e `840w`, o `currentSrc` medido em
-            844×390 sob DPR 3 resolvia para `840w` — par de 196,9 kB para
-            desenhar uma figura de 217px, pior do que o defeito de `sizes`
-            mentiroso que este comentário existe para evitar. `660w` (par de
-            140,5 kB) fecha exatamente esse pedido — 56,4 kB por par
-            economizados ante a alternativa de `840w`.
-
-        Os dois arquivos saem de
-        `squads/yard-burguer-squad/scripts/preparar-fotos-pessoas.mjs`.
-
-        `width`/`height` SÃO 840x1008 E NÃO MAIS 840x1260: o arquivo virou 5:6
-        (era 2:3). Os dois números existem para reservar a caixa antes da imagem
-        chegar — errados, eles devolvem o salto de layout que o
-        `medir-salto-layout.mjs` mede.
-      */}
-      <div class="dif__par">
-        <figure class="dif__gente dif__gente--esq">
-          <img
-            src={`/assets/pessoas/${diferenciais.gente.esquerda.arquivo}-840.webp`}
-            srcset={`/assets/pessoas/${diferenciais.gente.esquerda.arquivo}-420.webp 420w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-480.webp 480w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-620.webp 620w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-660.webp 660w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-840.webp 840w`}
-            sizes="(max-width: 520px) 37vw, (max-width: 900px) 220px, (max-height: 500px) 220px, (max-width: 1088px) 40px, (max-width: 1300px) 130px, (max-width: 1600px) 210px, (max-width: 2100px) 500px, 700px"
-            alt={diferenciais.gente.esquerda.alt}
-            width="840"
-            height="1008"
-            loading="lazy"
-            decoding="async"
-          />
-        </figure>
-
-        <figure class="dif__gente dif__gente--dir">
-          <img
-            src={`/assets/pessoas/${diferenciais.gente.direita.arquivo}-840.webp`}
-            srcset={`/assets/pessoas/${diferenciais.gente.direita.arquivo}-420.webp 420w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-480.webp 480w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-620.webp 620w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-660.webp 660w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-840.webp 840w`}
-            sizes="(max-width: 520px) 37vw, (max-width: 900px) 220px, (max-height: 500px) 220px, (max-width: 1088px) 40px, (max-width: 1300px) 130px, (max-width: 1600px) 210px, (max-width: 2100px) 500px, 700px"
-            alt={diferenciais.gente.direita.alt}
-            width="840"
-            height="1008"
-            loading="lazy"
-            decoding="async"
-          />
-        </figure>
       </div>
     </section>
 
@@ -1438,18 +1430,29 @@ const combos = menu.combos.map((combo) => ({
   }
 
   /**
-   * O WRAPPER QUE SÓ EXISTE PARA TROCAR `display`.
+   * O `<li>` QUE SÓ EXISTE PARA O `<ul>` ACEITAR A FIGURA — e desaparece em
+   * QUALQUER largura, não só no desktop.
    *
    * As duas figuras precisam ser filhas de `.diferenciais` para o
    * `position: absolute` ancorar nela (é o container de posicionamento mais
-   * próximo) — mas no celular elas precisam ser um PAR, lado a lado, dentro do
-   * fluxo normal. `display: contents` no desktop remove esta div da árvore de
-   * caixas: as figuras continuam ancorando direto em `.diferenciais`, como se
-   * a div nem existisse. No celular ela vira `display: flex` (ver o bloco
-   * `(max-width: 900px), (max-height: 500px)` mais abaixo) e passa a ser, de
-   * fato, a caixa que alinha o par.
+   * próximo) — mas também precisam estar dentro de `.pilares` para virarem
+   * item de ponta do trilho no celular (ver o bloco `(max-width: 900px),
+   * (max-height: 500px)` mais abaixo). `display: contents` resolve as duas: o
+   * `<li>` some da árvore de caixas e a `<figure>` (`.dif__gente`) passa a
+   * contar como se fosse filha direta de `.pilares` para efeito de layout —
+   * `position: absolute` continua resolvendo o container pelo ancestral
+   * posicionado mais próximo (`.diferenciais`), não pela profundidade do DOM,
+   * então o desktop nem percebe a mudança. No celular é essa promoção que
+   * deixa `.dif__gente` virar item de flex de verdade dentro do trilho.
+   *
+   * ANTES ISTO ERA UM `<div class="dif__par">` fora do `<ul>`, que virava
+   * `display: flex` no celular para empilhar as duas fotos lado a lado abaixo
+   * dos cartões. Essa versão saiu porque deixava ~330px de faixa morta no fim
+   * da seção (medido: 112px de vão + ~172px de foto + 40px de sobra) — a
+   * causa do "espaço enorme" que o dono via empurrando o carrossel de mais
+   * pedidos para baixo. Ver o comentário grande antes da seção.
    */
-  .dif__par {
+  .pilar-figura {
     display: contents;
   }
 
@@ -1750,74 +1753,45 @@ const combos = menu.combos.map((combo) => ({
   }
 
   /**
-   * CELULAR — as duas descem, e continuam sendo duas.
+   * CELULAR — as duas entram no trilho, uma em cada ponta.
    *
    * Nada de `display: none`: o público desta landing é celular, e esconder no
-   * celular o que existe no desktop é esconder da maioria. O que muda é o papel
-   * — de camada sobreposta para um par que fecha a seção, abaixo dos cartões.
+   * celular o que existe no desktop é esconder da maioria. O que muda é o
+   * papel — de camada sobreposta para item de ponta do próprio trilho de
+   * pilares (ver o comentário grande antes da seção, e o de `.pilar-figura`
+   * mais acima, para o histórico da versão anterior — um `<div>` em flex
+   * embaixo dos cartões — e por que ela saiu: ~330px de faixa morta medidos
+   * no fim da seção).
    *
-   * "É CELULAR?" ERA `(max-width: 767px)` E DIVERGIA DA PERGUNTA QUE A
-   * `.barra-pedido` E O `motion.js` FAZEM — `(max-width: 900px), (max-height:
-   * 500px)` (ver o comentário grande de `.barra-pedido`, que já avisava: toda
-   * vez que essas duas perguntas divergiram neste projeto, algo quebrou em
-   * silêncio). Aqui quebrou assim: entre 768–900px de largura, e em qualquer
-   * altura ≤500px (844×390 incluso), a seção continuava em modo desktop
-   * (figura `position: absolute`, plantada pelo piso de 120px) enquanto a
-   * `.barra-pedido` já cobria o rodapé por cima — medido 36,95px de
-   * sobreposição em 844×390 (25,7% da foto visível, comendo a mão e a palavra
-   * "YARD" da placa), 8,2px em 900×1000, 4,2px em 768×1024. A mesma divergência
-   * também espremia a faixa 768–900 no piso de 120px, que é largura de coluna
-   * desktop, não de par mobile. Com as duas perguntas iguais, a barra nunca
-   * mais cai por cima da seção nesta faixa, e 768–900 passa a receber o par
-   * embaixo do texto, com 150–260px de altura — o mesmo tratamento de
-   * qualquer celular.
+   * "É CELULAR?" É `(max-width: 900px), (max-height: 500px)` — a MESMA
+   * pergunta que `.barra-pedido`, o `motion.js` e `.pilares` (mais abaixo)
+   * fazem. Toda vez que essa pergunta divergiu entre dois pontos deste
+   * arquivo, algo quebrou em silêncio (ver o histórico no `git log` desta
+   * seção); manter a consulta idêntica aqui é o que evita repetir isso.
    *
    * A ordem esquerda/direita se mantém porque a ordem no DOM não muda, só o
-   * `display` do wrapper (`.dif__par`). `aspect-ratio: 5/6` é a proporção
-   * nativa do arquivo novo — sem cortar nada — e a ALTURA é quem trava
-   * (150–260px, clamped), com a largura saindo dela. Foi o pedido explícito:
-   * nunca travar a largura e deixar a altura sair da proporção, porque duas
-   * colunas de largura fixa é o que fazia o `cover` cortar a lata de
-   * Coca-Cola e o hambúrguer nas versões antigas.
+   * `display` do `<li>` que embrulha cada figura (`.pilar-figura`, ver a
+   * regra dele mais acima). `aspect-ratio: 5/6` é a proporção nativa do
+   * arquivo — sem cortar nada — e a ALTURA é quem trava (150–260px,
+   * clamped), com a largura saindo dela. Foi o pedido explícito, ainda
+   * válido aqui: nunca travar a largura e deixar a altura sair da proporção.
    */
   @media (max-width: 900px), (max-height: 500px) {
-    /* A SEÇÃO NÃO PRECISA MAIS SER ALTA QUANTO A FOTO — aqui a foto está no
-       fluxo normal, no fim da seção, não mais centralizada como camada. O
+    /* A SEÇÃO NÃO PRECISA MAIS SER ALTA QUANTO A FOTO — no celular a figura
+       vive dentro do trilho, não centralizada como camada. O
        `min-height: var(--gente-caixa)` do desktop viria de uma variável de
        altura de JANELA (até 56rem) e sobraria como espaço vazio enorme abaixo
        do último cartão. */
     .diferenciais {
       min-height: 0;
-      /* Chão depois do par de fotos, para elas não encostarem na seção
-         seguinte — o mesmo papel que o padding-bottom de sempre tinha, só que
-         agora a seção inteira que precisa dele, não uma figura deslocada. */
-      padding-bottom: 2.5rem;
     }
     /* O padding extra de `--gente-avanco` (3rem) só existe para abrir espaço
-       para a foto ancorada nas bordas no desktop. Aqui as figuras estão
-       ABAIXO do texto (ver `.dif__par` e `.dif__gente` mais abaixo) — sem
-       zerar, o miolo perderia 3rem de cada lado à toa numa tela de 390px. */
+       para a foto ancorada nas bordas no desktop. Aqui o trilho é quem carrega
+       as figuras nas próprias pontas — sem zerar, o miolo perderia 3rem de
+       cada lado à toa numa tela de 390px. */
     .diferenciais > .claro__wrap {
       padding-left: calc(1.5rem + env(safe-area-inset-left));
       padding-right: calc(1.5rem + env(safe-area-inset-right));
-    }
-
-    /**
-     * O PAR — lado a lado, centralizado, com 16px de vão.
-     *
-     * `.dif__par` é a única coisa que vira `display: flex` aqui (no desktop é
-     * `display: contents`, ver a regra dele mais acima). `align-items: flex-end`
-     * alinha as duas pelo pé — como as fotos têm a MESMA proporção (5:6), as
-     * duas sempre têm a mesma altura de qualquer forma; é só para não depender
-     * disso se um dia uma altura diferente entrar aqui.
-     */
-    .dif__par {
-      display: flex;
-      justify-content: center;
-      align-items: flex-end;
-      gap: 16px;
-      margin-top: 2rem;
-      padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
     }
 
     /**
@@ -1826,33 +1800,18 @@ const combos = menu.combos.map((combo) => ({
      * cartão e a `mask-image` o dissolvia; agora não há fundo nenhum, o arquivo
      * é recorte com alpha e o areia da seção passa por trás da pessoa direto.
      *
-     * `position: static` tira a figura do posicionamento absoluto do desktop; o
-     * `transform: translateY(-50%)` da centralização vertical do desktop
-     * continuaria valendo mesmo sob `position: static` (transform não olha para
-     * `position`) — por isso ele é zerado aqui explicitamente, senão o par
-     * inteiro subiria meia altura própria e ficaria cortado pelo topo da seção.
+     * `position: static` tira a figura do posicionamento absoluto do desktop —
+     * aqui ela é um ITEM DE FLEX DE VERDADE dentro de `.pilares` (a promoção
+     * vem do `display: contents` do `<li>` que a embrulha, ver a regra de
+     * `.pilar-figura`). `flex: 0 0 auto` trava o encolhimento: sem isso, o
+     * algoritmo de flex tentaria espremer a figura para caber no contêiner —
+     * exatamente o que os cartões de pilar já recusam com o próprio
+     * `flex: 0 0 min(78%, 20rem)` deles.
      *
-     * A ALTURA É `clamp(150px, 44vw, 260px)`, E OS TRÊS NÚMEROS SÃO MEDIDOS —
-     * eram 200/50vw/280px com o arquivo 2:3.
-     *
-     *   · 44vw no lugar de 50vw: a proporção passou de 2:3 (0,667) para 5:6
-     *     (0,833), então a MESMA altura devolve uma figura 25% mais larga. Com
-     *     50vw o par media 2x217+16 = 450px numa janela de 520 e, pior, em DPR
-     *     2,75 pedia 597px de device — o degrau em que o navegador pula para a
-     *     variante de 840w e o orçamento de peso estoura. 44vw faz a largura
-     *     medir 36,7vw, o par ocupar ~83% da janela em qualquer largura de
-     *     celular, e o pedido de device ficar em 400px: variante de 420w.
-     *   · piso de 150px no lugar de 200px: com a proporção nova, um piso de
-     *     200px em tela de 320px daria 167px de largura por figura e o par
-     *     encostaria nas duas bordas. O piso só entra abaixo de ~340px de
-     *     janela.
-     *   · teto de 260px no lugar de 280px: acima disso a largura passa de 217px
-     *     e cai no mesmo salto de variante descrito acima.
-     *
-     * Resultado medido em 393px de janela: figura de 145x174 contra 133x200 do
-     * par antigo — a CABEÇA da pessoa cresceu de 41px para 47px, porque o
-     * arquivo novo é a pessoa inteira e não mais uma pessoa dentro de um quadro
-     * com fundo sobrando.
+     * A ALTURA É `clamp(150px, 44vw, 260px)` — o mesmo número já medido para
+     * este arquivo (5:6) na versão anterior (abaixo do carrossel): resultado
+     * de 393px de janela, figura de 145x174. Mudou ONDE a figura mora, não o
+     * tamanho dela — a fórmula não depende de posição na página.
      *
      * A largura sai do `aspect-ratio: 5/6` nativo, nunca o contrário.
      */
@@ -1860,6 +1819,7 @@ const combos = menu.combos.map((combo) => ({
       position: static;
       top: auto;
       transform: none;
+      flex: 0 0 auto;
       height: clamp(150px, 44vw, 260px);
       width: auto;
       aspect-ratio: 5 / 6;
@@ -1867,13 +1827,11 @@ const combos = menu.combos.map((combo) => ({
     }
     .dif__gente--esq,
     .dif__gente--dir {
-      left: auto;
-      right: auto;
       /* O env() de safe-area do desktop existia para a borda ENCOSTADA na
-         física da tela (paisagem com notch). Aqui as duas ficam centralizadas
-         no meio da seção, longe da borda — manter o padding só encolheria a
-         foto por dentro sem motivo. O respiro de borda physical fica a cargo
-         do `padding-inline` de `.dif__par` acima. */
+         física da tela (paisagem com notch). Aqui a figura fica dentro do
+         trilho, ladeada por cartões — manter o padding só encolheria a foto
+         por dentro sem motivo. O respiro de borda física fica a cargo do
+         `padding-inline` do próprio `.claro__wrap` acima. */
       padding-left: 0;
       padding-right: 0;
     }
@@ -2065,6 +2023,30 @@ const combos = menu.combos.map((combo) => ({
       flex: 0 0 min(78%, 20rem);
       scroll-snap-align: start;
     }
+
+    /**
+     * AS DUAS FIGURAS DE PONTA TAMBÉM PRECISAM DE `scroll-snap-align` — e a
+     * ausência foi um defeito medido, não um detalhe.
+     *
+     * `scroll-snap-type: x mandatory` OBRIGA o repouso a cair num ponto de
+     * snap. Sem `scroll-snap-align` na figura, a posição 0 (onde ela mora) não
+     * é um ponto válido — só os `.pilar` têm `scroll-snap-align: start` — e o
+     * navegador reencaixa sozinho no primeiro CARTÃO assim que a página
+     * carrega. Medido: `pilares.scrollLeft` nascia em 167px (a largura da
+     * figura + o gap), não em 0, e o rapaz da placa nunca aparecia em repouso
+     * — só durante o próprio gesto de arrastar, antes do braço soltar e o
+     * snap puxar de volta.
+     *
+     * `start` na esquerda e `end` na direita: a figura da placa encosta o
+     * PRÓPRIO início no início do trilho (repouso = posição 0, a figura cheia
+     * e o primeiro cartão parcialmente visível ao lado — a viewport é mais
+     * larga que a figura sozinha); a da coca encosta o PRÓPRIO fim no fim do
+     * trilho (repouso = scrollLeft máximo, ela cheia e o último cartão do
+     * lado esquerdo). Usar `start` nas duas faria o repouso da direita sobrar
+     * viewport vazio depois da figura, que não existe pra rolar até lá.
+     */
+    .dif__gente--esq { scroll-snap-align: start; }
+    .dif__gente--dir { scroll-snap-align: end; }
   }
 
   /* Cartao com regua: o icone ganha area propria e a linha de brasa separa
