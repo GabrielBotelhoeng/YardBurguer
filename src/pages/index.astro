@@ -366,29 +366,49 @@ const combos = menu.combos.map((combo) => ({
             contra `.diferenciais`, exatamente como antes de entrar no `<ul>`.
 
             `sizes` DESCREVE O TAMANHO REAL, senão o navegador escolhe a
-            variante errada e o peso da rota anda sozinho. RECALIBRADO em
-            04/09 quando a figura passou a acompanhar `--pilar-larg` (a
-            largura do cartão, ver `.dif__gente` no CSS) em vez de travar
-            pela altura — o valor antigo (37vw) descrevia a figura de antes,
-            quase metade do tamanho de agora, e ficaria mentindo.
+            variante errada e o peso da rota anda sozinho. Em 04/09 a figura
+            passou a acompanhar `--pilar-larg` (a largura do cartão) em vez de
+            travar pela altura — 143px virou 267px em 390px de tela. Isso
+            atendeu o pedido visual ("do tamanho do card"), mas fez o peso da
+            rota estourar o teto do gate (`audit-page.mjs`) em 82.419 bytes: o
+            par de fotos em 760w custa 167 kB, e só sobravam ~85,5 kB de
+            orçamento depois do resto da página.
+
+            NÃO HÁ FOLGA HONESTA FORA DO PAR — já foi procurada duas vezes:
+            nenhum asset é carregado e nunca visto, nenhuma variante é maior
+            que o breakpoint pede, e converter as fotos grandes para AVIF foi
+            testado e MEDE PIOR, não melhor (coca −2%, placa −3%, poster
+            vertical −7%, e `supremo.webp` fica 32% MAIOR em AVIF — não tentar
+            de novo achando que é dinheiro fácil). A única folga grande da
+            página está no vídeo da Cena 2 (784 kB), fora do escopo daqui.
+
+            A SAÍDA, decisão do dono depois de ver os números: encolher a
+            figura de novo. `--pilar-larg * 0.567` — o MAIOR fator que ainda
+            faz o navegador escolher a variante de 420w do `srcset` em vez da
+            de 480w em 393px de largura com DPR 2,75 (o viewport que o Pixel 5
+            emulado do gate usa). Qualquer fator maior pula para 480w, e nessa
+            faixa o par custa ~87 kB — sempre acima do orçamento de 85,5 kB,
+            não importa o quão perto do limite o fator fique. Resultado:
+            figura de volta a ~150px em 390px de tela, perto do tamanho antigo
+            que motivou o pedido de aumento. O ganho visual quase desaparece;
+            o dono viu esse custo e escolheu mesmo assim caber no orçamento.
 
             `--pilar-larg` é `min(78% do trilho, 20rem)`, e o trilho é a
             largura da seção menos `2 × 1,5rem` de padding (ver o bloco
             `(max-width: 900px), (max-height: 500px)` de `.diferenciais >
             .claro__wrap`). Expandindo os 78%: `0,78 × (100vw − 48px) =
-            78vw − 37,44px` — é essa conta que `calc()` reproduz abaixo, e é
-            por isso que ela vale só ATÉ o ponto em que bate no teto de
-            20rem (320px): `78vw − 37,44px = 320px` em `vw ≈ 458,3px`. Dali
-            para cima (incluindo paisagem curta, onde o trilho é bem mais
-            largo que 20rem) a figura simplesmente trava em 320px, do mesmo
-            jeito que o cartão trava.
+            78vw − 37,44px` — é essa conta que `calc()` reproduz abaixo,
+            MULTIPLICADA por 0,567 para bater com a largura real da figura.
+            Ela vale só ATÉ o ponto em que `--pilar-larg` bate no teto de
+            20rem (320px): `vw ≈ 458,3px`. Dali para cima (incluindo paisagem
+            curta, onde o trilho é bem mais largo que 20rem) a figura trava em
+            `320px × 0,567 = 181,4px`.
 
-              (max-width: 458px)  → calc(78vw - 37.44px)
-                                     (360 → 243,4px; 390 → 266,8px;
-                                     414 → 285,5px — bate com o cartão,
-                                     medido em Playwright)
-              (max-width: 900px)  → 320px (teto de 20rem, ex. 768 CSS px)
-              (max-height: 500px) → 320px (paisagem curta, ex. 844×390 —
+              (max-width: 458px)  → calc((78vw - 37.44px) * 0.567)
+                                     (360 → 138,0px; 390 → 151,3px;
+                                     414 → 161,9px — medido em Playwright)
+              (max-width: 900px)  → 181.4px (teto de 20rem × 0,567)
+              (max-height: 500px) → 181.4px (paisagem curta, ex. 844×390 —
                                      mesmo teto, o trilho ali é mais largo
                                      que 20rem)
               (max-width: 1088px) → 40px  (901/1024, margem do wrap some)
@@ -398,20 +418,25 @@ const combos = menu.combos.map((combo) => ({
               default              → 700px
 
             As cinco larguras abaixo de 1088px são do DESKTOP (`--gente-larg`)
-            e não mudaram nesta rodada — só o celular (`--pilar-larg`) ficou
-            maior.
+            e não mudam aqui — desktop continua 246,4×792 em 1440px, intocado.
+            Só o celular (`--pilar-larg × 0.567`) encolheu.
 
             Os arquivos do `srcset` saem de
             `squads/yard-burguer-squad/scripts/preparar-fotos-pessoas.mjs`.
             `width`/`height` são 840x1008 (5:6) e reservam a caixa antes da
             imagem chegar.
+
+            O GATE MEDE EM 393px/DPR 2,75 (Pixel 5 emulado) E NÃO É O PIOR
+            CASO REAL — ver o comentário grande em `.dif__gente` no CSS, logo
+            acima da declaração de `width`, para a lacuna medida entre o que o
+            gate aprova e o que um iPhone real (DPR 3) baixa em 390 e 414px.
           */}
           <li class="pilar-figura pilar-figura--esq" role="presentation">
             <figure class="dif__gente dif__gente--esq">
               <img
                 src={`/assets/pessoas/${diferenciais.gente.esquerda.arquivo}-840.webp`}
                 srcset={`/assets/pessoas/${diferenciais.gente.esquerda.arquivo}-420.webp 420w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-480.webp 480w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-620.webp 620w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-660.webp 660w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-760.webp 760w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-840.webp 840w`}
-                sizes="(max-width: 458px) calc(78vw - 37.44px), (max-width: 900px) 320px, (max-height: 500px) 320px, (max-width: 1088px) 40px, (max-width: 1300px) 130px, (max-width: 1600px) 210px, (max-width: 2100px) 500px, 700px"
+                sizes="(max-width: 458px) calc((78vw - 37.44px) * 0.567), (max-width: 900px) 181.4px, (max-height: 500px) 181.4px, (max-width: 1088px) 40px, (max-width: 1300px) 130px, (max-width: 1600px) 210px, (max-width: 2100px) 500px, 700px"
                 alt={diferenciais.gente.esquerda.alt}
                 width="840"
                 height="1008"
@@ -447,7 +472,7 @@ const combos = menu.combos.map((combo) => ({
               <img
                 src={`/assets/pessoas/${diferenciais.gente.direita.arquivo}-840.webp`}
                 srcset={`/assets/pessoas/${diferenciais.gente.direita.arquivo}-420.webp 420w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-480.webp 480w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-620.webp 620w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-660.webp 660w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-760.webp 760w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-840.webp 840w`}
-                sizes="(max-width: 458px) calc(78vw - 37.44px), (max-width: 900px) 320px, (max-height: 500px) 320px, (max-width: 1088px) 40px, (max-width: 1300px) 130px, (max-width: 1600px) 210px, (max-width: 2100px) 500px, 700px"
+                sizes="(max-width: 458px) calc((78vw - 37.44px) * 0.567), (max-width: 900px) 181.4px, (max-height: 500px) 181.4px, (max-width: 1088px) 40px, (max-width: 1300px) 130px, (max-width: 1600px) 210px, (max-width: 2100px) 500px, 700px"
                 alt={diferenciais.gente.direita.alt}
                 width="840"
                 height="1008"
@@ -1828,11 +1853,51 @@ const combos = menu.combos.map((combo) => ({
      * exatamente o que os cartões de pilar já recusam com o próprio
      * `flex: 0 0 min(78%, 20rem)` deles.
      *
-     * A LARGURA É `var(--pilar-larg)` — A MESMA DO CARTÃO, E NÃO MAIS UM
-     * `clamp` PRÓPRIO. Até aqui a ALTURA travava (`clamp(150px, 44vw,
-     * 260px)`) e a largura saía da proporção 5:6 — em 390px isso dava uma
-     * figura de 143x171,6 contra um cartão de 266,8x380,8: pouco mais da
-     * metade da largura do cartão, e o dono pediu "do tamanho do card".
+     * A LARGURA ERA `var(--pilar-larg)` PURO — A MESMA DO CARTÃO. Até aqui a
+     * ALTURA travava (`clamp(150px, 44vw, 260px)`) e a largura saía da
+     * proporção 5:6 — em 390px isso dava uma figura de 143x171,6 contra um
+     * cartão de 266,8x380,8: pouco mais da metade da largura do cartão, e o
+     * dono pediu "do tamanho do card". `var(--pilar-larg)` sem fator (143 →
+     * 267px) atendeu o pedido, mas o par de fotos em 760w (o srcset que essa
+     * largura seleciona) pesa 167 kB, e isso estourou o teto do gate
+     * (`audit-page.mjs`) em 82.419 bytes — não havia orçamento para a
+     * largura cheia do cartão. Ver o comentário grande no `<li>` da figura,
+     * no markup acima, para a conta completa (por que não há folga em outro
+     * lugar da página, por que AVIF não ajuda aqui).
+     *
+     * `* 0.567` — decisão do dono depois de ver o custo: encolher a figura
+     * para caber no orçamento em vez de mexer no vídeo da Cena 2 ou aceitar
+     * o estouro. É o MAIOR fator testado que ainda faz o `sizes` do `<img>`
+     * selecionar a variante de 420w do `srcset` (e não a de 480w, ~87 kB o
+     * par, sempre acima do orçamento de 85,5 kB) em 393px de largura com DPR
+     * 2,75 — o viewport que o Pixel 5 emulado do gate usa. Resultado medido:
+     * `totalBytes` do gate cai de 1.582.419 para 1.486.539 (teto: 1.500.000,
+     * folga de 13.461 bytes). A figura volta a ~150px em 390px de tela —
+     * perto do tamanho antigo que motivou o pedido de aumento; o ganho
+     * visual quase some, e o dono viu esse número antes de decidir.
+     *
+     * O GATE NÃO É O PIOR CASO REAL — registrar para quem mexer aqui de
+     * novo não descobrir do zero. `audit-page.mjs` mede só em 393px de
+     * largura com DPR 2,75 (Pixel 5 emulado). Medido com Playwright em
+     * telas reais mais comuns:
+     *
+     *   390px de largura, DPR 2,75 (o que o gate testaria nesse tamanho)
+     *     → seleciona 420w (mesmo bucket aprovado pelo gate)
+     *   390px de largura, DPR 3 (iPhone 12/13/14 comuns)
+     *     → seleciona 480w — MAIS PESO do que o gate aprovou
+     *   414px de largura, DPR 2,75
+     *     → seleciona 480w
+     *   414px de largura, DPR 3 (iPhone 11/XR/Plus comuns)
+     *     → seleciona 620w — ainda mais peso
+     *
+     * Ou seja: uma fatia real de celulares (DPR 3, comum em iPhone) baixa
+     * bucket maior do que o gate mede e aprova, porque o gate só audita um
+     * viewport. Isso NÃO foi corrigido agora — é decisão consciente, fora do
+     * escopo desta rodada. Para blindar também DPR 3 até 414px de largura
+     * (o pior caso comum), o fator precisaria cair para `* 0.4904` — a
+     * figura ficaria ainda menor (~140px em 414px de largura) só para cobrir
+     * um caso que o gate oficial deste projeto não testa. Não aplicado aqui;
+     * o número fica escrito para quando essa lacuna for revisitada.
      *
      * TRAVAR PELA LARGURA, NUNCA PELA ALTURA — testado e descartado: em
      * 360px o cartão mede 405,2px de altura, o que pediria 338px de largura
@@ -1840,23 +1905,22 @@ const combos = menu.combos.map((combo) => ({
      * janela do trilho sozinha e reabriria o vazamento horizontal que o
      * `overflow-x: auto` do próprio trilho existe para conter por dentro. A
      * largura é segura por construção porque o cartão, do qual ela copia a
-     * medida, já cabe ali.
+     * medida (multiplicada por 0,567), já cabe ali.
      *
-     * A ALTURA agora SAI da proporção 5:6 (a mesma de sempre, nunca cortada)
-     * em vez de travar — o inverso do que valia antes. Resultado: figura
-     * mais ALTA que o cartão em nenhuma largura testada (243,4x292,1 em
-     * 360px contra cartão de 405,2px de altura) — ela fica mais BAIXA, e o
-     * alinhamento pelo pé (`align-self: flex-end`, na regra
-     * `.dif__gente--esq, .dif__gente--dir` logo abaixo) é o que decide onde
-     * sobra o respiro: em cima, não embaixo, para a figura "pisar" na mesma
-     * linha de base do cartão em vez de flutuar no meio da faixa.
+     * A ALTURA SAI da proporção 5:6 (a mesma de sempre, nunca cortada) em
+     * vez de travar. Resultado: a figura fica mais BAIXA que o cartão em
+     * toda largura testada, e o alinhamento pelo pé (`align-self: flex-end`,
+     * na regra `.dif__gente--esq, .dif__gente--dir` logo abaixo) é o que
+     * decide onde sobra o respiro: em cima, não embaixo, para a figura
+     * "pisar" na mesma linha de base do cartão em vez de flutuar no meio da
+     * faixa.
      */
     .dif__gente {
       position: static;
       top: auto;
       transform: none;
       flex: 0 0 auto;
-      width: var(--pilar-larg);
+      width: calc(var(--pilar-larg) * 0.567);
       height: auto;
       aspect-ratio: 5 / 6;
       background-color: transparent;
@@ -2076,12 +2140,15 @@ const combos = menu.combos.map((combo) => ({
        * `--pilar-larg` É A LARGURA DO CARTÃO, DECLARADA UMA VEZ SÓ.
        *
        * `.dif__gente` (mais acima no arquivo, mesma media query) lê esta
-       * mesma variável para a figura acompanhar a largura do cartão — pedido
-       * do dono ("do tamanho do card"). Custom property herda pela árvore do
-       * DOM, não pela ordem das regras no arquivo: `.pilar-figura` é
-       * `display: contents`, então a `<figure>` dentro dele é filha de fato
-       * de `.pilares` para efeito de herança, e enxerga esta variável mesmo
-       * declarada aqui embaixo.
+       * mesma variável — multiplicada por 0,567 — para a figura acompanhar
+       * a largura do cartão dentro do orçamento de peso (ver o comentário
+       * grande em `.dif__gente` para a conta completa: `var(--pilar-larg)`
+       * puro, sem fator, foi o pedido original do dono ("do tamanho do
+       * card"), mas estourava o gate em 82 kB). Custom property herda pela
+       * árvore do DOM, não pela ordem das regras no arquivo: `.pilar-figura`
+       * é `display: contents`, então a `<figure>` dentro dele é filha de
+       * fato de `.pilares` para efeito de herança, e enxerga esta variável
+       * mesmo declarada aqui embaixo.
        *
        * SE ESTE VALOR DIVERGIR do `flex` do `.pilar` logo abaixo, a figura
        * some de ser "do tamanho do card" sem nenhum erro visível — os dois
