@@ -400,6 +400,108 @@ const compor = (fonte, l, a, escala = 1, deslocX = 0) => {
 };
 
 /**
+ * O PÃO INFERIOR NASCE PÁLIDO NO TAKE — não é bug de composição, é o material.
+ *
+ * O dono fotografou a Cena 2 no celular e chamou de "faixa branca": o pão de
+ * baixo sai esbranquiçado, cor de pão cru, enquanto o de cima no MESMO quadro
+ * sai dourado e tostado. Medido por saturação HSL (não por brilho — os dois
+ * pães têm luminância parecida; é a vivacidade da cor que diverge), em
+ * quatro quadros e nos dois formatos, sempre pão de cima menos pão de baixo:
+ *
+ *   vertical, quadro   0 (explodido): topo S=59,3%  base S=39,4%  ΔS=19,9
+ *   vertical, quadro 191 (montado):   topo S=61,4%  base S=45,0%  ΔS=16,4
+ *   16:9,     quadro   0 (explodido): topo S=68,7%  base S=53,6%  ΔS=15,1
+ *   16:9,     quadro 191 (montado):   topo S=68,0%  base S=53,8%  ΔS=14,3
+ *
+ * O matiz (H) é o MESMO nos dois pães (27°-36° nos quatro casos) — não é um
+ * pão de outra cor, é o mesmo dourado, só que lavado. Confirmado no take
+ * ORIGINAL (`assets/raw/*-original.mp4`, antes de qualquer composição daqui):
+ * o defeito nasce na fonte, não é introduzido pelo `compor()` abaixo.
+ *
+ * A REGIÃO É ESTÁTICA — só por isso dá para corrigir com uma caixa fixa.
+ * O produto "explode" apenas por CIMA (pão de cima, bacon e cebola sobem);
+ * carne, queijo, alface e pão de baixo formam uma base que NÃO se move.
+ * Confirmado varrendo coluna de pixel nos quadros 0/60/120/191 dos dois
+ * formatos: a borda do pão de baixo cai no mesmo intervalo de Y em todos.
+ * Sem essa constância, a caixa abaixo teria que perseguir o produto quadro a
+ * quadro — o que o `overlay` do ffmpeg até suporta via expressão em função de
+ * `t`, mas não foi preciso chegar lá.
+ *
+ * O QUE NÃO FUNCIONOU, e por que está registrado:
+ *
+ * 1. `geq` por pixel (ganho de saturação condicionado a limiar de matiz por
+ *    pixel, tipo "se r>g>b então satura mais"). Resultado: ruído azul/roxo
+ *    espalhado pela textura do pão — pior que o defeito original. A textura
+ *    do miolo varia pixel a pixel o bastante para que um limiar RÍGIDO ligue
+ *    e desligue entre vizinhos, e cada liga/desliga é uma amostra diferente
+ *    de cor errada. Não repetir essa via sem suavizar o limiar.
+ *
+ * 2. Multiplicar saturação sozinho (`hue=s=1.45` sem mais nada) reabre uma
+ *    fração do problema: pixel quase neutro (S baixo) tem quase nada para
+ *    multiplicar — 0 vezes qualquer fator continua 0. A faixa mais pálida
+ *    (a mais próxima do branco) é exatamente a que esse método menos
+ *    alcança.
+ *
+ * O QUE FUNCIONOU: multiplicar saturação (`hue=s=1.20`) SOMADO a um leve
+ * puxão de temperatura em tons médios/claros (`colorbalance`, reduzindo azul
+ * e subindo vermelho em midtone/highlight) — o puxão aditivo alcança o pixel
+ * quase-branco que a multiplicação sozinha não alcança. Calibrado batendo
+ * contra o pão de cima do MESMO quadro (alvo, não estimativa): resultado
+ * final ficou em S=62,5% contra os 61,4% do pão de cima — a 1,1 ponto.
+ *
+ * A CAIXA TEM BORDA MACIA (`gblur`), não corte reto. Testado com corte reto
+ * (retângulo cru colado por cima): a costura aparecia como reta perfeita
+ * sobre o fundo escuro liso atrás do pão — exatamente o tipo de emenda que o
+ * `assets/LOOK.md` manda caçar. `gblur=sigma=18-20` na máscara elimina a
+ * aresta sem custar nitidez no pão em si, porque o desfoque é só no ALFA da
+ * mistura, nunca no pixel de cor.
+ *
+ * A MÁSCARA NASCE DO PRÓPRIO QUADRO (`split` + `lutyuv=y=0`), não de uma
+ * fonte `color=` separada. A primeira tentativa usava `color=...:d=8.5` como
+ * quadro-mascara e o `overlay` esticou a saída para bater com a duração da
+ * fonte mais longa — 216 quadros em vez de 192, vídeo maior e o scrub
+ * quebrado (mais quadros que a barra de rolagem espera). Derivar a máscara
+ * do mesmo `split` do vídeo principal garante EXATAMENTE a mesma contagem de
+ * quadros, sem precisar fixar `-frames:v` feito muleta.
+ */
+const CORRECAO_PAO_INFERIOR = {
+  colorbalance: 'rm=0.05:gm=0.0:bm=-0.07:rh=0.02:bh=-0.04',
+  saturacao: 1.20,
+  desfoqueMascara: 18,
+};
+
+/**
+ * Caixas medidas em espaço de SAÍDA (depois do `compor()`, já com escala e
+ * preenchimento aplicados) — é onde o pão de baixo cai em cada formato,
+ * folga incluída para cobrir a variação quadro a quadro sem tocar a carne
+ * (sempre acima) nem a mesa (sempre abaixo).
+ */
+const CAIXA_PAO_INFERIOR = {
+  larga: { x: 650, y: 670, w: 710, h: 230 },
+  vertical: { x: 195, y: 1425, w: 685, h: 150 },
+};
+
+/**
+ * Encadeia a correção acima DEPOIS da composição (`compChain`), como um
+ * `filter_complex` — não dá para fazer isso num `-vf` linear porque precisa
+ * de dois ramos (o quadro base intacto e o quadro corrigido) que se
+ * recombinam no fim via `overlay`.
+ */
+function corrigirPaoInferior(compChain, caixa) {
+  const { x, y, w, h } = caixa;
+  return (
+    `${compChain},split=3[cbase][cfix][cforma];` +
+    `[cforma]lutyuv=y=0:u=128:v=128[mascpreta];` +
+    `[mascpreta]drawbox=x=${x}:y=${y}:w=${w}:h=${h}:color=white:t=fill,` +
+    `gblur=sigma=${CORRECAO_PAO_INFERIOR.desfoqueMascara}[mascara];` +
+    `[cfix]colorbalance=${CORRECAO_PAO_INFERIOR.colorbalance},` +
+    `hue=s=${CORRECAO_PAO_INFERIOR.saturacao}[corrigido];` +
+    `[corrigido][mascara]alphamerge[corrigidoA];` +
+    `[cbase][corrigidoA]overlay=0:0[saida]`
+  );
+}
+
+/**
  * As duas fontes, medidas uma vez: dimensões e a cor do fundo nas duas pontas.
  *
  * A faixa é fina (1,5% da altura) e colada na borda de propósito: a cor precisa
@@ -431,6 +533,7 @@ const VARIANTES = [
     origem: 'larga',
     nome: 'burger-stack-16x9.mp4',
     vf: compor(FONTE.larga, LARGA.largura, LARGA.altura, RECUO),
+    caixaPaoInferior: CAIXA_PAO_INFERIOR.larga,
     crf: '37',
     nivel: '4.2',
     para: 'desktop — 2:1 composto, margem lateral para o cover cortar',
@@ -439,6 +542,7 @@ const VARIANTES = [
     origem: 'vertical',
     nome: 'burger-stack-vertical.mp4',
     vf: compor(FONTE.vertical, CELULAR.largura, CELULAR.altura, RECUO_VERTICAL, DESLOC_PRODUTO_VERTICAL),
+    caixaPaoInferior: CAIXA_PAO_INFERIOR.vertical,
     crf: '38',
     nivel: '4.2',
     para: 'celular — 9:16 composto, margem em volta',
@@ -453,8 +557,18 @@ const VARIANTES = [
  * enquadramento, quem pediu menos movimento veria um quadro que ninguém mais vê.
  */
 const POSTERS = [
-  { origem: 'larga', nome: 'burger-stack-poster-16x9.webp', vf: compor(FONTE.larga, LARGA.largura, LARGA.altura, RECUO) },
-  { origem: 'vertical', nome: 'burger-stack-poster-vertical.webp', vf: compor(FONTE.vertical, CELULAR.largura, CELULAR.altura, RECUO_VERTICAL, DESLOC_PRODUTO_VERTICAL) },
+  {
+    origem: 'larga',
+    nome: 'burger-stack-poster-16x9.webp',
+    vf: compor(FONTE.larga, LARGA.largura, LARGA.altura, RECUO),
+    caixaPaoInferior: CAIXA_PAO_INFERIOR.larga,
+  },
+  {
+    origem: 'vertical',
+    nome: 'burger-stack-poster-vertical.webp',
+    vf: compor(FONTE.vertical, CELULAR.largura, CELULAR.altura, RECUO_VERTICAL, DESLOC_PRODUTO_VERTICAL),
+    caixaPaoInferior: CAIXA_PAO_INFERIOR.vertical,
+  },
 ];
 
 function ff(args) {
@@ -486,7 +600,9 @@ for (const [chave, origem] of [['larga', ORIGEM_LARGA], ['vertical', ORIGEM_VERT
 for (const v of VARIANTES) {
   const saida = resolve(DESTINO, v.nome);
   console.log(`encodando ${v.nome} (${v.para}) …`);
-  ff(['-i', REVERTIDOS[v.origem], '-an', '-vf', v.vf, ...SEEKAVEL, '-crf', v.crf, '-level', v.nivel, saida]);
+  const filtro = corrigirPaoInferior(v.vf, v.caixaPaoInferior);
+  ff(['-i', REVERTIDOS[v.origem], '-an', '-filter_complex', filtro, '-map', '[saida]',
+      ...SEEKAVEL, '-crf', v.crf, '-level', v.nivel, saida]);
   console.log(`   ${v.nome}: ${kb(saida)}`);
 }
 
@@ -501,7 +617,9 @@ for (const v of VARIANTES) {
 for (const p of POSTERS) {
   const saida = resolve(DESTINO, p.nome);
   console.log(`gerando ${p.nome} (último quadro = hambúrguer montado) …`);
-  ff(['-sseof', '-0.1', '-i', REVERTIDOS[p.origem], '-frames:v', '1', '-vf', p.vf, '-q:v', '78', saida]);
+  const filtro = corrigirPaoInferior(p.vf, p.caixaPaoInferior);
+  ff(['-sseof', '-0.1', '-i', REVERTIDOS[p.origem], '-frames:v', '1',
+      '-filter_complex', filtro, '-map', '[saida]', '-q:v', '78', saida]);
   console.log(`   ${p.nome}: ${kb(saida)}`);
 }
 
