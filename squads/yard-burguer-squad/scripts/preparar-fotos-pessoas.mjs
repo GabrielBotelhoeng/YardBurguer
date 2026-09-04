@@ -43,9 +43,22 @@
  * alpha lossy devolvia ~12% do peso e sujava o contorno com halo — recorte com
  * borda suja é exatamente o defeito que o script de recorte existe para evitar.
  *
- * TRÊS LARGURAS, porque o `<img>` usa `srcset`:
- *   - 420: celular (é a variante que o aparelho do público realmente busca)
- *   - 620: celular grande / tablet, e desktop em DPR1 acima de 1600px
+ * CINCO LARGURAS, porque o `<img>` usa `srcset`:
+ *   - 420: celular em DPR baixo/médio, largura estreita (o degrau original)
+ *   - 480: celular em DPR3 real e largura estreita (iPhone 12 em diante,
+ *     390/414 CSS px, ANTES do teto de 44vw). Sob DPR3 o `sizes` de 220px
+ *     pede até 660px de device conforme a largura da janela — 480w cobre a
+ *     ponta estreita (iPhone em pé, ~390-414 CSS px ⇒ ~430-460px de device).
+ *   - 620: celular grande / tablet em DPR baixo, e desktop em DPR1 acima de
+ *     1600px.
+ *   - 660: celular no TETO de 44vw (a partir de ~591 CSS px de janela a
+ *     figura para de crescer e trava em 216,66px — ver `.diferenciais` no
+ *     CSS) sob DPR3 real. Faltava este degrau: 216,66 × 3 = 650px de device,
+ *     e sem um candidato entre 620 e 840 o `srcset` pulava direto para 840w
+ *     (o par custa 196,9 kB) para desenhar uma figura de 217px — pior do que
+ *     o defeito que este script existe para evitar. Medido em 844×390 (a
+ *     paisagem do próprio celular) sob DPR3: sem este degrau, `currentSrc`
+ *     resolvia para a variante de 840w.
  *   - 840: desktop em DPR2
  *
  * Uso: node squads/yard-burguer-squad/scripts/preparar-fotos-pessoas.mjs
@@ -60,7 +73,7 @@ const raiz = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const origem = join(raiz, 'referencia', 'pessoas');
 const destino = join(raiz, 'public', 'assets', 'pessoas');
 
-const LARGURAS = [420, 620, 840];
+const LARGURAS = [420, 480, 620, 660, 840];
 const QUALIDADE = 76;
 
 /**
@@ -86,7 +99,7 @@ async function preparar([id, arquivo]) {
     throw new Error(`${arquivo} veio sem canal alpha — rode recortar-fotos-pessoas.mjs antes`);
   }
   const saidas = [];
-  let total = 0;
+  const pesos = {};
 
   for (const largura of LARGURAS) {
     const buffer = await sharp(src)
@@ -95,10 +108,10 @@ async function preparar([id, arquivo]) {
       .toBuffer();
     await writeFile(join(destino, `${id}-${largura}.webp`), buffer);
     saidas.push(`${largura}=${(buffer.length / 1024).toFixed(1)}kb`);
-    if (largura === 420) total = buffer.length;
+    pesos[largura] = buffer.length;
   }
 
-  return { id, origem: `${meta.width}x${meta.height}`, saidas: saidas.join('  '), peso420: total };
+  return { id, origem: `${meta.width}x${meta.height}`, saidas: saidas.join('  '), pesos };
 }
 
 async function main() {
@@ -108,11 +121,13 @@ async function main() {
   for (const r of resultados) {
     console.log(`  ok   ${r.id.padEnd(14)} de ${r.origem}   ${r.saidas}`);
   }
-  const par420 = resultados.reduce((s, r) => s + r.peso420, 0) / 1024;
+  const par = (largura) =>
+    resultados.reduce((s, r) => s + r.pesos[largura], 0) / 1024;
   console.log(`\n${resultados.length} fotos x ${LARGURAS.length} larguras · qualidade ${QUALIDADE}`);
   console.log(
-    `par de 420w (o que o celular busca): ${par420.toFixed(1)} kB · ` +
-    `teto herdado do par anterior 86,8 kB · ${par420 <= 86.8 ? 'CABE' : 'ESTOURA'}`,
+    `par de 420w: ${par(420).toFixed(1)} kB · par de 480w (DPR3, largura estreita): ${par(480).toFixed(1)} kB · ` +
+    `par de 620w: ${par(620).toFixed(1)} kB · par de 660w (DPR3, teto de 44vw): ${par(660).toFixed(1)} kB · ` +
+    `par de 840w: ${par(840).toFixed(1)} kB`,
   );
 }
 
