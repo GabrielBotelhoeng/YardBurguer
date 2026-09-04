@@ -804,3 +804,145 @@ node -e "const s=require('sharp');(async()=>{const src='assets/hero/take-vertica
 s(src).resize({width:800,kernel:'lanczos3'}).avif({quality:44,effort:6}).toFile('public/assets/hero-vertical.avif');
 s(src).resize({width:800,kernel:'lanczos3'}).webp({quality:58,effort:6}).toFile('public/assets/hero-vertical.webp');})()"
 ```
+
+---
+
+## 2026-09-02 — par novo de fotos das pessoas (material do cliente)
+
+- **Gerado por:** ninguém — material entregue pelo dono
+- **Custo:** 0 crédito
+- **Origem:** `referencia/pessoas/placa.png` (1023×1537) e `convite.png` (1024×1536)
+- **Saída:** `public/assets/pessoas/pessoa-{placa,convite}-{420,620,840}.webp`
+
+Substituem o par anterior (`pessoa-cocacola` e `pessoa-placa`), que era mais
+escuro e tinha o produto pequeno. As duas novas mostram o hambúrguer com
+nitidez e têm o mesmo fundo preto de estúdio — o mesmo carvão da marca.
+
+**O lado de cada uma é composição, não ordem de arquivo.** As duas têm direção:
+na `placa` o cartaz fica à direita do homem; na `convite` a mão estendida aponta
+para a esquerda dele. Com a placa à ESQUERDA e o convite à DIREITA, os dois
+gestos apontam para o miolo da seção — para o texto. Invertidas, apontariam para
+fora da tela.
+
+**Qualidade 68 e não 80, e o número saiu do orçamento.** A folga da rota era de
+~1 kB, então o par novo precisava caber no peso do par que substituía. Medido no
+par de 620 (o que um DPR3 baixa):
+
+| qualidade | par de 620 |
+|---|---:|
+| 80 | 103.576 |
+| 74 | 86.652 |
+| **68** | **81.330** |
+| anterior no ar | 86.806 |
+
+Ou seja: **5,4 kB devolvidos** ao orçamento, não gastos. Foto de estúdio com
+fundo preto liso é o caso em que o webp mais rende — quase metade do quadro é
+uma cor só. Peso total da rota depois da troca: 1.493.375 bytes, folga de 6.625.
+
+Reproduzir: `node squads/yard-burguer-squad/scripts/preparar-fotos-pessoas.mjs`
+
+**O script não recorta, só reamostra.** A proporção nativa é 2:3 e o CSS do
+celular usa exatamente essa, então o `cover` não tem o que cortar. Recortar aqui
+reintroduziria o defeito consertado hoje de manhã — produto decepado na borda.
+
+---
+
+## 2026-09-03 — par de fotos recortado, alinhado pela cabeça (material do cliente)
+
+- **Gerado por:** ninguém — material entregue pelo dono, nenhum gerador tem
+  crédito (Gemini responde 429)
+- **Custo:** 0 crédito
+- **Origem:** `referencia/fotos/WhatsApp Image 2026-09-03 at 09.26.30.jpeg`
+  (1024×1536, o da placa) e `... 09.31.19.jpeg` (1147×1372, o da lata)
+- **Saída:** `referencia/pessoas/{placa,coca}.png` (1020×1224, com alpha) →
+  `public/assets/pessoas/pessoa-{placa,coca}-{420,620,840}.webp`
+- **Nota: 5** — é o par que o cliente pediu, sem nada decepado e com os dois
+  rapazes lendo do mesmo tamanho.
+
+Substitui o par de 02/09. A foto da direita **mudou de assunto**: era o gesto de
+convite (mão estendida) e virou a **lata de Coca-Cola erguida**. Por isso o id
+`convite` morreu e virou `coca`, com `alt` e justificativa de composição
+reescritos (`src/content/copy.json`, chave `_gentePosicao`). `convite.png` e
+`pessoa-convite-*.webp` foram apagados.
+
+### O material trocou de natureza: era fundo preto, agora é recorte
+
+O par anterior era estúdio de fundo PRETO e entrava **sem recorte** — o preto era
+o mesmo carvão da marca, aquecido por `filter: sepia()` e dissolvido no areia por
+`mask-image`. O par novo veio já recortado, achatado sobre `rgb(247,247,247)`
+pelo WhatsApp. Medido nos quatro cantos das duas fotos.
+
+Consequência no CSS, tudo em `src/pages/index.astro` e comentado lá:
+`mask-image` **removida** (os 5% de topo comeriam o agal; os 3% laterais, o
+cotovelo e a beirada do cartaz), `filter: sepia()` **removido** (sem fundo, ele
+só amarelava o thobe e dessaturava o vermelho da Coca), véu de revelação trocado
+de carvão para **areia** (sobre recorte, carvão vira tarja em vez de revelação),
+e o parallax do celular perdeu o `scale(1.16)` herdado do tempo do `cover`.
+
+### Recorte por flood fill em duas tolerâncias
+
+`squads/yard-burguer-squad/scripts/recortar-fotos-pessoas.mjs`. Limiar de
+luminância não serve: o thobe branco chega a 255 e um limiar que apagasse o
+fundo de 247 comeria a roupa. Flood fill a partir das bordas resolve — mas a
+primeira versão propagava com `dist < 22` e **vazava pelo keffiyeh**: o xadrez
+tem quadrados brancos em 240–250, o flood entrava pelos vãos das franjas e
+escorria por todo o pano.
+
+Medido no mapa de alpha, antes e depois:
+
+| | alpha parcial | parcial no MIOLO da figura |
+|---|---:|---:|
+| flood único (`dist < 22`) — `coca` | 8,00% | 96.242 px |
+| flood único — `placa` | 1,38% | 7.421 px |
+| **estrito (`dist ≤ 6`) + banda de 3px — `coca`** | **0,37%** | ~0 |
+| **estrito + banda — `placa`** | **0,32%** | ~0 |
+
+### Alinhamento pela ALTURA DA CABEÇA, e um bug de pipeline no caminho
+
+As fotos vieram com enquadramentos diferentes (a da placa vai até a coxa, a da
+coca para no quadril) e cabeças de tamanhos diferentes (330 px contra 370 px,
+medidos à mão sobre uma régua de 10 px). Encaixar por `contain` num quadro comum
+alinhava as MOLDURAS e desalinhava as PESSOAS.
+
+O script agora mede o corpo **em cabeças** (4,65 na placa, 3,71 na coca), corta a
+placa por baixo até as mesmas 3,71 cabeças — 309 px de thobe liso, longe do
+cartaz, que acaba em y≈866 — e escala as duas para a mesma altura, o que iguala a
+cabeça por construção. Cabeça de saída: 329 px e 330 px.
+
+Daí sai o quadro comum de **5:6** (1020×1224), que é a proporção nativa da
+`coca`. Era 2:3; a troca obrigou a mexer em `width`/`height` do `<img>`
+(840×1008), nos degraus de `sizes`, no `aspect-ratio` do par no celular e no
+termo de proporção de `--gente-larg-desejada`.
+
+**Bug encontrado no caminho:** `sharp(raw).joinChannel(alphaRaw).extract(...)`
+ignora o `extract` em silêncio — a saída volta com o quadro inteiro e nenhum
+erro. O `resize` seguinte, com `fit: cover`, reenquadrava a foto toda. Era daí
+que vinha a coca menor e mais baixa **e** o topo da cabeça comido na placa. O
+recorte é feito à mão no buffer agora.
+
+### Peso: qualidade SUBIU e o orçamento sobrou
+
+O `sizes` do celular declarava `190px` fixo enquanto a figura media 133 CSS px —
+em DPR 2,75 o navegador baixava a variante de 620w para desenhar 366. Corrigido
+para `37vw`, o aparelho passa a buscar a de **420w**.
+
+| largura | q68 | q76 | q80 | q84 |
+|---|---:|---:|---:|---:|
+| par 420w | 67,3 kB | **72,4 kB** | 79,9 kB | 88,7 kB |
+| par 620w | 121,4 kB | 128,7 kB | 142,9 kB | — |
+
+Escolhido **q76** (era 68): 72,4 kB contra os 86,8 kB do par anterior —
+**14,4 kB devolvidos** ao orçamento, com qualidade por pixel maior, não menor.
+A premissa antiga ("fundo preto liso é o caso em que webp mais rende") morreu
+junto com o fundo: agora o quadro inteiro é assunto e o xadrez do keffiyeh é o
+pior caso de compressão que existe.
+
+Peso da rota medido em Pixel 5 com `medir-cena-video.mjs`: **1.443,2 kB**,
+folga de 56,8 kB contra o teto de 1,5 MB. Empurrão de layout: 0 px.
+
+Reproduzir:
+
+```
+node squads/yard-burguer-squad/scripts/recortar-fotos-pessoas.mjs
+node squads/yard-burguer-squad/scripts/preparar-fotos-pessoas.mjs
+```
