@@ -43,7 +43,7 @@
  * alpha lossy devolvia ~12% do peso e sujava o contorno com halo — recorte com
  * borda suja é exatamente o defeito que o script de recorte existe para evitar.
  *
- * CINCO LARGURAS, porque o `<img>` usa `srcset`:
+ * SEIS LARGURAS, porque o `<img>` usa `srcset`:
  *   - 420: celular em DPR baixo/médio, largura estreita (o degrau original)
  *   - 480: celular em DPR3 real e largura estreita (iPhone 12 em diante,
  *     390/414 CSS px, ANTES do teto de 44vw). Sob DPR3 o `sizes` de 220px
@@ -59,6 +59,20 @@
  *     o defeito que este script existe para evitar. Medido em 844×390 (a
  *     paisagem do próprio celular) sob DPR3: sem este degrau, `currentSrc`
  *     resolvia para a variante de 840w.
+ *   - 760 — ADICIONADO em 04/09 quando a figura do celular passou a
+ *     acompanhar a largura do CARTÃO (`--pilar-larg`) em vez de travar pela
+ *     altura: pedido do dono, "do tamanho do card". A figura quase dobrou
+ *     (de ~133 para até 320 CSS px) e o gate de peso mede no Pixel 5
+ *     emulado (393 CSS px, DPR 2,75) — ali a figura passou a pedir 393 × 0,78
+ *     − ajustes ≈ 269 CSS px × 2,75 ≈ 740px de device. Sem este degrau
+ *     entre 660 e 840, o `srcset` pulava para 840w NOS DOIS lados — mesmo
+ *     defeito do item anterior, só que maior: +122 kB no par (de 71,5 kB em
+ *     420w para 193,5 kB em 840w) contra uma folga de orçamento de ~13,5 kB.
+ *     760w é o menor múltiplo de 20 acima dos ~740,5px medidos (com folga de
+ *     ~20px), e ainda assim CUSTA MAIS DO QUE A FOLGA TEM — ver o número
+ *     exato no commit que introduziu este degrau. Reduz o estouro, não o
+ *     zera; zerar pediria desenhar a figura menor do que o cartão, que era
+ *     o pedido oposto.
  *   - 840: desktop em DPR2
  *
  * Uso: node squads/yard-burguer-squad/scripts/preparar-fotos-pessoas.mjs
@@ -73,7 +87,7 @@ const raiz = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const origem = join(raiz, 'referencia', 'pessoas');
 const destino = join(raiz, 'public', 'assets', 'pessoas');
 
-const LARGURAS = [420, 480, 620, 660, 840];
+const LARGURAS = [420, 480, 620, 660, 760, 840];
 const QUALIDADE = 76;
 
 /**
@@ -127,6 +141,7 @@ async function main() {
   console.log(
     `par de 420w: ${par(420).toFixed(1)} kB · par de 480w (DPR3, largura estreita): ${par(480).toFixed(1)} kB · ` +
     `par de 620w: ${par(620).toFixed(1)} kB · par de 660w (DPR3, teto de 44vw): ${par(660).toFixed(1)} kB · ` +
+    `par de 760w (Pixel 5, figura do tamanho do card): ${par(760).toFixed(1)} kB · ` +
     `par de 840w: ${par(840).toFixed(1)} kB`,
   );
 }

@@ -366,22 +366,42 @@ const combos = menu.combos.map((combo) => ({
             contra `.diferenciais`, exatamente como antes de entrar no `<ul>`.
 
             `sizes` DESCREVE O TAMANHO REAL, senão o navegador escolhe a
-            variante errada e o peso da rota anda sozinho — mesmo valor de
-            antes da mudança, porque a fórmula do celular (altura por `vw`,
-            largura pela proporção 5:6) não depende de ONDE a figura fica na
-            página, só do tamanho em que ela é desenhada:
+            variante errada e o peso da rota anda sozinho. RECALIBRADO em
+            04/09 quando a figura passou a acompanhar `--pilar-larg` (a
+            largura do cartão, ver `.dif__gente` no CSS) em vez de travar
+            pela altura — o valor antigo (37vw) descrevia a figura de antes,
+            quase metade do tamanho de agora, e ficaria mentindo.
 
-              (max-width: 520px) → 37vw   (393 CSS px → 433 px de device em
-                                    DPR3 → variante de 480w)
-              (max-width: 900px) → 220px  (teto de 44vw/260px, DPR3 → 660w)
-              (max-height: 500px) → 220px (paisagem curta, ex. 844×390)
+            `--pilar-larg` é `min(78% do trilho, 20rem)`, e o trilho é a
+            largura da seção menos `2 × 1,5rem` de padding (ver o bloco
+            `(max-width: 900px), (max-height: 500px)` de `.diferenciais >
+            .claro__wrap`). Expandindo os 78%: `0,78 × (100vw − 48px) =
+            78vw − 37,44px` — é essa conta que `calc()` reproduz abaixo, e é
+            por isso que ela vale só ATÉ o ponto em que bate no teto de
+            20rem (320px): `78vw − 37,44px = 320px` em `vw ≈ 458,3px`. Dali
+            para cima (incluindo paisagem curta, onde o trilho é bem mais
+            largo que 20rem) a figura simplesmente trava em 320px, do mesmo
+            jeito que o cartão trava.
+
+              (max-width: 458px)  → calc(78vw - 37.44px)
+                                     (360 → 243,4px; 390 → 266,8px;
+                                     414 → 285,5px — bate com o cartão,
+                                     medido em Playwright)
+              (max-width: 900px)  → 320px (teto de 20rem, ex. 768 CSS px)
+              (max-height: 500px) → 320px (paisagem curta, ex. 844×390 —
+                                     mesmo teto, o trilho ali é mais largo
+                                     que 20rem)
               (max-width: 1088px) → 40px  (901/1024, margem do wrap some)
               (max-width: 1300px) → 130px (1280)
               (max-width: 1600px) → 210px (1440)
               (max-width: 2100px) → 500px (1920)
               default              → 700px
 
-            Os cinco arquivos do `srcset` saem de
+            As cinco larguras abaixo de 1088px são do DESKTOP (`--gente-larg`)
+            e não mudaram nesta rodada — só o celular (`--pilar-larg`) ficou
+            maior.
+
+            Os arquivos do `srcset` saem de
             `squads/yard-burguer-squad/scripts/preparar-fotos-pessoas.mjs`.
             `width`/`height` são 840x1008 (5:6) e reservam a caixa antes da
             imagem chegar.
@@ -390,8 +410,8 @@ const combos = menu.combos.map((combo) => ({
             <figure class="dif__gente dif__gente--esq">
               <img
                 src={`/assets/pessoas/${diferenciais.gente.esquerda.arquivo}-840.webp`}
-                srcset={`/assets/pessoas/${diferenciais.gente.esquerda.arquivo}-420.webp 420w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-480.webp 480w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-620.webp 620w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-660.webp 660w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-840.webp 840w`}
-                sizes="(max-width: 520px) 37vw, (max-width: 900px) 220px, (max-height: 500px) 220px, (max-width: 1088px) 40px, (max-width: 1300px) 130px, (max-width: 1600px) 210px, (max-width: 2100px) 500px, 700px"
+                srcset={`/assets/pessoas/${diferenciais.gente.esquerda.arquivo}-420.webp 420w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-480.webp 480w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-620.webp 620w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-660.webp 660w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-760.webp 760w, /assets/pessoas/${diferenciais.gente.esquerda.arquivo}-840.webp 840w`}
+                sizes="(max-width: 458px) calc(78vw - 37.44px), (max-width: 900px) 320px, (max-height: 500px) 320px, (max-width: 1088px) 40px, (max-width: 1300px) 130px, (max-width: 1600px) 210px, (max-width: 2100px) 500px, 700px"
                 alt={diferenciais.gente.esquerda.alt}
                 width="840"
                 height="1008"
@@ -426,8 +446,8 @@ const combos = menu.combos.map((combo) => ({
             <figure class="dif__gente dif__gente--dir">
               <img
                 src={`/assets/pessoas/${diferenciais.gente.direita.arquivo}-840.webp`}
-                srcset={`/assets/pessoas/${diferenciais.gente.direita.arquivo}-420.webp 420w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-480.webp 480w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-620.webp 620w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-660.webp 660w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-840.webp 840w`}
-                sizes="(max-width: 520px) 37vw, (max-width: 900px) 220px, (max-height: 500px) 220px, (max-width: 1088px) 40px, (max-width: 1300px) 130px, (max-width: 1600px) 210px, (max-width: 2100px) 500px, 700px"
+                srcset={`/assets/pessoas/${diferenciais.gente.direita.arquivo}-420.webp 420w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-480.webp 480w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-620.webp 620w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-660.webp 660w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-760.webp 760w, /assets/pessoas/${diferenciais.gente.direita.arquivo}-840.webp 840w`}
+                sizes="(max-width: 458px) calc(78vw - 37.44px), (max-width: 900px) 320px, (max-height: 500px) 320px, (max-width: 1088px) 40px, (max-width: 1300px) 130px, (max-width: 1600px) 210px, (max-width: 2100px) 500px, 700px"
                 alt={diferenciais.gente.direita.alt}
                 width="840"
                 height="1008"
@@ -1808,22 +1828,58 @@ const combos = menu.combos.map((combo) => ({
      * exatamente o que os cartões de pilar já recusam com o próprio
      * `flex: 0 0 min(78%, 20rem)` deles.
      *
-     * A ALTURA É `clamp(150px, 44vw, 260px)` — o mesmo número já medido para
-     * este arquivo (5:6) na versão anterior (abaixo do carrossel): resultado
-     * de 393px de janela, figura de 145x174. Mudou ONDE a figura mora, não o
-     * tamanho dela — a fórmula não depende de posição na página.
+     * A LARGURA É `var(--pilar-larg)` — A MESMA DO CARTÃO, E NÃO MAIS UM
+     * `clamp` PRÓPRIO. Até aqui a ALTURA travava (`clamp(150px, 44vw,
+     * 260px)`) e a largura saía da proporção 5:6 — em 390px isso dava uma
+     * figura de 143x171,6 contra um cartão de 266,8x380,8: pouco mais da
+     * metade da largura do cartão, e o dono pediu "do tamanho do card".
      *
-     * A largura sai do `aspect-ratio: 5/6` nativo, nunca o contrário.
+     * TRAVAR PELA LARGURA, NUNCA PELA ALTURA — testado e descartado: em
+     * 360px o cartão mede 405,2px de altura, o que pediria 338px de largura
+     * mantendo 5:6, contra 312px de trilho visível. A figura estouraria a
+     * janela do trilho sozinha e reabriria o vazamento horizontal que o
+     * `overflow-x: auto` do próprio trilho existe para conter por dentro. A
+     * largura é segura por construção porque o cartão, do qual ela copia a
+     * medida, já cabe ali.
+     *
+     * A ALTURA agora SAI da proporção 5:6 (a mesma de sempre, nunca cortada)
+     * em vez de travar — o inverso do que valia antes. Resultado: figura
+     * mais ALTA que o cartão em nenhuma largura testada (243,4x292,1 em
+     * 360px contra cartão de 405,2px de altura) — ela fica mais BAIXA, e o
+     * alinhamento pelo pé (`align-self: flex-end`, na regra
+     * `.dif__gente--esq, .dif__gente--dir` logo abaixo) é o que decide onde
+     * sobra o respiro: em cima, não embaixo, para a figura "pisar" na mesma
+     * linha de base do cartão em vez de flutuar no meio da faixa.
      */
     .dif__gente {
       position: static;
       top: auto;
       transform: none;
       flex: 0 0 auto;
-      height: clamp(150px, 44vw, 260px);
-      width: auto;
+      width: var(--pilar-larg);
+      height: auto;
       aspect-ratio: 5 / 6;
       background-color: transparent;
+
+      /**
+       * ALINHADA PELO PÉ, NÃO PELO MEIO — decisão, não default.
+       *
+       * `.pilares` não declara `align-items`, então o valor é o inicial,
+       * `stretch`. Isso não afeta os cartões (`.pilar`, sem altura própria:
+       * eles esticam para a altura do trilho, que a figura de qualquer jeito
+       * NÃO alcança mais — mesmo maior, ela segue mais baixa que o cartão em
+       * toda largura testada). A figura tem altura própria (via
+       * `aspect-ratio`), então `stretch` cai no fallback `flex-start` — topo
+       * do trilho — e o respiro sobraria embaixo, com a pessoa flutuando
+       * acima da base do cartão.
+       *
+       * `flex-end` põe o respiro em CIMA: a base da figura encosta na base
+       * do trilho (mesma linha da base do cartão, que ocupa a altura
+       * inteira), e a foto "pisa" no chão da seção — a mesma leitura que já
+       * existe no desktop e que a placa/`.diferenciais` (mais acima) usa
+       * como referência.
+       */
+      align-self: flex-end;
     }
     .dif__gente--esq,
     .dif__gente--dir {
@@ -2015,12 +2071,30 @@ const combos = menu.combos.map((combo) => ({
       scrollbar-width: none;
       /* Sobra para a sombra do foco não ser recortada pelo próprio scroller. */
       padding-block-end: 0.5rem;
+
+      /**
+       * `--pilar-larg` É A LARGURA DO CARTÃO, DECLARADA UMA VEZ SÓ.
+       *
+       * `.dif__gente` (mais acima no arquivo, mesma media query) lê esta
+       * mesma variável para a figura acompanhar a largura do cartão — pedido
+       * do dono ("do tamanho do card"). Custom property herda pela árvore do
+       * DOM, não pela ordem das regras no arquivo: `.pilar-figura` é
+       * `display: contents`, então a `<figure>` dentro dele é filha de fato
+       * de `.pilares` para efeito de herança, e enxerga esta variável mesmo
+       * declarada aqui embaixo.
+       *
+       * SE ESTE VALOR DIVERGIR do `flex` do `.pilar` logo abaixo, a figura
+       * some de ser "do tamanho do card" sem nenhum erro visível — os dois
+       * só voltam a bater por acaso. Por isso o `.pilar` consome a MESMA
+       * variável em vez de repetir `min(78%, 20rem)` a mão.
+       */
+      --pilar-larg: min(78%, 20rem);
     }
     .pilares::-webkit-scrollbar {
       display: none;
     }
     .pilares > .pilar {
-      flex: 0 0 min(78%, 20rem);
+      flex: 0 0 var(--pilar-larg);
       scroll-snap-align: start;
     }
 
