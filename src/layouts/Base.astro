@@ -1,6 +1,10 @@
 ---
 /**
- * Fontes self-hosted via @fontsource, nao via Google Fonts.
+ * Fontes self-hosted, geradas por
+ * squads/yard-burguer-squad/scripts/subsetar-fontes.mjs a partir dos pacotes
+ * @fontsource (que continuam em package.json só como matéria-prima do
+ * script — não são mais importados aqui). Ver src/styles/fonts.css para a
+ * declaração @font-face e o porquê de cada corte.
  *
  * Os tokens ja pediam Anton e Inter desde o inicio, mas ninguem tinha
  * importado o arquivo — a pagina inteira caia no sans do sistema e perdia a
@@ -10,15 +14,14 @@
  * caminho critico da fonte, que e exatamente o custo que pesa no 4G do
  * interior. O Astro ainda faz hash e cache longo dos arquivos.
  */
-import '@fontsource/anton/400.css';
-import '@fontsource-variable/inter';
+import '../styles/fonts.css';
 
 /**
  * Preload dos subsets latinos.
  *
  * A auditoria mediu CLS de 0.059, e o culpado não era imagem: o shift acontece
  * aos ~2s no bloco do hero, exatamente quando o Anton termina de baixar e o
- * texto reflui. É FOUT — o @fontsource usa font-display: swap, então a página
+ * texto reflui. É FOUT — a fonte usa font-display: swap, então a página
  * pinta com a fonte do sistema e reflui quando a real chega.
  *
  * Preload em vez de font-display: optional porque o H1 do hero é o elemento de
@@ -26,12 +29,14 @@ import '@fontsource-variable/inter';
  * quem estivesse em rede ruim veria a página inteira na fonte do sistema — que
  * foi o defeito que os prints pegaram lá atrás.
  *
- * Só os subsets latinos: os demais nem chegam a ser baixados por unicode-range.
+ * Aponta para os arquivos JÁ SUBSETADOS em public/assets/fonts/ (65,9 kB ->
+ * ~35 kB somados os dois) — não mais para os originais do @fontsource.
  */
-import antonLatino from '@fontsource/anton/files/anton-latin-400-normal.woff2?url';
-import interLatino from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 import '../styles/tokens.css';
 import copy from '../content/copy.json';
+
+const antonLatino = '/assets/fonts/anton-subset.woff2';
+const interLatino = '/assets/fonts/inter-subset.woff2';
 
 interface Props {
   title?: string;
