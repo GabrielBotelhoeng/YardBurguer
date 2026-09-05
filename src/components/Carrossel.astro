@@ -412,10 +412,26 @@ const LIMITE_PONTOS = 5;
     opacity: 0;
     transform: translateY(14px);
     transition: opacity 450ms ease, transform 450ms ease;
+    /**
+     * INVISÍVEL TAMBÉM PARA O DEDO, e não só para o olho.
+     *
+     * `opacity: 0` esconde, mas continua capturando ponteiro: o `.cart__cta` dos
+     * cards laterais seguia sendo um alvo de toque real — 55x18px no card a
+     * `scale(0.68)`, abaixo dos 24px de altura que o WCAG 2.5.8 pede. Ele já
+     * estava fora do Tab e do leitor de tela (`tabindex="-1"` + `aria-hidden`),
+     * então era um alvo que SÓ o dedo enxergava.
+     *
+     * Navegar errado ninguém navegava — o listener do slide dá `preventDefault`
+     * e todos os CTAs vão para o mesmo cardápio. Mas o toque caía num link
+     * anunciado como inexistente em vez de cair no card, que é o gesto que a
+     * pilha sugere. Com `none` o clique atravessa e chega em quem deve tratá-lo.
+     */
+    pointer-events: none;
   }
   .cart[data-pos='0'] .cart__base {
     opacity: 1;
     transform: none;
+    pointer-events: auto;
   }
 
   .cart__nome {
@@ -583,6 +599,9 @@ const LIMITE_PONTOS = 5;
     .cart__base {
       opacity: 1;
       transform: none;
+      /* Aqui não há card "do meio": os onze aparecem em coluna, todos legíveis,
+         e o CTA de cada um é um alvo legítimo de 44px. */
+      pointer-events: auto;
     }
     .carrossel__controles { display: none; }
   }

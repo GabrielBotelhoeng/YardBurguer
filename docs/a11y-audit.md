@@ -1,18 +1,24 @@
 # Auditoria de acessibilidade — YARD Burguer
 
 Task `audit-accessibility` · @mobile-performance-guardian
-**Gate com poder de veto** · rodada de 2026-08-26
+**Gate com poder de veto** · rodada de 2026-08-26, com adendo de 2026-09-05
 
 > A rodada anterior (2026-08-25) media a variante **camadas**, só em retrato, e
 > deu PASSA com "75 elementos de texto medidos, 0 reprovados". A Cena 2 em vídeo
 > entrou em 26/08 12:27 — depois. Esta rodada mede a variante que está no ar, em
 > retrato **e em paisagem**.
 
-## Veredito: PASSA COM RESSALVA
+## Veredito: PASSA COM RESSALVA — reconfirmado em 2026-09-05
 
 Um critério objetivo reprova, e ele já era conhecido e aceito. Mais importante:
 esta rodada descobriu que o método de contraste é **cego para o caso principal
 da Cena 2** — ver a seção seguinte, que vale mais que o veredito.
+
+> **Adendo de 2026-09-05.** O gate encontrou uma segunda cegueira, do mesmo
+> feitio: o julgamento de alvo de toque não vê oclusão nem projeção 3D. Um alvo
+> de 26 × 36 px no carrossel foi corrigido e o instrumento que o achou ficou em
+> `medir-alvo-toque.mjs`. A ressalva do contraste **continua aberta** — as duas
+> seções no fim deste documento dizem o que falta juntar ao gate.
 
 Os dois números de contraste abaixo saem do próprio `audit-page.mjs` e ficam no
 `audit.json`. Na primeira versão desta rodada só o de retrato saía dali — o de
@@ -73,6 +79,50 @@ devolve zero e o script antigo os contava como reprovados.
 Alvo invisível não é alvo de toque. A medição desta rodada filtra por
 visibilidade real (`offsetParent` e dimensão > 0) antes de julgar, e em retrato
 o resultado correto é **0 problemas de 10 alvos**.
+
+## Carrossel: o alvo que só o dedo enxergava — corrigido em 2026-09-05
+
+Os `.cart__cta` dos cards fora do centro já saíam do Tab e do leitor de tela
+(`tabindex="-1"` + `aria-hidden="true"`), mas seguiam com `pointer-events: auto`
+por baixo de `opacity: 0`. Eram alvos anunciados como inexistentes e alcançáveis
+mesmo assim — a definição de armadilha.
+
+Ninguém navegava para o lugar errado: o listener do slide dá `preventDefault` e
+os onze CTAs vão para o mesmo cardápio. O defeito era o toque cair num link
+fantasma em vez de cair no card, que é o gesto que a pilha sugere.
+
+Corrigido com `pointer-events: none` no `.cart__base`, devolvido a `auto` no
+card central e no bloco de `reduced-motion`, onde os onze cards ficam visíveis
+e cada CTA é legítimo.
+
+### O número que circulava estava errado, e o método explica por quê
+
+O achado original falava em **55 × 18 px em todos os cards laterais**. Medido
+com varredura, o alvo real era **um** card (`pos=1`, o vizinho da direita), de
+**26 × 36 px**. Os outros três não eram alcançáveis por dedo nenhum: dois estão
+fora da viewport do Pixel 5 e o terceiro fica coberto pelo `.claro__wrap`.
+
+A diferença vem do instrumento. Sob `rotateY`, `getBoundingClientRect` devolve a
+**caixa projetada** — 108 × 41 px para esse mesmo card —, que não é a geometria
+que o toque encontra. Medir a caixa dá um número; medir quem `elementFromPoint`
+devolve, ponto a ponto, dá outro. Só o segundo é o alvo.
+
+Consequência para o veredito: 26 × 36 px **passa** no WCAG 2.5.8 (AA, 24 × 24) e
+reprova no 2.5.5 (AAA, 44 × 44). Era um defeito de nível AAA, não a falha AA que
+o relato sugeria — e ainda assim valia corrigir, porque o custo foi uma linha.
+
+### Isto é a mesma cegueira do contraste, na outra ponta
+
+O `audit-page.mjs` julga alvo de toque por `getBoundingClientRect`. Ele não vê
+oclusão, não vê `pointer-events` e não vê projeção 3D: um alvo coberto por outro
+elemento é contado como bom, e um alvo girado é medido pela sombra. É o gêmeo do
+problema de contraste desta rodada — o instrumento mede o que está declarado no
+CSS, não o que chega em quem usa.
+
+`medir-alvo-toque.mjs` é a resposta para o carrossel, e traz o próprio controle
+junto: desliga a correção por CSSOM na mesma página e remede, porque com
+autoplay dois builds nunca param no mesmo card. Juntar essa varredura ao gate é
+o item 2 da próxima rodada, ao lado da amostragem de pixel para contraste.
 
 ## Redução de movimento
 
