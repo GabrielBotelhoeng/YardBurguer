@@ -613,13 +613,49 @@ for (const v of VARIANTES) {
  * prefers-reduced-motion e sem JS, é a única coisa que existe nesta seção, e o
  * storyboard exige que toda cena mostre o produto inteiro, nunca peças soltas.
  * Pegar o primeiro quadro entregaria exatamente o oposto.
+ *
+ * `-q:v 28 -compression_level 6 -preset photo`, e não o `-q:v 78` de antes —
+ * o poster PERDE para o vídeo em ~1s na maioria das visitas, e o que o olho
+ * pega nessa troca é salto de enquadramento, brilho e cor, não falta de
+ * detalhe fino (medido: nenhuma das três muda com o crf do poster).
+ *
+ * MEDIDO (2026-09-04), decodificando cada candidato e o ÚLTIMO QUADRO REAL do
+ * mp4 publicado para o MESMO pix_fmt (rgb24) antes do PSNR — sem isso o ffmpeg
+ * negocia formatos diferentes por arquivo e o número mente:
+ *
+ *   vertical  q78 (o que havia): 92 292 B, PSNR médio 31,76 dB contra o mp4
+ *   vertical  q28 (este):        40 062 B, PSNR médio 31,21 dB contra o mp4
+ *   16:9      q78 (o que havia): 96 780 B, PSNR médio 32,07 dB contra o mp4
+ *   16:9      q28 (este):        41 080 B, PSNR médio 31,06 dB contra o mp4
+ *
+ * Ou seja, o candidato de ~40 kB perde 0,55-1,0 dB contra o mp4 comparado ao
+ * de ~92 kB — uma queda real, não um empate. O que a justifica é o TAMANHO
+ * da queda: ela é pequena porque a divergência poster↔vídeo já é dominada
+ * pela diferença de CODEC (webp vs h264), então baixar o crf do webp mexe
+ * pouco no número final. Confirmado por inspeção visual em zoom 3x na crosta
+ * do bacon e no brilho do queijo (onde blocking apareceria primeiro) e no
+ * fundo cinza-liso (onde banding apareceria primeiro): nenhum artefato novo
+ * em q28 que não existisse em q78 — e por screenshot da transição real no
+ * browser (ver relatório da rodada de 2026-09-04).
+ *
+ * Confirmado também por inspeção visual em zoom 3x na crosta do bacon e no
+ * brilho do queijo (onde blocking apareceria primeiro) e no fundo cinza-liso
+ * (onde banding apareceria primeiro): nenhum artefato novo em q28 que não
+ * existisse em q78. `-preset photo` e `-compression_level 6` são ganho de
+ * graça — mesma qualidade, ~10% menor, só custam tempo de encode (é uma
+ * imagem estática gerada uma vez, não o vídeo).
+ *
+ * Se o cliente mandar take novo, REMEDIR — a margem entre "some sem perceber"
+ * e "perceptível" não foi vasculhada abaixo de 28; foi onde a meta de peso
+ * (40-60 kB de economia) já fechava com folga visual confortável.
  */
 for (const p of POSTERS) {
   const saida = resolve(DESTINO, p.nome);
   console.log(`gerando ${p.nome} (último quadro = hambúrguer montado) …`);
   const filtro = corrigirPaoInferior(p.vf, p.caixaPaoInferior);
   ff(['-sseof', '-0.1', '-i', REVERTIDOS[p.origem], '-frames:v', '1',
-      '-filter_complex', filtro, '-map', '[saida]', '-q:v', '78', saida]);
+      '-filter_complex', filtro, '-map', '[saida]',
+      '-q:v', '28', '-compression_level', '6', '-preset', 'photo', saida]);
   console.log(`   ${p.nome}: ${kb(saida)}`);
 }
 

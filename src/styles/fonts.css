@@ -1,0 +1,65 @@
+/**
+ * Fontes self-hosted, subsetadas.
+ *
+ * Gerado por squads/yard-burguer-squad/scripts/subsetar-fontes.mjs — ler o
+ * script para o porquê de cada caractere e de cada limite de peso incluído,
+ * e o que quebra (vira "tofu"/glifo vazio) se alguém puser um caractere fora
+ * do conjunto.
+ *
+ * ESTE ARQUIVO SUBSTITUI os imports de '@fontsource/anton/400.css' e
+ * '@fontsource-variable/inter' que existiam em Base.astro. Os dois pacotes
+ * continuam em package.json — são a matéria-prima que o script de geração lê
+ * — mas os arquivos deles não são mais baixados pela página.
+ *
+ * O QUE SE PERDEU DE PROPÓSITO: as partições cyrillic/cyrillic-ext/greek/
+ * greek-ext/vietnamese/latin-ext do @fontsource nunca custaram 1 byte aqui —
+ * o unicode-range delas já impedia o download em qualquer conteúdo real desta
+ * página (confirmado com squads/yard-burguer-squad/scripts/audit-page.mjs:
+ * sempre 2 requisições de fonte, nunca mais, antes e depois desta mudança).
+ * Elas cobrem caractere que este cardápio em português nunca usa.
+ *
+ * Ao não reimportar essas partições, um caractere fora do alfabeto
+ * latino/PT-BR (cirílico, grego, vietnamita) deixa de ter face dedicada da
+ * marca e cai no PRÓXIMO nome da pilha declarada em tokens.css — 'Archivo
+ * Black' → system-ui para título, system-ui/-apple-system para corpo. Ou
+ * seja: se um dia entrar conteúdo nesses idiomas, o texto aparece na fonte do
+ * sistema — não quebrado, não em caixinha vazia. Se o negócio precisar mesmo
+ * de um desses idiomas, a saída é reimportar a partição específica do
+ * @fontsource (ex.: '@fontsource-variable/inter/cyrillic.css'), não desfazer
+ * este arquivo.
+ *
+ * unicode-range abaixo é o MESMO da partição "latin" original do @fontsource
+ * — não foi estreitado. Isso é proposital: um caractere dentro de U+0000-00FF
+ * que não esteja no subset (ex.: ø, æ, ß, ö) ainda casa com esta @font-face
+ * (o range diz "eu cubro isso") mas o glifo não existe no arquivo — vira
+ * tofu, não cai para o próximo da pilha. É o preço documentado do subset por
+ * caractere; ver subsetar-fontes.mjs para a lista exata do que está incluído.
+ */
+
+@font-face {
+  font-family: 'Anton';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('/assets/fonts/anton-subset.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: swap;
+  /**
+   * 400–700, não 100–900: a página inteira (levantada com getComputedStyle
+   * em cada elemento, em 375/390/430/844×390 + desktop) só usa esses três
+   * pesos: 400, 600, 700. A faixa continua variável — 500 ou 650 ainda
+   * interpolam normalmente — só os dois extremos que nada usa foram cortados.
+   * Ver subsetar-fontes.mjs para a comparação em bytes contra a alternativa
+   * de três arquivos estáticos (que perde, quase dobro do peso).
+   */
+  font-weight: 400 700;
+  src: url('/assets/fonts/inter-subset.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
