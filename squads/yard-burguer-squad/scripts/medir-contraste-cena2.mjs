@@ -26,8 +26,21 @@
  * Sai com código 1 se algum texto ficar abaixo do seu piso.
  */
 import { chromium, devices } from 'playwright';
+import { writeFileSync } from 'node:fs';
 
 const URL = process.argv[2] ?? 'http://localhost:4321';
+
+/**
+ * Saída de máquina, para o `audit-page.mjs` consumir.
+ *
+ * O gate roda headless e por isso NÃO consegue medir esta cena sozinho — sem
+ * aba visível o observer não reporta, o vídeo não decodifica e o pin não é
+ * criado. Em vez de deixar o gate afirmar um contraste que ele não coleta (o
+ * defeito que a rodada de 26/08 veio corrigir), ele passa a INVOCAR este script
+ * e a incorporar este arquivo.
+ */
+const SAIDA_JSON = process.env.SAIDA_JSON ?? null;
+const medicoes = [];
 
 const PERFIS = [
   { nome: 'celular  ', ctx: { ...devices['iPhone 13'], isMobile: true } },
@@ -141,18 +154,32 @@ for (const perfil of PERFIS) {
     await rolar(base + comp * info.f);
     await pag.waitForTimeout(500);
 
-    // Esconde SO este texto e fotografa a faixa que ficava atras dele.
+    /**
+     * ESCONDE TODOS OS TEXTOS DA CENA, não só o alvo.
+     *
+     * Escondendo apenas o alvo, os outros quatro `[data-passo]` continuavam
+     * acesos e caíam DENTRO da faixa fotografada — no celular eles ficam
+     * empilhados perto. O "fundo" então continha texto da mesma cor do texto
+     * medido, e o pior pixel virava a própria cor: contraste **1,00 exato**, em
+     * dez das vinte e uma medições. Número que parece defeito grave e é erro de
+     * instrumento; no desktop, onde os passos se espalham, o mesmo texto dava
+     * 7,9–8,3.
+     *
+     * O que se quer atrás do texto é vídeo + véu, que é o que o comentário do
+     * topo sempre prometeu medir. `visibility: hidden` preserva o layout, então
+     * esconder todos não move nada de lugar.
+     */
     const caixa = await pag.evaluate(
       ({ sels, alvoChave }) => {
         let alvo = null;
         sels.forEach((sel) => {
           document.querySelectorAll('#explode ' + sel).forEach((el, n) => {
             if (sel + '#' + n === alvoChave) alvo = el;
+            el.style.visibility = 'hidden';
           });
         });
         if (!alvo) return null;
         const r = alvo.getBoundingClientRect();
-        alvo.style.visibility = 'hidden';
         return { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) };
       },
       { sels: SELETORES, alvoChave: chave }
@@ -161,16 +188,14 @@ for (const perfil of PERFIS) {
 
     const buf = await pag.screenshot({ clip: caixa });
 
-    await pag.evaluate(
-      ({ sels, alvoChave }) => {
-        sels.forEach((sel) => {
-          document.querySelectorAll('#explode ' + sel).forEach((el, n) => {
-            if (sel + '#' + n === alvoChave) el.style.visibility = '';
-          });
+    // Devolve TODOS, pelo mesmo motivo que escondeu todos.
+    await pag.evaluate((sels) => {
+      sels.forEach((sel) => {
+        document.querySelectorAll('#explode ' + sel).forEach((el) => {
+          el.style.visibility = '';
         });
-      },
-      { sels: SELETORES, alvoChave: chave }
-    );
+      });
+    }, SELETORES);
 
     // Decodifica o PNG no proprio browser: evita dependencia nova so para ler
     // pixel, e o canvas ali ja e o mesmo que renderizou a cena.
@@ -188,16 +213,52 @@ for (const perfil of PERFIS) {
     const [tr, tg, tb] = (info.corTexto.match(/\d+/g) ?? [232, 220, 200]).map(Number);
     const lumTexto = luminancia(tr, tg, tb);
 
-    let pior = Infinity, piorPixel = null;
-    for (let i = 0; i < pixels.length; i += 4) {
-      const rz = razao(lumTexto, luminancia(pixels[i], pixels[i + 1], pixels[i + 2]));
-      if (rz < pior) { pior = rz; piorPixel = [pixels[i], pixels[i + 1], pixels[i + 2]]; }
-    }
-
     const grande = info.corpo >= 24 || (info.corpo >= 18.66 && Number(info.peso) >= 700);
     const piso = grande ? 3.0 : 4.5;
+
+    /**
+     * ALÉM DO PIOR PIXEL, A FRAÇÃO ABAIXO DO PISO.
+     *
+     * "Pior pixel" sozinho é uma métrica que tende a 1,00 sempre que o fundo
+     * cruza a luminância do texto — e um fundo com variação ampla SEMPRE cruza,
+     * em algum ponto. Sozinha ela não distingue "um pixel coincidente na borda"
+     * de "o texto sumiu em cima do pão". Reprovar nos dois casos é reprovar por
+     * construção.
+     *
+     * A fração responde o que falta: quanto da área atrás do texto está abaixo
+     * do piso. É ela que separa artefato de defeito, e por isso vai junto no
+     * relatório em vez de substituir o pior pixel.
+     */
+    let pior = Infinity;
+    let piorPixel = null;
+    let abaixoDoPiso = 0;
+    let totalPixels = 0;
+    for (let i = 0; i < pixels.length; i += 4) {
+      const rz = razao(lumTexto, luminancia(pixels[i], pixels[i + 1], pixels[i + 2]));
+      totalPixels++;
+      if (rz < piso) abaixoDoPiso++;
+      if (rz < pior) { pior = rz; piorPixel = [pixels[i], pixels[i + 1], pixels[i + 2]]; }
+    }
+    const fracaoRuim = Math.round((abaixoDoPiso / totalPixels) * 1000) / 10;
     const passa = pior >= piso;
     if (!passa) reprovou = true;
+
+    medicoes.push({
+      perfil: perfil.nome.trim(),
+      elemento: chave,
+      corpo: Math.round(info.corpo),
+      grande,
+      pior: Math.round(pior * 100) / 100,
+      fracaoRuim,
+      piso,
+      passa,
+      piorPixel,
+      // A cor de origem fica registrada: quando o número surpreender, a
+      // primeira pergunta é sempre "contra que cor isso foi medido".
+      corTexto: info.corTexto,
+      lumTexto: Math.round(lumTexto * 1000) / 1000,
+      caixa: `${caixa.width}x${caixa.height}`,
+    });
 
     console.log(
       perfil.nome,
@@ -205,14 +266,35 @@ for (const perfil of PERFIS) {
       String(Math.round(info.corpo)) + 'px',
       (grande ? 'grande' : 'normal').padEnd(7),
       '| pior ' + pior.toFixed(2) + ':1',
+      'ruim ' + String(fracaoRuim).padStart(5) + '%',
       'piso ' + piso.toFixed(1),
       passa ? 'PASSA' : 'REPROVA',
-      '| pixel ' + JSON.stringify(piorPixel)
+      '| texto ' + info.corTexto + ' | pixel ' + JSON.stringify(piorPixel)
     );
   }
   await ctx.close();
 }
 
 await navegador.close();
+
+if (SAIDA_JSON) {
+  writeFileSync(
+    SAIDA_JSON,
+    JSON.stringify(
+      {
+        medido: true,
+        metodo: 'amostragem de pixel sob o texto, com o próprio texto escondido',
+        // Sem medição nenhuma o veredito seria "aprova" por vacuidade — o mesmo
+        // falso verde do trilho de comprimento zero, algumas linhas acima.
+        reprova: reprovou,
+        totalMedicoes: medicoes.length,
+        medicoes,
+      },
+      null,
+      2
+    )
+  );
+}
+
 console.log(reprovou ? '\nREPROVA — ha texto abaixo do piso AA sobre o video.' : '\nAPROVA — todo texto da cena passa no seu piso AA.');
 process.exit(reprovou ? 1 : 0);

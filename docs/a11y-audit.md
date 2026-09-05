@@ -8,17 +8,21 @@ Task `audit-accessibility` · @mobile-performance-guardian
 > entrou em 26/08 12:27 — depois. Esta rodada mede a variante que está no ar, em
 > retrato **e em paisagem**.
 
-## Veredito: PASSA COM RESSALVA — reconfirmado em 2026-09-05
+## Veredito: PASSA COM RESSALVA — remedido em 2026-09-05
 
 Um critério objetivo reprova, e ele já era conhecido e aceito. Mais importante:
 esta rodada descobriu que o método de contraste é **cego para o caso principal
 da Cena 2** — ver a seção seguinte, que vale mais que o veredito.
 
-> **Adendo de 2026-09-05.** O gate encontrou uma segunda cegueira, do mesmo
-> feitio: o julgamento de alvo de toque não vê oclusão nem projeção 3D. Um alvo
-> de 26 × 36 px no carrossel foi corrigido e o instrumento que o achou ficou em
-> `medir-alvo-toque.mjs`. A ressalva do contraste **continua aberta** — as duas
-> seções no fim deste documento dizem o que falta juntar ao gate.
+> **A rodada de 2026-09-05 juntou os dois métodos que faltavam ao gate**, e o
+> resultado muda metade deste documento. O resumo está em "O que mudou quando o
+> gate passou a enxergar", no fim. Em uma linha: **duas das quatro pendências
+> aceitas não existem mais**, e o defeito de contraste real está no texto de
+> 16px, não no título.
+>
+> Números desta tabela de 26/08 que **não valem mais**: "3 problemas de 13" em
+> alvos de paisagem (hoje 0 de 15) e "0 reprovados" de contraste, que era zero
+> por cegueira e não por qualidade.
 
 Os dois números de contraste abaixo saem do próprio `audit-page.mjs` e ficam no
 `audit.json`. Na primeira versão desta rodada só o de retrato saía dali — o de
@@ -26,10 +30,10 @@ paisagem foi medido à mão, por um script de bancada, e o relatório afirmava u
 número que o instrumento não coletava. Era o mesmo defeito que esta rodada veio
 denunciar, em escala menor; foi corrigido antes de o documento valer.
 
-| Critério | Retrato | Paisagem |
-|---|---|---|
-| Contraste de texto | 0 reprovados de 79 | 0 reprovados de 82 |
-| Alvos de toque ≥ 44 px | 0 problemas de 10 | **3 problemas de 13** ❌ |
+| Critério | Retrato | Paisagem | Remedido em 05/09 |
+|---|---|---|---|
+| Contraste de texto | 0 reprovados de 79 | 0 reprovados de 82 | 0 de 141 · 0 de 144 |
+| Alvos de toque ≥ 44 px | 0 problemas de 10 | **3 problemas de 13** ❌ | **0 de 13 · 0 de 15** ✅ |
 | Foco visível no teclado | 13 paradas, 0 sem outline | — |
 | `lang`, `h1` único, landmarks | ok | — |
 | Imagens sem `alt` | 0 | — |
@@ -55,7 +59,11 @@ Para a próxima rodada, medir texto sobre mídia exige amostrar o quadro por bai
 do texto — que é o que `medir-cena-video.mjs` já faz. Enquanto os dois métodos
 não se juntarem, este gate não pode afirmar contraste da Cena 2.
 
-## Alvos de toque: três links de navbar em paisagem
+## Alvos de toque: três links de navbar em paisagem — RESOLVIDO
+
+> **Superado em 2026-09-05.** Os três medem 77×44, 138×44 e 104×44 e passam;
+> `.nav__link` ganhou `min-height: 44px`. A tabela abaixo é o registro de 26/08 e
+> fica como histórico. Não usar os 19px como número corrente.
 
 | Elemento | Medido |
 |---|---|
@@ -121,8 +129,79 @@ CSS, não o que chega em quem usa.
 
 `medir-alvo-toque.mjs` é a resposta para o carrossel, e traz o próprio controle
 junto: desliga a correção por CSSOM na mesma página e remede, porque com
-autoplay dois builds nunca param no mesmo card. Juntar essa varredura ao gate é
-o item 2 da próxima rodada, ao lado da amostragem de pixel para contraste.
+autoplay dois builds nunca param no mesmo card.
+
+## O que mudou quando o gate passou a enxergar — 2026-09-05
+
+Os dois métodos que viviam fora do gate entraram nele. A varredura de alvo de
+toque virou `MEDIR_TOQUE` dentro do `audit-page.mjs`; o contraste sobre vídeo
+não pôde ser copiado para dentro — exige `headless: false` — então o gate passou
+a **invocar** `medir-contraste-cena2.mjs` sob `COM_CENA=1` e a incorporar o
+resultado. Sem essa variável ele grava `medido: false` com o motivo, em vez de
+seguir calado.
+
+Essa distinção é o ponto: o gate não deixou de ser cego porque passou a enxergar
+tudo, mas porque **parou de afirmar cobertura que não tem**.
+
+### Duas das quatro pendências aceitas do PR #4 não existem mais
+
+| Pendência de 26/08 | Estado em 05/09 |
+|---|---|
+| nº 2 — contraste do título em paisagem, 2,12–2,86:1 | **9,31:1**, passa. No celular, 5,43:1 |
+| nº 3 — 3 alvos de navbar abaixo de 44px em paisagem | **0 de 15**; `.nav__link` tem `min-height: 44px` |
+
+Nenhuma das duas foi corrigida nesta rodada: elas já estavam resolvidas e
+ninguém tinha remedido. É a mesma lição do peso — número de gate envelhece, e
+envelhece nos dois sentidos.
+
+### Uma falha AA real que só apareceu quando o carrossel cresceu
+
+O `.cart__cta` — o botão "Ver no cardápio" dentro do card — media **4,23:1**,
+contra os 4,5 que o AA pede para texto de 13,6px em peso 700. Carvão sobre fogo.
+
+Ela passou despercebida por um motivo aritmético: o gate media 79 textos quando
+o carrossel tinha 3 cards, e hoje mede 141. O defeito sempre esteve lá; o que
+mudou foi a chance de ser amostrado.
+
+Corrigido com **branco puro**, que leva a razão para 4,57:1 — exatamente a
+correção que o `.cta` global de `tokens.css` já tinha recebido, com o mesmo
+raciocínio anotado lá: escurecer o fogo resolveria também, mas fogo é token de
+marca e o problema é de texto. O botão do carrossel nunca herdou aquela
+correção por ser componente escopado.
+
+### O defeito real está no texto de 16px, não no título
+
+O que a amostragem de pixel encontrou agora, e nenhuma rodada anterior viu:
+
+| Perfil | Elemento | Pior pixel | Área abaixo do piso |
+|---|---|---|---|
+| celular | `[data-passo]` | 1,00:1 | **21,2%** |
+| celular | `.cenavideo__texto` | 1,00:1 | **23,2%** |
+| paisagem | `[data-passo]` | 1,00:1 | **26,1%** |
+| paisagem | `.cenavideo__texto` | 1,00:1 | 26,1% |
+| desktop | todos | 7,90–12,89:1 | 0% |
+
+Texto em `rgb(245, 239, 228)` sobre os trechos claros do take. No desktop passa
+folgado, porque ali o véu é outro.
+
+**A fração foi acrescentada por necessidade, e ela é o que torna o número
+crível.** "Pior pixel" sozinho tende a 1,00 sempre que o fundo cruza a
+luminância do texto — e fundo com variação ampla sempre cruza. Sozinha, essa
+métrica reprovaria por construção, e foi exatamente o que pareceu quando os
+primeiros 1,00 apareceram. A fração separa o pixel coincidente de borda do texto
+que some em cima do pão: 21% da área não é coincidência.
+
+**Um artefato real foi corrigido no caminho.** O medidor escondia só o texto
+alvo e fotografava a faixa — mas os outros quatro `[data-passo]` continuavam
+acesos e caíam dentro do enquadramento no celular, onde ficam empilhados. O
+"fundo" continha texto da mesma cor, e o pior pixel virava a própria cor do
+texto. Agora esconde todos antes de fotografar, que é o que o método sempre
+prometeu medir: vídeo + véu.
+
+**Isto NÃO foi corrigido, de propósito.** A Cena 2 tem quatro pendências aceitas
+pelo cliente e mexer nelas sem ele pedir seria refazer decisão tomada. Este é um
+defeito novo, próximo da pendência nº 2 mas em outro elemento — precisa de
+decisão antes de virar trabalho.
 
 ## Redução de movimento
 
