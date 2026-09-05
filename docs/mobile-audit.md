@@ -7,7 +7,7 @@ Task `audit-mobile-experience` · @mobile-performance-guardian
 > LCP 1,01 s, CLS 0,000 e 690 kB. A Cena 2 em vídeo entrou em 26/08 12:27, ou
 > seja, **depois** — o gate nunca tinha visto a variante que está no ar.
 
-## Veredito: REPROVA — por peso, e só por peso
+## Veredito: PASSA — atualizado em 2026-09-05
 
 O salto de layout que esta rodada encontrou **foi corrigido durante ela**; os
 números abaixo já são os de depois.
@@ -17,12 +17,14 @@ números abaixo já são os de depois.
 | LCP à chegada | ≤ 2,5 s | **1,69 s** | ✅ |
 | CLS sem interação | ≤ 0,1 | **0,000** | ✅ |
 | Empurrão ao rolar (era 800 px) | 0 px | **0 px** | ✅ |
-| **Peso total da rota** | ≤ 1,5 MB | **1,64 MB** | ❌ |
+| **Peso total da rota** | ≤ 1,5 MB | **1,404 MB** | ✅ |
 | Erros de JS | 0 | **0** | ✅ |
 | 404 | 0 | **0** | ✅ |
 
-O único critério em aberto é o peso, e ele é decisão de produto: ou o teto sobe,
-ou o take encolhe. Nada mais reprova.
+> Este veredito dizia **REPROVA por peso** e ficou dizendo isso por dez dias
+> depois de deixar de ser verdade — inclusive durante a correção de 02/09, que
+> reescreveu a seção de peso lá embaixo e esqueceu o cabeçalho. Quem lê um gate
+> lê o topo. Ver "Peso — rodada de 2026-09-05" para os bytes de hoje.
 
 Medido em Pixel 5, 4G do interior (1,6 Mbps, 150 ms de latência) com CPU a 1/4,
 contra o build de produção servido estático.
@@ -203,6 +205,57 @@ Vale registrar o que **não** entra nessa conta: sob `prefers-reduced-motion` e
 sem JavaScript, **zero byte de vídeo é pedido** (verificado nesta rodada). O
 peso de 1,6 MB é o do caminho completo, não o do pior caso.
 
+## Peso — rodada de 2026-09-05: 1.404.116 bytes, 96 kB de folga
+
+O dilema acima ("ou o teto sobe, ou o take encolhe") **não precisou ser
+resolvido**: os 76 kB que faltavam saíram de dois lugares que não custam pixel
+nenhum, e o take continua intacto.
+
+| Tipo | bytes | % | |
+|---|---:|---:|---|
+| media (`burger-stack-vertical.mp4`) | 785.591 | 56,0% | 1 req |
+| image | 499.397 | 35,6% | 19 req |
+| script | 49.916 | 3,6% | 3 req |
+| font | 36.164 | 2,6% | 2 req |
+| stylesheet | 15.712 | 1,1% | 1 req |
+| document | 17.336 | 1,2% | 1 req |
+| **total** | **1.404.116** | | **27 req** |
+
+**Folga de 95.884 bytes — 6,4% do teto**, contra os ~21 kB (1,4%) da rodada de
+02/09. O que mudou, nos dois commits do PR #26:
+
+- **Fontes: 67.508 → 36.164 bytes (−46%).** Inter Variable baixava o eixo
+  100-900 inteiro e todo o latino estendido para desenhar três pesos;
+  `subsetar-fontes.mjs` corta o eixo para 400-700 e o alfabeto para latino
+  completo + acentos do PT-BR.
+- **Posters da Cena 2: q78 → q28.** Vertical (o que entra nesta conta) de
+  92.292 para 40.062 bytes. Custa 0,5-1 dB de PSNR contra o último quadro real
+  do mp4 — a divergência entre poster e vídeo já era dominada pela diferença de
+  codec, não pela qualidade do webp.
+
+**Número confirmado por medição independente**, em árvore isolada por
+`git archive` do commit `6790b66`, build limpo e porta própria: bateu
+**exatamente**, 1.404.116 bytes. A verificação também confirmou, medindo:
+
+- o celular pede **um único** `.mp4`, o `-vertical` — nenhum 16:9 em nenhum
+  dos cinco viewports;
+- sob `prefers-reduced-motion: reduce` o total cai para 471.284 bytes com
+  **zero byte de vídeo** e `currentSrc` vazio;
+- as únicas fontes servidas são os dois subsets; nenhum arquivo de
+  `@fontsource` chega ao `dist/`. Varredura de glifo sobre as 272 strings de
+  `copy.json` + `menu.json` e sobre o `innerText` renderizado (incluindo o selo
+  dinâmico de aberto/fechado): **nenhum caractere fora do subset**, sem tofu.
+
+Cuidado de método que essa rodada acrescenta: **medir no viewport do gate ou
+não comparar.** Os mesmos commits medidos em outros cinco viewports deram
+1.381.389–1.435.477 bytes — variação legítima, porque `srcset`/`sizes` escolhem
+imagens diferentes por largura e DPR. Divergência de ±30 kB entre duas medições
+costuma ser viewport diferente, não regressão.
+
+**A folga não é convite para gastar sem medir.** Analytics e prova social — os
+próximos itens do `PENDENCIAS.md` — cabem nela, mas cada um sai deste mesmo
+bolso de 96 kB.
+
 ## LCP: 1,69 s, e por que a medição anterior dizia outra coisa
 
 O `audit-page.mjs` rola a página sozinho para capturar shift tardio. Como o LCP
@@ -223,8 +276,10 @@ PR #5 — antes ele expirava antes de existir seek para julgar.
 
 ## Reaberto para a próxima rodada
 
-- **O teto de peso**, único critério ainda reprovado: subir o número ou encolher
-  o take. É decisão de produto.
+- ~~**O teto de peso**, único critério ainda reprovado: subir o número ou
+  encolher o take.~~ **Fechado em 2026-09-05 sem tocar no take** — fontes e
+  posters devolveram 96 kB de folga (PR #26). O vídeo segue sendo 56% da rota;
+  se algum dia a folga acabar de novo, é lá que mora a única peça grande.
 - **A variante `camadas` não foi corrigida.** O mesmo mecanismo de pin tardio
   vale para ela (medido: empurrão equivalente, com a cena já fora da tela). Como
   não é a variante no ar, ficou para quando ela voltar a ser usada — o caminho é

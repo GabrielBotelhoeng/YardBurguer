@@ -29,6 +29,19 @@ Re-rodar `audit-accessibility` e `audit-mobile-experience` contra a variante
 aceitas continuam aceitas — o ponto é registrá-las no gate em vez de deixá-lo
 dizendo que não existem.
 
+> **Metade fechada em 2026-09-05.** O gate mobile foi re-rodado contra a
+> variante `video` e agora **passa medido**: 1.404.116 bytes contra teto de
+> 1,5 MB, 96 kB de folga, confirmado por medição independente em árvore isolada
+> (PR #26). O `mobile-audit.md` tinha um segundo problema além de estar velho:
+> o cabeçalho continuou dizendo **REPROVA** por dez dias depois que a seção de
+> peso já dizia outra coisa. Corrigido.
+>
+> **O a11y continua vencido**, e o item 1 daquele gate segue de pé: o cálculo de
+> contraste sobe a árvore atrás de `background-color` e é cego para texto sobre
+> vídeo. Medição por amostragem de pixel na rodada de 05/09 dá 3,90:1 no pior
+> caso do título da Cena 2 em retrato (passa, o texto tem 28px e o mínimo é
+> 3,0), mas quem mede isso hoje é um script avulso, não o gate.
+
 ## 1. Bloqueia o lançamento
 
 Nada mudou desde 25/08.
