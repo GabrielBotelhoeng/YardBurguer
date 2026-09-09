@@ -560,12 +560,17 @@ const combos = menu.combos.map((combo) => ({
                     Continua uma lista de verdade para o leitor de tela: o `+`
                     é `aria-hidden` porque é pontuação visual, e quem ouve já
                     recebe a separação pela própria estrutura de lista.
+
+                    O texto vem embrulhado em `<span>` só para o CSS poder
+                    fixá-lo na segunda coluna: o primeiro item não tem `+`, e
+                    sem o embrulho ele caía na calha do marcador e desalinhava
+                    do resto da conta.
                   */}
                   <ul class="combo__partes" role="list">
                     {combo.partes.map((parte, i) => (
                       <li class="combo__parte">
                         {i > 0 && <span class="combo__mais" aria-hidden="true">+</span>}
-                        {parte}
+                        <span class="combo__parte-texto">{parte}</span>
                       </li>
                     ))}
                   </ul>
@@ -2400,19 +2405,25 @@ const combos = menu.combos.map((combo) => ({
   .combos__cta { margin-top: 2.5rem; }
 
   /**
-   * `auto-fit` com mínimo de 19rem. São CINCO combos desde 05/09, e cinco não
-   * divide bem: em três colunas sobra um par órfão na última linha. Deixar o
-   * `1fr` esticar os dois é melhor do que forçar coluna fixa — a última linha
-   * fica larga de propósito, e o Família, que é o maior combo, é justamente
-   * quem cai lá.
+   * FLEX, e não grid, por causa da última linha.
+   *
+   * São CINCO combos desde 05/09, e cinco não divide bem: em três colunas
+   * sobra um par órfão embaixo. O `auto-fit` com `minmax(19rem, 1fr)` que
+   * estava aqui prometia esticar esse par — e não estica: `1fr` dimensiona a
+   * COLUNA, que continua valendo um terço da faixa, então os dois últimos
+   * cards ficavam com a largura dos de cima e deixavam um buraco à direita.
+   *
+   * Com `flex-wrap`, a última linha reparte a faixa inteira entre quem sobrou.
+   * A linha fica larga de propósito, e o Família — o maior combo — é
+   * justamente quem cai lá.
    */
   .combos__lista {
-    display: grid;
+    display: flex;
+    flex-wrap: wrap;
     gap: 1rem;
     list-style: none;
     padding: 0;
     margin-top: 2.5rem;
-    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
   }
 
   /**
@@ -2430,6 +2441,14 @@ const combos = menu.combos.map((combo) => ({
    * card alto ao lado de outro baixo.
    */
   .combo {
+    /*
+     * `flex: 1 1 19rem` — 19rem é o piso de conteúdo (foto de 6,5rem + a
+     * linha mais longa da conta, "2 Tápera do Sertão"), não um número
+     * escolhido no olho. Encolhe abaixo disso só em tela estreita, onde a
+     * lista já é de uma coluna e o card vale a largura toda.
+     */
+    flex: 1 1 19rem;
+    min-width: 0;
     display: flex;
     align-items: start;
     gap: 1.1rem;
@@ -2473,28 +2492,36 @@ const combos = menu.combos.map((combo) => ({
   }
 
   /**
-   * A conta do combo, item a item.
+   * A conta do combo, uma linha por item.
    *
-   * `inline flex` em cada parte para o `+` nunca quebrar sozinho no fim da
-   * linha — separador órfão no começo da linha de baixo lê como erro de
-   * digitação. O espaçamento entre partes vem do `gap` da lista, então o `+`
-   * fica solto no meio do vão em vez de colado numa das palavras.
+   * UM ITEM POR LINHA, SEMPRE. Antes a lista era `flex-wrap` e agrupava o que
+   * coubesse: no Casal saía "Yard King + Apólo" na mesma linha enquanto os
+   * outros cards quebravam a cada item. A conta mudava de formato de card
+   * para card, que é exatamente o que a quebra em itens veio resolver.
+   *
+   * O `+` VIVE NUMA CALHA FIXA de 0,75rem, e o texto começa sempre na segunda
+   * coluna — inclusive no primeiro item, que não tem marcador. Sem a calha, o
+   * hambúrguer começava colado na margem e os acompanhamentos recuavam: três
+   * linhas com dois alinhamentos diferentes.
    */
   .combo__partes {
     margin-top: 0.45rem;
     padding: 0;
     list-style: none;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.15rem 0.5rem;
+    display: grid;
+    gap: 0.15rem;
   }
   .combo__parte {
-    display: inline-flex;
+    display: grid;
+    grid-template-columns: 0.75rem 1fr;
     align-items: baseline;
-    gap: 0.5rem;
+    gap: 0.4rem;
     font-size: 0.92rem;
     line-height: 1.45;
     color: var(--color-areia);
+  }
+  .combo__parte-texto {
+    grid-column: 2;
   }
   .combo__mais {
     color: var(--color-brasa);

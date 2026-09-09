@@ -63,8 +63,15 @@ Nada mudou desde 25/08.
 | **`docs/pitch-yard.md`** | O roteiro de demo para o dono — o que se fala enquanto ele rola a página. |
 
 O `menu.json` tem 11 hambúrgueres, 5 combos e 6 porções; a página mostra 3
-destaques e 4 combos. Isso é **decisão, não dívida**: a seção é vitrine e todo
-item leva ao Brendi (ver `scroll-storyboard.md`).
+destaques e **os 5 combos**. Mostrar parte dos hambúrgueres é **decisão, não
+dívida**: a seção é vitrine e todo item leva ao Brendi (ver
+`scroll-storyboard.md`).
+
+Com os combos era outra coisa. Este parágrafo dizia "4 combos" e a frase lia
+como decisão até 05/09, quando a conferência contra
+`menu.brendi.com.br/yard-burguer` mostrou que o COMBO BARATÍSSIMO nunca esteve
+no `menu.json`: não era vitrine escolhida, era dado faltando. Combo é oferta
+fechada — omitir um esconde um preço, não um item de catálogo.
 
 ## 3. Dívidas de imagem
 
