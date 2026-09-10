@@ -460,7 +460,21 @@ const LIMITE_PONTOS = 5;
     margin-top: 0.25rem;
     font-size: 0.85rem;
     font-weight: 700;
-    color: var(--color-carvao);
+    /**
+     * BRANCO PURO, pelo mesmo motivo que o `.cta` global de `tokens.css`.
+     *
+     * Era `--color-carvao` sobre fogo: **4,23:1**, medido pelo gate, contra os
+     * 4,5 que o AA pede para texto de 13,6px em peso 700 — longe dos 18,66px
+     * que fariam dele "texto grande". Falha real, no botão de conversão do
+     * carrossel, e ela passou despercebida porque o gate media 79 textos quando
+     * o carrossel tinha 3 cards; hoje mede 141.
+     *
+     * Branco leva a **4,57:1**. É a correção que o `.cta` global já tinha
+     * recebido e que este botão nunca herdou, por ser componente escopado.
+     * Escurecer o fogo resolveria também e está descartado lá pelo mesmo
+     * motivo: é token de marca, e o problema é de texto.
+     */
+    color: #fff;
     background-color: var(--color-fogo);
     padding: 0.6rem 1rem;
     border-radius: 999px;

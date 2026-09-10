@@ -44,12 +44,18 @@ const destaques = maisPedidos.itens.map((item) => ({
 
 /**
  * O AVIF das fotos de combo — mesma regra do carrossel: existe no disco só
- * onde ele ganha, e quem responde é o disco, não uma lista aqui. As quatro
+ * onde ele ganha, e quem responde é o disco, não uma lista aqui. As cinco
  * fotos de combo vêm do CDN do Brendi (reamostragem de 240px), que é
  * exatamente o caso em que o AVIF fica em ~64% do webp.
+ *
+ * A COMPOSIÇÃO É QUEBRADA AQUI, e não no `menu.json`. O dado lá é o fato do
+ * cardápio numa frase só; separar em partes é decisão de APRESENTAÇÃO, e
+ * misturar as duas coisas obrigaria a reescrever o fato toda vez que o layout
+ * mudasse. O `+` é o separador que o próprio cardápio do Brendi usa.
  */
 const combos = menu.combos.map((combo) => ({
   ...combo,
+  partes: combo.composicao.split('+').map((p) => p.trim()),
   foto: fotoPorId.get(combo.id) ?? null,
   fotoAvif: existsSync(new URL(`../../public/assets/produtos/${combo.id}.avif`, import.meta.url))
     ? `/assets/produtos/${combo.id}.avif`
@@ -528,7 +534,7 @@ const combos = menu.combos.map((combo) => ({
             combos.map((combo) => (
               <li class="combo">
                 {combo.foto && (
-                  <picture>
+                  <picture class="combo__figura">
                     {combo.fotoAvif && <source type="image/avif" srcset={combo.fotoAvif} />}
                     <img
                       class="combo__foto"
@@ -541,9 +547,33 @@ const combos = menu.combos.map((combo) => ({
                     />
                   </picture>
                 )}
-                <div>
+                <div class="combo__corpo">
                   <h3 class="combo__nome">{combo.nome}</h3>
-                  <p class="combo__composicao">{combo.composicao}</p>
+                  {/*
+                    O QUE VEM DENTRO, ITEM A ITEM.
+
+                    Era uma frase corrida — "2 Tápera do Sertão + Batata 300g +
+                    Refrigerante 1L" — que o olho lê como parágrafo e atravessa
+                    sem contar o que está levando. Em itens separados, a conta
+                    fica visível, que é o argumento do combo.
+
+                    Continua uma lista de verdade para o leitor de tela: o `+`
+                    é `aria-hidden` porque é pontuação visual, e quem ouve já
+                    recebe a separação pela própria estrutura de lista.
+
+                    O texto vem embrulhado em `<span>` só para o CSS poder
+                    fixá-lo na segunda coluna: o primeiro item não tem `+`, e
+                    sem o embrulho ele caía na calha do marcador e desalinhava
+                    do resto da conta.
+                  */}
+                  <ul class="combo__partes" role="list">
+                    {combo.partes.map((parte, i) => (
+                      <li class="combo__parte">
+                        {i > 0 && <span class="combo__mais" aria-hidden="true">+</span>}
+                        <span class="combo__parte-texto">{parte}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </li>
             ))
@@ -2374,32 +2404,84 @@ const combos = menu.combos.map((combo) => ({
   .combos .secao__texto { color: var(--color-areia); }
   .combos__cta { margin-top: 2.5rem; }
 
+  /**
+   * FLEX, e não grid, por causa da última linha.
+   *
+   * São CINCO combos desde 05/09, e cinco não divide bem: em três colunas
+   * sobra um par órfão embaixo. O `auto-fit` com `minmax(19rem, 1fr)` que
+   * estava aqui prometia esticar esse par — e não estica: `1fr` dimensiona a
+   * COLUNA, que continua valendo um terço da faixa, então os dois últimos
+   * cards ficavam com a largura dos de cima e deixavam um buraco à direita.
+   *
+   * Com `flex-wrap`, a última linha reparte a faixa inteira entre quem sobrou.
+   * A linha fica larga de propósito, e o Família — o maior combo — é
+   * justamente quem cai lá.
+   */
   .combos__lista {
-    display: grid;
+    display: flex;
+    flex-wrap: wrap;
     gap: 1rem;
     list-style: none;
     padding: 0;
     margin-top: 2.5rem;
-    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
   }
 
-  /* Combo e leitura rapida: foto a esquerda, o que vem dentro a direita.
-     Sem preco por decisao de arquitetura — preco vive no Brendi, onde muda. */
+  /**
+   * Foto à esquerda, o que vem dentro à direita.
+   *
+   * Sem preço por decisão de arquitetura — preço vive no Brendi, onde muda.
+   *
+   * A FOTO NÃO CRESCE, e isso é limite de material, não de gosto: o CDN do
+   * Brendi só entrega 240x240 e não existe rota para resolução maior (testado
+   * em `fetch-menu-images.mjs`). A 6,5rem ela ainda fica nítida em DPR2; num
+   * card de foto grande no topo a ampliação passaria de 2x e apareceria.
+   *
+   * `align-items: start` e não `center`: com a composição em itens, os cards
+   * têm alturas diferentes, e centralizar fazia a foto flutuar no meio de um
+   * card alto ao lado de outro baixo.
+   */
   .combo {
+    /*
+     * `flex: 1 1 19rem` — 19rem é o piso de conteúdo (foto de 6,5rem + a
+     * linha mais longa da conta, "2 Tápera do Sertão"), não um número
+     * escolhido no olho. Encolhe abaixo disso só em tela estreita, onde a
+     * lista já é de uma coluna e o card vale a largura toda.
+     */
+    flex: 1 1 19rem;
+    min-width: 0;
     display: flex;
-    align-items: center;
+    align-items: start;
     gap: 1.1rem;
     padding: 0.85rem;
     border-radius: 0.9rem;
     background-color: rgb(232 220 200 / 0.06);
     border: 1px solid rgb(232 220 200 / 0.1);
   }
-  .combo__foto {
+  /**
+   * O `flex-shrink: 0` MORA NO <picture>, e essa é a correção.
+   *
+   * Ele estava no `<img>`, que não é o item flex — quem é filho do `.combo` é
+   * o `<picture>`. Sem trava, o picture cedia à pressão do texto e levava a
+   * imagem junto: as fotos vinham sendo servidas em ~66x104 no lugar dos
+   * 104x104 pedidos, cada card com uma largura diferente (66, 86, 65, 63, 67),
+   * e o `object-fit: cover` cortava as laterais de todas.
+   *
+   * Defeito PRÉ-EXISTENTE, não da mudança de layout: medido no markup antigo,
+   * de frase corrida, dava 68px — o mesmo esmagamento.
+   */
+  .combo__figura {
     flex-shrink: 0;
     width: 6.5rem;
     height: 6.5rem;
+  }
+  .combo__foto {
+    width: 100%;
+    height: 100%;
     object-fit: cover;
     border-radius: 0.65rem;
+  }
+  .combo__corpo {
+    min-width: 0;
   }
   .combo__nome {
     font-family: var(--font-display);
@@ -2408,11 +2490,42 @@ const combos = menu.combos.map((combo) => ({
     line-height: 1.05;
     color: var(--color-brasa);
   }
-  .combo__composicao {
-    margin-top: 0.35rem;
+
+  /**
+   * A conta do combo, uma linha por item.
+   *
+   * UM ITEM POR LINHA, SEMPRE. Antes a lista era `flex-wrap` e agrupava o que
+   * coubesse: no Casal saía "Yard King + Apólo" na mesma linha enquanto os
+   * outros cards quebravam a cada item. A conta mudava de formato de card
+   * para card, que é exatamente o que a quebra em itens veio resolver.
+   *
+   * O `+` VIVE NUMA CALHA FIXA de 0,75rem, e o texto começa sempre na segunda
+   * coluna — inclusive no primeiro item, que não tem marcador. Sem a calha, o
+   * hambúrguer começava colado na margem e os acompanhamentos recuavam: três
+   * linhas com dois alinhamentos diferentes.
+   */
+  .combo__partes {
+    margin-top: 0.45rem;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.15rem;
+  }
+  .combo__parte {
+    display: grid;
+    grid-template-columns: 0.75rem 1fr;
+    align-items: baseline;
+    gap: 0.4rem;
     font-size: 0.92rem;
-    line-height: 1.5;
+    line-height: 1.45;
     color: var(--color-areia);
+  }
+  .combo__parte-texto {
+    grid-column: 2;
+  }
+  .combo__mais {
+    color: var(--color-brasa);
+    font-weight: 700;
   }
 
   .onde { background-color: var(--color-creme); color: var(--color-carvao); }

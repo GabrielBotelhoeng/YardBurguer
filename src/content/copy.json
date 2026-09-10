@@ -234,8 +234,9 @@
     "nota": "Preços e disponibilidade atualizados direto no nosso cardápio."
   },
   "combos": {
+    "_fonte": "Os cinco combos e o que vem em cada um saem de menu.json (cardápio real do Brendi), conferido em 2026-09-05. O texto fala de UMA a QUATRO pessoas porque é o que os próprios nomes dizem — Solteiro, Casal, Família. Não fala em almoço: a loja abre 18:00.",
     "titulo": "Combos que valem a pena",
-    "texto": "Burger, acompanhamento e bebida. Conta simples, fome resolvida.",
+    "texto": "Um pra você ou quatro pra dividir. Burger, acompanhamento e bebida na mesma conta.",
     "cta": "Pedir agora"
   },
   "ondeEstamos": {

@@ -1,7 +1,59 @@
 import { chromium, devices } from 'playwright';
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync, unlinkSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const URL_BASE = process.env.ALVO;
+const AQUI = dirname(fileURLToPath(import.meta.url));
+
+/**
+ * O CONTRASTE DA CENA 2 É DELEGADO, e o gate diz isso em voz alta.
+ *
+ * `MEDIR_A11Y` calcula contraste subindo a árvore atrás de `background-color`.
+ * Atrás do título da Cena 2 não há cor: há um vídeo. O gate media "0 reprovados"
+ * e o texto sobre o take estava em 2,12–2,86:1 — número que só apareceu quando
+ * alguém amostrou pixel por fora, e que este relatório afirmava não existir.
+ *
+ * Copiar aquela medição para cá não resolveria: ela exige `headless: false`
+ * (sem aba visível o observer não reporta, o vídeo não decodifica e o pin não é
+ * criado), e este gate roda headless de propósito. Então ele INVOCA o medidor.
+ *
+ * `COM_CENA=1` liga a etapa. Sem ela, o relatório registra `medido: false` com
+ * o motivo — o gate deixa de ser cego não porque passou a enxergar tudo, mas
+ * porque parou de afirmar cobertura que não tem. Gate que se cala sobre o que
+ * não mediu vale mais do que gate que aprova por vacuidade.
+ */
+function medirContrasteDaCena2() {
+  if (process.env.COM_CENA !== '1') {
+    return {
+      medido: false,
+      motivo:
+        'exige aba visível (headless:false) e este gate roda headless. ' +
+        'Rodar com COM_CENA=1, ou à mão: node medir-contraste-cena2.mjs <url>',
+    };
+  }
+
+  const arquivo = join(AQUI, '.contraste-cena2.json');
+  if (existsSync(arquivo)) unlinkSync(arquivo);
+
+  const r = spawnSync(
+    process.execPath,
+    [join(AQUI, 'medir-contraste-cena2.mjs'), URL_BASE],
+    { env: { ...process.env, SAIDA_JSON: arquivo }, encoding: 'utf8', timeout: 600000 }
+  );
+
+  if (!existsSync(arquivo)) {
+    return {
+      medido: false,
+      motivo: `o medidor não produziu saída (código ${r.status}). Não confundir com aprovação.`,
+      stderr: (r.stderr || '').slice(-400),
+    };
+  }
+  const dados = JSON.parse(readFileSync(arquivo, 'utf8'));
+  unlinkSync(arquivo);
+  return dados;
+}
 
 /**
  * Auditoria com medição real, não estimativa.
@@ -145,6 +197,152 @@ const MEDIR_A11Y = () => {
     };
 };
 
+/**
+ * ALVO DE TOQUE — MEDIDO POR QUEM RECEBE O TOQUE, NÃO PELA CAIXA.
+ *
+ * A versão anterior perguntava `getBoundingClientRect` e comparava com 44. Isso
+ * é cego para três coisas ao mesmo tempo:
+ *
+ *   1. OCLUSÃO — alvo coberto por outro elemento contava como bom;
+ *   2. `pointer-events` e `opacity` — alvo invisível e intocável contava como
+ *      ruim, gerando trabalho que não existe;
+ *   3. PROJEÇÃO 3D — sob `rotateY` a caixa é a SOMBRA do elemento, não a
+ *      região que o dedo encontra.
+ *
+ * O estrago dos itens 2 e 3, medido em 2026-09-05: o gate acusava 10 alvos
+ * reprovados em retrato, sendo que NENHUM deles era alcançável. Os "55x18px"
+ * eram os cards do carrossel fora de cena, a `opacity: 0` e `scale(0.4)`; os de
+ * 88x35 a 116x43 eram os laterais, cobertos pelo card central. Esse número
+ * falso circulou como defeito real e gerou uma rodada inteira de investigação.
+ *
+ * A varredura responde a pergunta certa: para cada ponto do quadro, quem
+ * `elementFromPoint` devolve. A menor caixa que contém os acertos é o alvo, e é
+ * esse número que o WCAG 2.5.5 (AAA, 44) e o 2.5.8 (AA, 24) cobram.
+ *
+ * Quem não é alcançável em ponto nenhum sai do relatório: não é alvo de toque,
+ * é decoração. É a mesma regra do falso positivo de `display: none` corrigido
+ * em 26/08, levada até o fim.
+ */
+const MEDIR_TOQUE = () => {
+  const PISO_AAA = 44;
+  const PISO_AA = 24;
+
+  /** `opacity` multiplica ao subir a árvore: 0 em qualquer ancestral zera tudo. */
+  const opacidadeEfetiva = (el) => {
+    let acc = 1;
+    let no = el;
+    while (no && no !== document.documentElement) {
+      acc *= Number(getComputedStyle(no).opacity);
+      if (acc === 0) return 0;
+      no = no.parentElement;
+    }
+    return acc;
+  };
+
+  /**
+   * CADA ALVO É TRAZIDO PARA A VIEWPORT ANTES DE SER MEDIDO.
+   *
+   * `elementFromPoint` só responde dentro da janela: sem rolar, todo alvo
+   * abaixo da dobra devolve zero acerto e sairia do relatório como "não
+   * alcançável". A primeira versão desta varredura fez exatamente isso e
+   * entregou 6 alvos onde o gate antigo via 25 — um gate que só audita a
+   * primeira tela, o que é pior que o instrumento que ele veio substituir.
+   *
+   * O scroll é restaurado no fim para não contaminar as medidas seguintes.
+   */
+  const scrollOriginal = window.scrollY;
+
+  const resultado = Array.from(document.querySelectorAll('a, button'))
+    .map((el) => {
+      el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+      const r = el.getBoundingClientRect();
+      const s = getComputedStyle(el);
+      const naTela = el.offsetParent !== null && r.width > 0 && r.height > 0;
+      const visivel =
+        naTela &&
+        s.visibility !== 'hidden' &&
+        s.pointerEvents !== 'none' &&
+        opacidadeEfetiva(el) > 0.05;
+
+      // Passo proporcional: alvo grande não precisa de 2px para ser descrito, e
+      // varrer um <a> que envolve meia tela ponto a ponto trava a medição.
+      const passo = Math.max(2, Math.floor(Math.min(r.width, r.height) / 12));
+      let acertos = 0;
+      let minX = Infinity;
+      let maxX = -Infinity;
+      let minY = Infinity;
+      let maxY = -Infinity;
+
+      if (visivel) {
+        for (let y = r.top; y <= r.bottom; y += passo) {
+          for (let x = r.left; x <= r.right; x += passo) {
+            if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) continue;
+            const alvo = document.elementFromPoint(x, y);
+            // O ponto pode cair num filho (o <svg> dentro do botão, por exemplo)
+            // e continua sendo um toque que chega no controle.
+            if (alvo && (alvo === el || el.contains(alvo))) {
+              acertos++;
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+      }
+
+      /**
+       * AS BORDAS SÃO REFINADAS A 1px, senão o passo vira erro de medida.
+       *
+       * A varredura grossa só encontra pontos MÚLTIPLOS do passo, então a menor
+       * caixa que contém os acertos é sempre menor que o alvo — até um passo em
+       * cada eixo. Com passo 3, o CTA de 137x44 media 42 de altura e reprovava
+       * nos 44 do AAA por causa do instrumento, não do CSS. Um gate que reprova
+       * pelo próprio erro de amostragem é pior que gate nenhum.
+       *
+       * A partir do último acerto, caminhar de 1 em 1 até a borda custa no
+       * máximo `passo` testes por lado.
+       */
+      const acerta = (x, y) => {
+        if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) return false;
+        const alvo = document.elementFromPoint(x, y);
+        return !!alvo && (alvo === el || el.contains(alvo));
+      };
+      if (acertos > 0) {
+        const meioY = (minY + maxY) / 2;
+        const meioX = (minX + maxX) / 2;
+        while (acerta(minX - 1, meioY)) minX -= 1;
+        while (acerta(maxX + 1, meioY)) maxX += 1;
+        while (acerta(meioX, minY - 1)) minY -= 1;
+        while (acerta(meioX, maxY + 1)) maxY += 1;
+      }
+
+      // `+ 1` porque as bordas são INCLUSIVAS: um alvo que responde de x=100 a
+      // x=143 mede 44px, não 43. Sem isso todo alvo de exatamente 44px reprova
+      // por um pixel — o gate acusaria a página inteira.
+      const largura = acertos ? Math.round(maxX - minX) + 1 : 0;
+      const altura = acertos ? Math.round(maxY - minY) + 1 : 0;
+
+      return {
+        texto: (el.textContent || '').trim().slice(0, 32),
+        classe: String(el.className || '').split(' ')[0],
+        // A caixa fica no relatório para que a diferença entre ela e o alvo
+        // real seja auditável — é ela que produzia os números falsos.
+        caixa: `${Math.round(r.width)}x${Math.round(r.height)}`,
+        largura,
+        altura,
+        alcancavel: acertos > 0,
+        visivel,
+        okAA: largura >= PISO_AA && altura >= PISO_AA,
+        ok: largura >= PISO_AAA && altura >= PISO_AAA,
+      };
+    })
+    .filter((t) => t.visivel && t.alcancavel);
+
+  window.scrollTo(0, scrollOriginal);
+  return resultado;
+};
+
 async function auditar() {
   const navegador = await chromium.launch();
   const relatorio = {};
@@ -258,30 +456,7 @@ async function auditar() {
   };
 
   // ---------- Área de toque dos CTAs ----------
-  /**
-   * Só entra o que EXISTE na tela.
-   *
-   * A versão anterior media todo `a` e `button` do documento, inclusive os
-   * ocultos por `display: none` — que devolvem 0x0 e eram contados como
-   * reprovados. Em 26/08 isso produziu "3 alvos de 0px na navbar" em retrato,
-   * onde esses links nem aparecem. Alvo invisível não é alvo de toque, e falso
-   * positivo em gate com veto manda corrigir o que não está quebrado.
-   */
-  relatorio.toque = await mobile.evaluate(() =>
-    Array.from(document.querySelectorAll('a, button'))
-      .map((el) => {
-        const r = el.getBoundingClientRect();
-        return {
-          texto: (el.textContent || '').trim().slice(0, 32),
-          classe: String(el.className || '').split(' ')[0],
-          largura: Math.round(r.width),
-          altura: Math.round(r.height),
-          visivel: el.offsetParent !== null && r.width > 0 && r.height > 0,
-          ok: r.width >= 44 && r.height >= 44,
-        };
-      })
-      .filter((t) => t.visivel)
-  );
+  relatorio.toque = await mobile.evaluate(MEDIR_TOQUE);
 
   // ---------- Acessibilidade ----------
   relatorio.a11y = await mobile.evaluate(MEDIR_A11Y);
@@ -394,25 +569,22 @@ async function auditar() {
 
   relatorio.paisagem = {
     a11y: await paisagem.evaluate(MEDIR_A11Y),
-    toque: await paisagem.evaluate(() =>
-      Array.from(document.querySelectorAll('a, button'))
-        .map((el) => {
-          const r = el.getBoundingClientRect();
-          return {
-            texto: (el.textContent || '').trim().slice(0, 32),
-            classe: String(el.className || '').split(' ')[0],
-            largura: Math.round(r.width),
-            altura: Math.round(r.height),
-            visivel: el.offsetParent !== null && r.width > 0 && r.height > 0,
-            ok: r.width >= 44 && r.height >= 44,
-          };
-        })
-        .filter((t) => t.visivel && !t.ok)
-    ),
+    /**
+     * Paisagem devolve a lista INTEIRA, como retrato, e não só os reprovados.
+     * Filtrar por `!ok` aqui dava um "3 problemas de 13" cujo denominador era
+     * outro: 13 eram os medidos, 3 os que sobraram no array. Quem lê o
+     * relatório não tem como saber disso, e as duas orientações precisam ser
+     * comparáveis.
+     */
+    toque: await paisagem.evaluate(MEDIR_TOQUE),
   };
   await ctxPaisagem.close();
 
   await navegador.close();
+
+  // Fora do navegador headless de propósito: esta etapa abre o seu próprio.
+  relatorio.contrasteCena2 = medirContrasteDaCena2();
+
   writeFileSync('audit.json', JSON.stringify(relatorio, null, 2));
   console.log(JSON.stringify(relatorio, null, 2));
 }

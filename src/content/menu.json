@@ -96,34 +96,43 @@
     }
   ],
 
+  "_combos": "Conferido contra menu.brendi.com.br/yard-burguer em 2026-09-05. São CINCO combos, não quatro: o Baratíssimo faltava aqui desde sempre. A ordem é do menor para o maior, que é a ordem em que a pessoa se reconhece — 'sou eu', 'somos dois', 'é a turma'. A gramagem da batata sai da descrição oficial de cada combo; onde o cardápio não diz, não se inventa.",
   "combos": [
     {
-      "id": "combo-mega",
-      "nome": "Combo Mega",
-      "imageId": "fd2b9a4abeb1d19296e6fc543fa178ed",
-      "composicao": "2 Tápera + Batata + Refrigerante 1L",
-      "preco": { "de": 158.33, "por": 126.66 }
+      "id": "combo-solteiro",
+      "nome": "Combo Solteiro",
+      "imageId": "19cf70b798dd9e61a815d220b3436fd1",
+      "composicao": "Cheese Burger + Batata 150g + Refrigerante lata",
+      "preco": { "de": 59.7, "por": 47.76 }
+    },
+    {
+      "id": "combo-baratissimo",
+      "nome": "Combo Baratíssimo",
+      "imageId": "3ca482f8845f60c8ef6ba9f02b37090c",
+      "composicao": "2 Cheese Burger + Refrigerante 1L",
+      "preco": { "de": 88.8, "por": 71.04 }
     },
     {
       "id": "combo-casal",
       "nome": "Combo Casal",
       "imageId": "86e490786fe4335062514cf598835a23",
-      "composicao": "King + Apólo + Batata + Refrigerante 1L",
+      "composicao": "Yard King + Apólo + Batata 300g + Refrigerante",
+      "_nota": "O cardápio se contradiz neste: o NOME do item diz 'REFRI 1L' e a descrição diz '2 Refri Lata'. Enquanto o Brendi não resolver, aqui fica 'Refrigerante' sem quantidade — afirmar qualquer um dos dois seria afirmar o que não se sabe.",
       "preco": { "de": 151.4, "por": 121.12 }
+    },
+    {
+      "id": "combo-mega",
+      "nome": "Combo Mega",
+      "imageId": "fd2b9a4abeb1d19296e6fc543fa178ed",
+      "composicao": "2 Tápera do Sertão + Batata 300g + Refrigerante 1L",
+      "preco": { "de": 158.33, "por": 126.66 }
     },
     {
       "id": "combo-familia",
       "nome": "Combo Família",
       "imageId": "80e6374c61ed2c8008469b0b9ba80d4a",
-      "composicao": "4 Burguer Salad + Batata + Refrigerante 1L",
+      "composicao": "4 Burguer Salad + Fritas 300g + Refrigerante 1L",
       "preco": { "de": 216.0, "por": 172.8 }
-    },
-    {
-      "id": "combo-solteiro",
-      "nome": "Combo Solteiro",
-      "imageId": "19cf70b798dd9e61a815d220b3436fd1",
-      "composicao": "Cheese Burger + Refrigerante lata + Batata",
-      "preco": { "de": 59.7, "por": 47.76 }
     }
   ],
 
